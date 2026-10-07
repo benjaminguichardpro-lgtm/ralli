@@ -1,0 +1,150 @@
+import type { ClubRole } from "@/generated/prisma/client";
+import { generateInviteCode, isWellFormedInviteCode } from "@/lib/clubs/invite-code";
+import { db } from "@/lib/db";
+import { DomainError, isUniqueViolation } from "./errors";
+
+// Toutes les fonctions prennent l'identifiant de l'acteur et vérifient ses droits en base :
+// l'UI peut masquer un bouton, mais c'est ici que le cloisonnement est garanti.
+
+const NOT_FOUND = new DomainError("NOT_FOUND", "Club introuvable");
+const FORBIDDEN = new DomainError("FORBIDDEN", "Action réservée aux admins du club");
+
+async function getRole(userId: string, clubId: string): Promise<ClubRole | null> {
+  const m = await db.clubMembership.findUnique({
+    where: { userId_clubId: { userId, clubId } },
+    select: { role: true },
+  });
+  return m?.role ?? null;
+}
+
+async function requireMember(userId: string, clubId: string): Promise<ClubRole> {
+  const role = await getRole(userId, clubId);
+  // Un non-membre ne doit pas pouvoir distinguer « club inexistant » de « club fermé ».
+  if (!role) throw NOT_FOUND;
+  return role;
+}
+
+async function requireAdmin(userId: string, clubId: string): Promise<void> {
+  if ((await requireMember(userId, clubId)) !== "ADMIN") throw FORBIDDEN;
+}
+
+/** Réessaie en cas de collision (rarissime) sur le code d'invitation. */
+async function withFreshInviteCode<T>(fn: (code: string) => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      return await fn(generateInviteCode());
+    } catch (e) {
+      if (!isUniqueViolation(e, "inviteCode")) throw e;
+    }
+  }
+  throw new Error("Impossible de générer un code d'invitation unique");
+}
+
+export async function createClub(actorId: string, name: string): Promise<{ id: string; inviteCode: string }> {
+  return withFreshInviteCode((inviteCode) =>
+    db.club.create({
+      data: {
+        name,
+        inviteCode,
+        createdById: actorId,
+        memberships: { create: { userId: actorId, role: "ADMIN" } },
+      },
+      select: { id: true, inviteCode: true },
+    }),
+  );
+}
+
+export async function joinClubByCode(actorId: string, rawCode: string): Promise<{ clubId: string }> {
+  const invalid = new DomainError("INVALID_INVITE_CODE", "Code d'invitation invalide");
+  if (!isWellFormedInviteCode(rawCode)) throw invalid;
+  const club = await db.club.findUnique({ where: { inviteCode: rawCode }, select: { id: true } });
+  if (!club) throw invalid;
+  if (await getRole(actorId, club.id)) {
+    throw new DomainError("ALREADY_MEMBER", "Vous êtes déjà membre de ce club");
+  }
+  try {
+    await db.clubMembership.create({ data: { userId: actorId, clubId: club.id, role: "MEMBER" } });
+  } catch (e) {
+    if (isUniqueViolation(e)) throw new DomainError("ALREADY_MEMBER", "Vous êtes déjà membre de ce club");
+    throw e;
+  }
+  return { clubId: club.id };
+}
+
+export async function regenerateInviteCode(actorId: string, clubId: string): Promise<string> {
+  await requireAdmin(actorId, clubId);
+  const club = await withFreshInviteCode((inviteCode) =>
+    db.club.update({ where: { id: clubId }, data: { inviteCode }, select: { inviteCode: true } }),
+  );
+  return club.inviteCode;
+}
+
+export async function setMemberRole(actorId: string, clubId: string, targetUserId: string, role: ClubRole): Promise<void> {
+  await requireAdmin(actorId, clubId);
+  await db.$transaction(async (tx) => {
+    const target = await tx.clubMembership.findUnique({
+      where: { userId_clubId: { userId: targetUserId, clubId } },
+      select: { role: true },
+    });
+    if (!target) throw new DomainError("NOT_FOUND", "Ce compte n'est pas membre du club");
+    if (target.role === role) return;
+    if (target.role === "ADMIN" && role === "MEMBER") {
+      const admins = await tx.clubMembership.count({ where: { clubId, role: "ADMIN" } });
+      if (admins <= 1) throw new DomainError("LAST_ADMIN", "Le club doit garder au moins un admin");
+    }
+    await tx.clubMembership.update({
+      where: { userId_clubId: { userId: targetUserId, clubId } },
+      data: { role },
+    });
+  }, { isolationLevel: "Serializable" }); // deux admins qui se retirent le rôle en même temps
+}
+
+export type MyClub = { id: string; name: string; role: ClubRole };
+
+export async function listMyClubs(userId: string): Promise<MyClub[]> {
+  const rows = await db.clubMembership.findMany({
+    where: { userId },
+    select: { role: true, club: { select: { id: true, name: true } } },
+    orderBy: { club: { name: "asc" } },
+  });
+  return rows.map((r) => ({ id: r.club.id, name: r.club.name, role: r.role }));
+}
+
+export type ClubView = {
+  id: string;
+  name: string;
+  myRole: ClubRole;
+  /** Visible des admins uniquement. */
+  inviteCode: string | null;
+  members: { userId: string; displayName: string; role: ClubRole; joinedAt: Date }[];
+};
+
+/** Page club : réservée aux membres. Les emails ne sont jamais exposés. */
+export async function getClubView(actorId: string, clubId: string): Promise<ClubView> {
+  const myRole = await requireMember(actorId, clubId);
+  const club = await db.club.findUnique({
+    where: { id: clubId },
+    select: {
+      id: true,
+      name: true,
+      inviteCode: true,
+      memberships: {
+        select: { role: true, joinedAt: true, user: { select: { id: true, displayName: true } } },
+        orderBy: [{ role: "desc" }, { joinedAt: "asc" }], // ADMIN avant MEMBER (ordre de l'enum)
+      },
+    },
+  });
+  if (!club) throw NOT_FOUND;
+  return {
+    id: club.id,
+    name: club.name,
+    myRole,
+    inviteCode: myRole === "ADMIN" ? club.inviteCode : null,
+    members: club.memberships.map((m) => ({
+      userId: m.user.id,
+      displayName: m.user.displayName,
+      role: m.role,
+      joinedAt: m.joinedAt,
+    })),
+  };
+}

@@ -16,8 +16,13 @@
     "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "db:verify": "tsx scripts/verify-db-constraints.ts",
-    "db:start": "prisma dev --name ralli --detach -p 51213 -P 51214 --shadow-db-port 51215",
-    "db:stop": "prisma dev stop ralli"
+    "db:start": "prisma dev --name ralli --detach",
+    "db:stop": "prisma dev stop ralli",
+    "db:test:start": "prisma dev --name ralli-test --detach",
+    "db:test:stop": "prisma dev stop ralli-test",
+    "db:ls": "prisma dev ls",
+    "reset-password": "tsx scripts/reset-password.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

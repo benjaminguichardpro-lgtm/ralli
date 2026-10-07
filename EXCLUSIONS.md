@@ -19,6 +19,8 @@ Ces fonctionnalités sont volontairement absentes. Aucune n'est cachée : si ell
 - **Emails et notifications push** : aucun envoi.
 - **Vérification d'email** : non faite.
 - **Mot de passe oublié** : pas de parcours en libre-service, puisqu'aucun email n'est envoyé. Pendant le pilote, dépannage par un opérateur avec `npm run reset-password -- <email>`, qui génère un mot de passe temporaire à changer à la connexion suivante.
+- **Quitter un club, exclure un membre** : non prévus dans le MVP (un admin peut seulement nommer un admin ou retirer ce rôle).
+- **Révocation des sessions** : les sessions sont des JWT de 30 jours. Après un `reset-password`, une session déjà ouverte ailleurs reste valide jusqu'à son expiration.
 
 ## Données personnelles
 - **Suppression de compte et export des données** : hors MVP. **À faire avant toute ouverture publique.**

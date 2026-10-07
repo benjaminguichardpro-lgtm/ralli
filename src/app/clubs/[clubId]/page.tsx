@@ -1,0 +1,71 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { MemberRoleForm, RegenerateCodeForm } from "@/components/club-forms";
+import { requireUser } from "@/lib/auth/current-user";
+import { type ClubView, getClubView } from "@/server/clubs";
+import { DomainError } from "@/server/errors";
+
+export const metadata: Metadata = { title: "Club · Ralli" };
+
+export default function ClubPage({ params }: { params: Promise<{ clubId: string }> }) {
+  return (
+    <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
+      <Club params={params} />
+    </Suspense>
+  );
+}
+
+async function Club({ params }: { params: Promise<{ clubId: string }> }) {
+  const user = await requireUser();
+  const { clubId } = await params;
+  let club: ClubView;
+  try {
+    club = await getClubView(user.id, clubId);
+  } catch (e) {
+    // Non-membre ou club inexistant : même réponse, pour ne rien révéler.
+    if (e instanceof DomainError && e.code === "NOT_FOUND") notFound();
+    throw e;
+  }
+  const isAdmin = club.myRole === "ADMIN";
+
+  return (
+    <section className="space-y-6">
+      <div>
+        <h1 className="font-serif text-3xl text-primary">{club.name}</h1>
+        <p className="text-ink-muted">Votre rôle : {isAdmin ? "admin" : "membre"}</p>
+      </div>
+
+      {isAdmin && club.inviteCode && (
+        <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+          <h2 className="font-serif text-xl text-primary">Code d&apos;invitation</h2>
+          <p data-testid="invite-code" className="font-mono text-3xl font-bold tracking-widest text-ink">
+            {club.inviteCode}
+          </p>
+          <p className="text-sm text-ink-muted">À communiquer aux membres, joueurs et proches. Ils le saisissent dans « Rejoindre un club ».</p>
+          <RegenerateCodeForm clubId={club.id} />
+        </div>
+      )}
+
+      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+        <h2 className="font-serif text-xl text-primary">Membres ({club.members.length})</h2>
+        <ul className="divide-y divide-canvas">
+          {club.members.map((m) => (
+            <li key={m.userId} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
+              <span>
+                <span className="font-medium">{m.displayName}</span>
+                {m.role === "ADMIN" && (
+                  <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-on-primary">admin</span>
+                )}
+                {m.userId === user.id && <span className="ml-2 text-sm text-ink-muted">(vous)</span>}
+              </span>
+              {isAdmin && (
+                <MemberRoleForm clubId={club.id} userId={m.userId} displayName={m.displayName} role={m.role} isSelf={m.userId === user.id} />
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
