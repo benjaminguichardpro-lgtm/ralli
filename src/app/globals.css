@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/*
+ * Source unique des couleurs et polices de Ralli.
+ * Aucune couleur codée en dur ailleurs : les composants utilisent les classes
+ * générées (bg-primary, text-ink, …). Les ratios de contraste sont vérifiés
+ * par `npm run contrast` et par le test src/lib/theme/contrast.test.ts,
+ * qui lisent ce fichier.
+ */
+@theme {
+  --color-primary: #1b4d3e; /* Vert Wimbledon : en-têtes, boutons primaires */
+  --color-on-primary: #ffffff;
+  --color-accent: #c4501b; /* Terre battue : fonds de badges de cotes, CTA secondaires */
+  --color-on-accent: #ffffff;
+  --color-canvas: #f5efe0; /* Crème : fond de page */
+  --color-surface: #ffffff; /* Cartes */
+  --color-success: #5e9c4b; /* Vert gazon : fonds et icônes de succès, jamais texte blanc */
+  --color-on-success: #1f2421;
+  --color-success-ink: #3d7030; /* Texte « gagné » sur blanc ou crème */
+  --color-ink: #1f2421; /* Texte principal */
+  --color-ink-muted: #5a5a52; /* Texte secondaire */
+
+  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}

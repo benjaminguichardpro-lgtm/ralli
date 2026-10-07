@@ -1,0 +1,309 @@
+// Schéma Ralli (MVP). Identifiants : cuid (non devinables), jamais d'entier séquentiel.
+// Conventions : code en anglais, vocabulaire neutre (prediction, committedAces, payout).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────── Enums ───────────────────────────────
+
+enum ClubRole {
+  MEMBER
+  ADMIN
+}
+
+enum TeamKind {
+  CLUB // équipe d'un club Ralli, avec un capitaine
+  EXTERNAL // adversaire hors Ralli, géré par le club Ralli qui l'a créé, sans capitaine
+}
+
+// Échelle FFT ordonnée (du plus faible au plus fort). L'ordre et le rating
+// numérique sont définis dans la config des cotes, pas ici.
+enum FftRank {
+  NC
+  R40
+  R30_5
+  R30_4
+  R30_3
+  R30_2
+  R30_1
+  R30
+  R15_5
+  R15_4
+  R15_3
+  R15_2
+  R15_1
+  R15
+  R5_6
+  R4_6
+  R3_6
+  R2_6
+  R1_6
+  R0
+  RM2_6 // -2/6
+  RM4_6 // -4/6
+  RM15 // -15
+  RM30 // -30
+  PREMIERE_SERIE // 1re série (numérotés), échelon unique
+}
+
+// Statut STOCKÉ. LOCKED n'est jamais stocké : il est dérivé à la lecture
+// (status = OPEN et heure serveur >= startsAt).
+enum EncounterStatus {
+  DRAFT
+  OPEN
+  SCORE_PROPOSED
+  DISPUTED
+  CONFIRMED
+  CANCELLED
+}
+
+enum Side {
+  HOME
+  AWAY
+}
+
+enum MatchOutcome {
+  COMPLETED // match joué jusqu'au bout
+  RETIRED // abandon : le vainqueur est déclaré, règlement normal
+  WALKOVER // WO : le vainqueur est déclaré, règlement normal
+  NOT_PLAYED // non joué : pronostics remboursés
+}
+
+enum PredictionStatus {
+  PENDING
+  WON
+  LOST
+  REFUNDED
+}
+
+enum LedgerType {
+  SIGNUP_BONUS // +1000 à l'inscription
+  WEEKLY_BONUS // +200 le lundi si solde < 500
+  PREDICTION_COMMIT // Aces engagés (montant négatif)
+  PREDICTION_PAYOUT // Aces gagnés = engagés × cote (positif)
+  PREDICTION_REFUND // remboursement (match non joué, rencontre annulée)
+}
+
+// ─────────────────────────────── Comptes et clubs ───────────────────────────────
+
+model User {
+  id                 String   @id @default(cuid())
+  email              String   @unique // stocké en minuscules
+  passwordHash       String
+  displayName        String // pseudo public, affiché dans les classements
+  displayNameKey     String   @unique // pseudo en minuscules, pour l'unicité insensible à la casse
+  ageConfirmedAt     DateTime // date de la case « J'ai 18 ans ou plus »
+  mustChangePassword Boolean  @default(false) // posé par `npm run reset-password`
+  createdAt          DateTime @default(now())
+
+  memberships       ClubMembership[]
+  clubsCreated      Club[]           @relation("ClubCreatedBy")
+  captainOf         Team[]           @relation("TeamCaptain")
+  player            Player?
+  predictions       Prediction[]
+  ledgerEntries     LedgerEntry[]
+  encountersCreated Encounter[]      @relation("EncounterCreatedBy")
+  encounterEvents   EncounterEvent[]
+}
+
+model Club {
+  id          String   @id @default(cuid())
+  name        String
+  inviteCode  String   @unique // 6 caractères, alphabet sans 0/O/1/I, régénérable
+  createdById String
+  createdAt   DateTime @default(now())
+
+  createdBy   User             @relation("ClubCreatedBy", fields: [createdById], references: [id])
+  memberships ClubMembership[]
+  teams       Team[]
+  players     Player[]
+  encounters  Encounter[]
+}
+
+model ClubMembership {
+  userId   String
+  clubId   String
+  role     ClubRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@id([userId, clubId])
+  @@index([clubId])
+}
+
+// ─────────────────────────────── Équipes et joueurs ───────────────────────────────
+
+model Team {
+  id               String   @id @default(cuid())
+  clubId           String // club Ralli propriétaire (pour EXTERNAL : le club qui l'a créée)
+  kind             TeamKind @default(CLUB)
+  name             String // ex. « Messieurs 1 »
+  externalClubName String? // EXTERNAL uniquement : nom du club adverse réel
+  captainId        String? // CLUB : obligatoire (contrôle applicatif) ; EXTERNAL : toujours null
+  createdAt        DateTime @default(now())
+
+  club           Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  captain        User?        @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
+  players        TeamPlayer[]
+  homeEncounters Encounter[]  @relation("HomeTeam")
+  awayEncounters Encounter[]  @relation("AwayTeam")
+
+  @@unique([clubId, name])
+  @@index([captainId])
+}
+
+// Personne qui joue. Peut exister sans compte. Liée à au plus un User.
+model Player {
+  id        String   @id @default(cuid())
+  clubId    String // club Ralli qui gère la fiche (pour un joueur externe : le club qui l'a saisi)
+  firstName String
+  lastName  String // affiché publiquement sous la forme « Prénom N. »
+  fftRank   FftRank // niveau déclaré, saisi à la main
+  userId    String?  @unique // lien optionnel ; refusé tant que le joueur est dans une rencontre non réglée
+  createdAt DateTime @default(now())
+
+  club        Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  teams       TeamPlayer[]
+  homeMatches Match[]      @relation("HomePlayer")
+  awayMatches Match[]      @relation("AwayPlayer")
+
+  @@index([clubId])
+}
+
+model TeamPlayer {
+  teamId   String
+  playerId String
+  addedAt  DateTime @default(now())
+
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, playerId])
+  @@index([playerId])
+}
+
+// ─────────────────────────────── Rencontres et matchs ───────────────────────────────
+
+model Encounter {
+  id                String          @id @default(cuid())
+  organizerClubId   String // le club Ralli responsable (« club domicile » de la règle de confirmation)
+  homeTeamId        String
+  awayTeamId        String
+  startsAt          DateTime // UTC ; les pronostics ferment à cette heure (LOCKED dérivé)
+  status            EncounterStatus @default(DRAFT)
+  createdById       String
+  scoreProposedById String? // pour la règle des deux personnes distinctes
+  settledAt         DateTime? // posé une seule fois, dans la transaction de règlement (idempotence)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  organizerClub Club             @relation(fields: [organizerClubId], references: [id], onDelete: Restrict)
+  homeTeam      Team             @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
+  awayTeam      Team             @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
+  createdBy     User             @relation("EncounterCreatedBy", fields: [createdById], references: [id])
+  matches       Match[]
+  events        EncounterEvent[]
+
+  @@index([organizerClubId])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@index([status, startsAt])
+}
+
+// Journal des transitions d'état (audit : qui a proposé, contesté, tranché, annulé).
+model EncounterEvent {
+  id          String          @id @default(cuid())
+  encounterId String
+  fromStatus  EncounterStatus
+  toStatus    EncounterStatus
+  actorId     String? // null si action système
+  note        String? // motif de contestation, d'annulation…
+  payload     Json? // ex. scores proposés au moment de la transition
+  createdAt   DateTime        @default(now())
+
+  encounter Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  actor     User?     @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([encounterId, createdAt])
+}
+
+model Match {
+  id           String @id @default(cuid())
+  encounterId  String
+  order        Int // 1, 2, 3… ordre d'affichage
+  homePlayerId String
+  awayPlayerId String
+
+  // Cotes figées au passage DRAFT → OPEN (copiées ensuite sur chaque pronostic).
+  // Stockées en centièmes entiers (156 = 1,56) pour un calcul exact sans flottants.
+  oddsHomeX100   Int?
+  oddsAwayX100   Int?
+  oddsComputedAt DateTime?
+  oddsInputs     Json? // ratings, forme, H2H, P, version des constantes : pour le backtest
+
+  // Résultat (proposé, puis éventuellement corrigé par l'arbitrage admin).
+  outcome    MatchOutcome?
+  winnerSide Side? // null si NOT_PLAYED
+  sets       Json? // [{ "home": 6, "away": 4 }, …, { "home": 10, "away": 8, "superTiebreak": true }]
+
+  encounter   Encounter    @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  homePlayer  Player       @relation("HomePlayer", fields: [homePlayerId], references: [id], onDelete: Restrict)
+  awayPlayer  Player       @relation("AwayPlayer", fields: [awayPlayerId], references: [id], onDelete: Restrict)
+  predictions Prediction[]
+
+  @@unique([encounterId, order])
+  @@index([homePlayerId])
+  @@index([awayPlayerId])
+}
+
+// ─────────────────────────────── Pronostics et portefeuille ───────────────────────────────
+
+model Prediction {
+  id            String           @id @default(cuid())
+  userId        String
+  matchId       String
+  pickedSide    Side
+  committedAces Int // entier, ≥ 10
+  oddsX100      Int // cote figée au moment de la validation
+  status        PredictionStatus @default(PENDING)
+  payoutAces    Int? // computePayout(committedAces, oddsX100) si WON (src/lib/predictions/payout.ts) ; 0 si LOST ; committedAces si REFUNDED
+  createdAt     DateTime         @default(now())
+  settledAt     DateTime?
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  match         Match         @relation(fields: [matchId], references: [id], onDelete: Restrict)
+  ledgerEntries LedgerEntry[]
+
+  @@unique([userId, matchId]) // un pronostic par match et par utilisateur
+  @@index([matchId])
+  @@index([userId, settledAt])
+}
+
+// Ledger append-only (UPDATE et DELETE bloqués par un trigger dans la migration).
+// Solde = SUM(amount) des écritures de l'utilisateur.
+model LedgerEntry {
+  id             String     @id @default(cuid())
+  userId         String
+  type           LedgerType
+  amount         Int // signé : négatif pour un engagement, positif sinon
+  predictionId   String?
+  // Clé d'idempotence unique, ex. « signup:<userId> », « weekly:<userId>:2026-W41 »,
+  // « commit:<predictionId> », « payout:<predictionId> », « refund:<predictionId> ».
+  idempotencyKey String     @unique
+  createdAt      DateTime   @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  prediction Prediction? @relation(fields: [predictionId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([predictionId])
+}
