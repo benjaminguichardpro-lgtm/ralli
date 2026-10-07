@@ -14,7 +14,9 @@ export type DomainErrorCode =
   | "ALREADY_IN_TEAM"
   | "PLAYER_HAS_MATCHES"
   | "PLAYER_LOCKED"
-  | "ALREADY_LINKED";
+  | "ALREADY_LINKED"
+  | "CONFLICT"
+  | "INVALID_TRANSITION";
 
 /** Erreur métier attendue, avec un message affichable tel quel à l'utilisateur. */
 export class DomainError extends Error {

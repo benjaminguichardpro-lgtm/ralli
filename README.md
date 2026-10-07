@@ -73,10 +73,25 @@ Quand un compte Neon existera :
 - Tous ces contrôles sont faits côté serveur (`src/server/clubs.ts`), jamais seulement dans l'interface.
 
 
-### Confirmation du score d'une rencontre contre une équipe externe
-Une équipe **externe** représente un adversaire qui n'utilise pas Ralli (pas de capitaine dans l'app). Pour une rencontre contre une équipe externe, le score est proposé puis confirmé par **deux personnes distinctes**, chacune ayant le rôle **ADMIN** du club organisateur ou **capitaine** d'une équipe de ce club. La même personne ne peut jamais proposer et confirmer.
+### Rencontres (décisions R1 à R8)
+- **Adversaires** : une rencontre oppose toujours une équipe du club à une **équipe adverse de la liste du club**, que l'adversaire utilise Ralli ou non. Les deux clubs ne sont jamais liés dans l'app. La liste est alimentée par les admins et les capitaines.
+- **Création** : par le capitaine de l'équipe (pour son équipe) ou un admin du club. Le créateur indique si son équipe reçoit ou se déplace, et saisit l'heure de début en heure de Paris.
+- **Composition** : le créateur compose les deux côtés, de 1 à 8 simples, avec des joueurs pris dans les effectifs. Un joueur ne dispute qu'un simple par rencontre (les doubles sont hors MVP).
+- **Publication** (brouillon → ouverte) : au moins un match et une heure de début dans le futur. Les cotes de chaque match sont calculées et figées à ce moment-là.
+- **Après publication, avant le début** : on peut ajouter un match (cotes calculées aussitôt), modifier un match (l'ancien est retiré, ses pronostics remboursés, un match de remplacement reçoit de nouvelles cotes) ou en retirer un (pronostics remboursés ; au moins un match doit rester). Reporter déplace aussi la fermeture des pronostics ; ceux déjà faits sont conservés.
+- **Après le début** : la composition est figée. Un report reste possible, mais les pronostics **restent fermés** (`predictionsCloseAt` ne bouge plus).
+- **Annulation** (brouillon, ouverte ou verrouillée) : tous les pronostics en attente sont remboursés. Un brouillon peut aussi être supprimé.
+- **Droits de gestion** (composer, publier, reporter, annuler) : le capitaine de l'équipe du club dans la rencontre (qu'elle reçoive ou se déplace) et les admins du club.
+- **Visibilité** : un brouillon n'est visible que des admins et capitaines du club. Une fois publiée, la page de la rencontre est **publique** (lien partageable, sans compte), affiche les joueurs en « Prénom N. », n'est pas indexée par les moteurs de recherche, et a un identifiant non devinable.
 
-Entre deux équipes Ralli : un capitaine propose, le capitaine de l'autre équipe confirme ou conteste ; en cas de contestation, un admin de l'un des deux clubs tranche. Un admin peut confirmer à la place d'un capitaine adverse muet 48 h après la proposition.
+### Machine à états (`src/lib/encounters/state.ts`, seul endroit où les transitions sont définies)
+`DRAFT → OPEN → LOCKED → SCORE_PROPOSED → CONFIRMED`, ou `SCORE_PROPOSED → DISPUTED → CONFIRMED`, et `DRAFT | OPEN | LOCKED → CANCELLED`. Toute autre transition est rejetée avec un message clair. `LOCKED` n'est jamais stocké : c'est `OPEN` avec l'heure de fermeture des pronostics atteinte, calculé à la lecture, sans cron.
+
+### Confirmation du score (tranche 7)
+Toutes les rencontres opposant une équipe du club à une équipe adverse de sa liste, le score est proposé puis confirmé par **deux personnes distinctes** ayant le rôle **ADMIN** du club organisateur ou **capitaine** d'une équipe de ce club. La même personne ne peut jamais proposer et confirmer.
+
+### Remboursements
+Un pronostic remboursé passe au statut `REFUNDED` et donne lieu à une écriture `PREDICTION_REFUND` au ledger. C'est idempotent : un filtre sur les pronostics en attente, une mise à jour conditionnelle et la clé unique `refund:<id>` du ledger empêchent tout double crédit.
 
 ### Équipes et joueurs
 - **Équipes du club** : créées par l'admin, avec un capitaine obligatoire choisi parmi les membres. Seul l'admin change de capitaine.

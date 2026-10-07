@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { EncounterList } from "@/components/encounter-list";
 import { ButtonLink } from "@/components/ui";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { listMyClubs } from "@/server/clubs";
+import { listUpcomingForUser } from "@/server/encounters";
 import { getBalance } from "@/server/ledger";
 
 export default function Home() {
@@ -18,7 +20,7 @@ async function HomeContent() {
   const user = await getCurrentUser();
   if (!user) return <Welcome />;
   if (user.mustChangePassword) redirect("/mot-de-passe");
-  const [clubs, balance] = await Promise.all([listMyClubs(user.id), getBalance(user.id)]);
+  const [clubs, balance, upcoming] = await Promise.all([listMyClubs(user.id), getBalance(user.id), listUpcomingForUser(user.id)]);
 
   return (
     <section className="space-y-6">
@@ -27,6 +29,11 @@ async function HomeContent() {
         <p className="text-ink-muted">
           Solde : <strong data-testid="balance" className="text-ink">{balance.toLocaleString("fr-FR")} Aces</strong>
         </p>
+      </div>
+
+      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+        <h2 className="font-serif text-xl text-primary">Rencontres à venir</h2>
+        <EncounterList items={upcoming} empty="Aucune rencontre publiée dans vos clubs." />
       </div>
 
       <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">

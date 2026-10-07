@@ -53,7 +53,7 @@ enum FftRank {
 }
 
 // Statut STOCKÉ. LOCKED n'est jamais stocké : il est dérivé à la lecture
-// (status = OPEN et heure serveur >= startsAt).
+// (status = OPEN et heure serveur >= predictionsCloseAt).
 enum EncounterStatus {
   DRAFT
   OPEN
@@ -194,17 +194,20 @@ model TeamPlayer {
 // ─────────────────────────────── Rencontres et matchs ───────────────────────────────
 
 model Encounter {
-  id                String          @id @default(cuid())
-  organizerClubId   String // le club Ralli responsable (« club domicile » de la règle de confirmation)
-  homeTeamId        String
-  awayTeamId        String
-  startsAt          DateTime // UTC ; les pronostics ferment à cette heure (LOCKED dérivé)
-  status            EncounterStatus @default(DRAFT)
-  createdById       String
-  scoreProposedById String? // pour la règle des deux personnes distinctes
-  settledAt         DateTime? // posé une seule fois, dans la transaction de règlement (idempotence)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id                 String          @id @default(cuid())
+  organizerClubId    String // le club Ralli responsable (« club domicile » de la règle de confirmation)
+  homeTeamId         String
+  awayTeamId         String
+  startsAt           DateTime // UTC ; heure de début (modifiable par un report)
+  // Fermeture des pronostics. = startsAt à la publication et lors d'un report AVANT le début ;
+  // inchangée lors d'un report APRÈS le début (les pronostics restent fermés).
+  predictionsCloseAt DateTime
+  status             EncounterStatus @default(DRAFT)
+  createdById        String
+  scoreProposedById  String? // pour la règle des deux personnes distinctes
+  settledAt          DateTime? // posé une seule fois, dans la transaction de règlement (idempotence)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
   organizerClub Club             @relation(fields: [organizerClubId], references: [id], onDelete: Restrict)
   homeTeam      Team             @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
@@ -217,6 +220,7 @@ model Encounter {
   @@index([homeTeamId])
   @@index([awayTeamId])
   @@index([status, startsAt])
+  @@index([status, predictionsCloseAt])
 }
 
 // Journal des transitions d'état (audit : qui a proposé, contesté, tranché, annulé).
@@ -249,6 +253,10 @@ model Match {
   oddsAwayX100   Int?
   oddsComputedAt DateTime?
   oddsInputs     Json? // ratings, forme, H2H, P, version des constantes : pour le backtest
+
+  // Match retiré ou modifié après publication : ses pronostics sont remboursés et, en cas de
+  // modification, un match de remplacement est créé (numéro suivant, nouvelles cotes).
+  voidedAt DateTime?
 
   // Résultat (proposé, puis éventuellement corrigé par l'arbitrage admin).
   outcome    MatchOutcome?

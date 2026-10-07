@@ -30,6 +30,7 @@ export async function makeEncounterWithPlayer(opts: {
       homeTeamId: home.id,
       awayTeamId: away.id,
       startsAt: new Date(Date.now() + 86_400_000),
+      predictionsCloseAt: new Date(Date.now() + 86_400_000),
       status: opts.status,
       createdById: opts.createdById,
       settledAt: opts.settled ? new Date() : null,

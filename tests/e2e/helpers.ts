@@ -13,7 +13,10 @@ export async function checkPage(page: Page, shot?: string) {
   expect(findForbiddenWords(text), `mots interdits sur ${page.url()}`).toEqual([]);
   await expect(page.getByText("Jeu gratuit, sans argent réel, réservé aux 18 ans et plus.")).toBeVisible();
   const heights = await page
-    .locator("main button, main a.inline-flex, main input:not([type=hidden]):not([type=checkbox])")
+    // Cases à cocher et boutons radio : la zone tactile est leur <label>, mesuré à la place.
+    .locator(
+      "main button, main a.inline-flex, main input:not([type=hidden]):not([type=checkbox]):not([type=radio]), main label:has(> input[type=checkbox]), main label:has(> input[type=radio])",
+    )
     .evaluateAll((els) =>
       els
         // Next 16 garde les écrans précédents dans le DOM, masqués (display: none) : on ne mesure que le visible.

@@ -3,9 +3,12 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { MemberRoleForm, RegenerateCodeForm } from "@/components/club-forms";
+import { EncounterList } from "@/components/encounter-list";
 import { CreateExternalTeamForm, CreateTeamForm } from "@/components/team-forms";
+import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
 import { type ClubView, getClubView } from "@/server/clubs";
+import { listClubEncounters } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
 import { isCaptainInClub } from "@/server/permissions";
 import { listClubTeams } from "@/server/teams";
@@ -32,7 +35,11 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
     throw e;
   }
   const isAdmin = club.myRole === "ADMIN";
-  const [teams, isCaptain] = await Promise.all([listClubTeams(user.id, club.id), isCaptainInClub(user.id, club.id)]);
+  const [teams, isCaptain, encounters] = await Promise.all([
+    listClubTeams(user.id, club.id),
+    isCaptainInClub(user.id, club.id),
+    listClubEncounters(user.id, club.id),
+  ]);
   const clubTeams = teams.filter((t) => t.kind === "CLUB");
   const externalTeams = teams.filter((t) => t.kind === "EXTERNAL");
 
@@ -56,6 +63,14 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
           <RegenerateCodeForm clubId={club.id} />
         </div>
       )}
+
+      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+        <h2 className="font-serif text-xl text-primary">Rencontres</h2>
+        <EncounterList items={encounters} empty="Aucune rencontre pour l'instant." />
+        {(isAdmin || isCaptain) && (
+          <ButtonLink href={`/clubs/${club.id}/rencontres/nouvelle`}>Nouvelle rencontre</ButtonLink>
+        )}
+      </div>
 
       <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Équipes du club</h2>

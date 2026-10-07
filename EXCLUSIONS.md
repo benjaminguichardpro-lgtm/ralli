@@ -3,6 +3,7 @@
 Ces fonctionnalités sont volontairement absentes. Aucune n'est cachée : si elle n'est pas dans le périmètre du brief, elle est listée ici.
 
 ## Hors périmètre produit
+- **Rencontres entre deux clubs Ralli liés** : un adversaire est toujours une équipe de la liste du club, même s'il utilise Ralli. Il n'y a donc ni confirmation du score par le capitaine adverse, ni arbitrage entre deux clubs (écart assumé avec le brief initial, décision R2).
 - **Doubles** : seuls les simples sont gérés.
 - **Tournois** : uniquement des rencontres d'interclubs.
 - **Intégration FFT / Ten'Up** : les niveaux FFT sont déclarés à la main.
@@ -28,5 +29,4 @@ Ces fonctionnalités sont volontairement absentes. Aucune n'est cachée : si ell
 
 ## Modération et exploitation
 - **Modération avancée** : pas d'outil de signalement ni de bannissement. Seuls les litiges de score sont arbitrés, par les admins de club.
-- **Report d'une rencontre** : pas de changement de date. On annule (remboursement intégral) puis on recrée la rencontre.
 - **Calibrage des cotes** : les constantes du modèle ne sont pas calibrées tant qu'aucun backtest n'a été fait.

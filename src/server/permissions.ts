@@ -1,14 +1,17 @@
-import type { ClubRole, TeamKind } from "@/generated/prisma/client";
+import type { ClubRole, Prisma, TeamKind } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { DomainError } from "./errors";
 
 // Contrôles de droits partagés par les services. Toujours relus en base, jamais déduits de l'UI.
+// Dans une transaction, passer le client de transaction `tx` (sinon la lecture se fait hors transaction).
+
+type Client = Prisma.TransactionClient;
 
 export const CLUB_NOT_FOUND = new DomainError("NOT_FOUND", "Club introuvable");
 export const ADMIN_ONLY = new DomainError("FORBIDDEN", "Action réservée aux admins du club");
 
-export async function getClubRole(userId: string, clubId: string): Promise<ClubRole | null> {
-  const m = await db.clubMembership.findUnique({
+export async function getClubRole(userId: string, clubId: string, client: Client = db): Promise<ClubRole | null> {
+  const m = await client.clubMembership.findUnique({
     where: { userId_clubId: { userId, clubId } },
     select: { role: true },
   });
@@ -27,8 +30,8 @@ export async function requireClubAdmin(userId: string, clubId: string): Promise<
 }
 
 /** Vrai si l'utilisateur est capitaine d'au moins une équipe CLUB du club. */
-export async function isCaptainInClub(userId: string, clubId: string): Promise<boolean> {
-  const n = await db.team.count({ where: { clubId, kind: "CLUB", captainId: userId } });
+export async function isCaptainInClub(userId: string, clubId: string, client: Client = db): Promise<boolean> {
+  const n = await client.team.count({ where: { clubId, kind: "CLUB", captainId: userId } });
   return n > 0;
 }
 

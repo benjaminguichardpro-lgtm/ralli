@@ -54,7 +54,7 @@ const checks: Check[] = [
     sql: `INSERT INTO "LedgerEntry"(id,"userId",type,amount,"idempotencyKey") VALUES ('verif_po','verif_u','PREDICTION_PAYOUT',0,'verif:po')`,
     expect: "error",
   },
-  { label: "TRUNCATE LedgerEntry (autorisé pour réinitialiser la branche test)", sql: `TRUNCATE "LedgerEntry"`, expect: "ok" },
+  { label: "TRUNCATE LedgerEntry (autorisé pour réinitialiser la base de test)", sql: `TRUNCATE "LedgerEntry"`, expect: "ok" },
 ];
 
 // Données minimales pour satisfaire les clés étrangères (club → équipes → joueurs → rencontre → match).
@@ -66,8 +66,8 @@ INSERT INTO "Club"(id,name,"inviteCode","createdById") VALUES ('verif_c','Club v
 INSERT INTO "Team"(id,"clubId",name) VALUES ('verif_t1','verif_c','Équipe A'),('verif_t2','verif_c','Équipe B');
 INSERT INTO "Player"(id,"clubId","firstName","lastName","fftRank") VALUES
   ('verif_pl1','verif_c','A','A','R30'),('verif_pl2','verif_c','B','B','R15');
-INSERT INTO "Encounter"(id,"organizerClubId","homeTeamId","awayTeamId","startsAt","createdById","updatedAt")
-  VALUES ('verif_e','verif_c','verif_t1','verif_t2',now(),'verif_u',now());
+INSERT INTO "Encounter"(id,"organizerClubId","homeTeamId","awayTeamId","startsAt","predictionsCloseAt","createdById","updatedAt")
+  VALUES ('verif_e','verif_c','verif_t1','verif_t2',now(),now(),'verif_u',now());
 INSERT INTO "Match"(id,"encounterId","order","homePlayerId","awayPlayerId") VALUES ('verif_m','verif_e',1,'verif_pl1','verif_pl2');
 INSERT INTO "LedgerEntry"(id,"userId",type,amount,"idempotencyKey") VALUES ('verif_le','verif_u','SIGNUP_BONUS',1000,'verif:signup');
 `;
