@@ -43,6 +43,33 @@ describe("authenticate", () => {
   });
 });
 
+describe("authenticate par pseudo ou par email", () => {
+  it("accepte le pseudo sans tenir compte de la casse ni des espaces autour, et l'email en majuscules", async () => {
+    const { id } = await registerUser(input({ displayName: "Alice Dupont" }));
+    for (const ident of ["Alice Dupont", "alice dupont", "ALICE DUPONT", "  Alice   Dupont ", "alice@club.fr", "ALICE@Club.fr"]) {
+      expect(await authenticate(ident, "motdepasse"), ident).toEqual({ id });
+      expect(await authenticate(ident, "mauvais"), ident).toBeNull();
+    }
+  });
+
+  it("refuse l'inconnu, le vide et le pseudo d'un autre compte avec le mauvais mot de passe", async () => {
+    await registerUser(input());
+    await registerUser(input({ email: "bob@club.fr", displayName: "Bob", password: "autremotdepasse" }));
+    expect(await authenticate("Inconnu", "motdepasse")).toBeNull();
+    expect(await authenticate("", "motdepasse")).toBeNull();
+    expect(await authenticate("   ", "motdepasse")).toBeNull();
+    expect(await authenticate("bob@inconnu.fr", "autremotdepasse")).toBeNull();
+    expect(await authenticate("Bob", "motdepasse")).toBeNull(); // mot de passe d'Alice
+    expect((await authenticate("Bob", "autremotdepasse"))?.id).toBeTruthy();
+  });
+
+  it("le pseudo ne peut pas être confondu avec un email : « @ » est interdit dans un pseudo", async () => {
+    await registerUser(input());
+    expect(await authenticate("alice@", "motdepasse")).toBeNull();
+    expect(await authenticate("@club.fr", "motdepasse")).toBeNull();
+  });
+});
+
 describe("resetPasswordByEmail / changePassword", () => {
   it("pose un mot de passe temporaire, force le changement, puis le lève", async () => {
     const { id } = await registerUser(input());

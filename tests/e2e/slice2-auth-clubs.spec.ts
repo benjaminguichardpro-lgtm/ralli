@@ -180,8 +180,23 @@ test("déconnexion puis mauvais mot de passe", async () => {
   await bob.getByRole("button", { name: "Déconnexion" }).click();
   await expect(bob.getByRole("heading", { name: "Bienvenue sur Ralli" })).toBeVisible();
   await signIn(bob, "Bob", "mauvaismdp");
-  await expect(bob.getByText("Email ou mot de passe incorrect")).toBeVisible();
+  await expect(bob.getByText("Email, pseudo ou mot de passe incorrect")).toBeVisible();
   await checkPage(bob, "06-connexion-erreur");
+  await signIn(bob, "Bob");
+  await expect(bob.getByTestId("nav-user")).toHaveText("Bob");
+});
+
+test("connexion par pseudo (casse libre) ou par email, même message d'erreur", async () => {
+  await bob.getByRole("button", { name: "Déconnexion" }).click();
+  await expect(bob.getByRole("heading", { name: "Bienvenue sur Ralli" })).toBeVisible();
+  await signIn(bob, "Bob", "motdepasse", "  bOB ");
+  await expect(bob.getByTestId("nav-user")).toHaveText("Bob");
+  await bob.getByRole("button", { name: "Déconnexion" }).click();
+  await signIn(bob, "Bob", "mauvaismdp", "Bob");
+  await expect(bob.getByText("Email, pseudo ou mot de passe incorrect")).toBeVisible();
+  await signIn(bob, "Bob", "motdepasse", "pseudo.inconnu");
+  await expect(bob.getByText("Email, pseudo ou mot de passe incorrect")).toBeVisible();
+  await checkPage(bob, "06b-connexion-pseudo");
   await signIn(bob, "Bob");
   await expect(bob.getByTestId("nav-user")).toHaveText("Bob");
 });
@@ -190,7 +205,7 @@ test("reset-password : mot de passe temporaire puis changement forcé", async ({
   const temp = resetPassword("bob@club.test");
   const page = await newPage(browser);
   await signIn(page, "Bob", "motdepasse");
-  await expect(page.getByText("Email ou mot de passe incorrect")).toBeVisible();
+  await expect(page.getByText("Email, pseudo ou mot de passe incorrect")).toBeVisible();
   await signIn(page, "Bob", temp);
   await expect(page).toHaveURL(/\/mot-de-passe$/);
   await expect(page.getByText("mot de passe temporaire")).toBeVisible();

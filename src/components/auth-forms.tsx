@@ -64,7 +64,16 @@ export function SignInForm() {
   return (
     <form action={action} className="space-y-4" noValidate>
       <FormMessage>{state.message}</FormMessage>
-      <Field label="Email" name="email" type="email" autoComplete="email" required defaultValue={state.values?.email} error={e.email} />
+      <Field
+        label="Email ou pseudo"
+        name="identifier"
+        autoComplete="username"
+        autoCapitalize="none"
+        spellCheck={false}
+        required
+        defaultValue={state.values?.identifier}
+        error={e.identifier}
+      />
       <Field label="Mot de passe" name="password" type="password" autoComplete="current-password" required error={e.password} />
       <SubmitButton className="w-full" pendingLabel="Connexion…">
         Se connecter

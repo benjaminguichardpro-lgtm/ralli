@@ -37,9 +37,10 @@ export async function signUp(page: Page, name: string, opts: { checkAge?: boolea
   await page.getByRole("button", { name: "Créer mon compte" }).click();
 }
 
-export async function signIn(page: Page, name: string, password = "motdepasse") {
+/** Connexion par email (par défaut) ou, avec `identifier`, par ce texte tel quel (pseudo, éventuellement en autres majuscules). */
+export async function signIn(page: Page, name: string, password = "motdepasse", identifier?: string) {
   await page.goto("/connexion");
-  await page.getByLabel("Email").fill(`${name.toLowerCase()}@club.test`);
+  await page.getByLabel("Email ou pseudo").fill(identifier ?? `${name.toLowerCase()}@club.test`);
   await page.getByLabel("Mot de passe").fill(password);
   await page.getByRole("button", { name: "Se connecter" }).click();
 }

@@ -1,7 +1,7 @@
 import { SIGNUP_BONUS_ACES } from "@/config/game";
 import { generateTemporaryPassword, hashPassword, verifyPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
-import { type SignUpInput, displayNameKey } from "@/lib/validation/account";
+import { type SignUpInput, displayNameKey, loginLookup } from "@/lib/validation/account";
 import { DomainError, isUniqueViolation } from "./errors";
 
 const EMAIL_TAKEN = new DomainError("EMAIL_TAKEN", "Un compte existe déjà avec cet email");
@@ -54,9 +54,13 @@ export async function registerUser(input: SignUpInput): Promise<{ id: string }> 
 // Hash factice (même coût bcrypt) pour que la durée de réponse ne révèle pas si l'email existe.
 let dummyHash: Promise<string> | undefined;
 
-/** Vérifie les identifiants. Renvoie null sans préciser lequel est faux. */
-export async function authenticate(email: string, password: string): Promise<{ id: string } | null> {
-  const user = await db.user.findUnique({ where: { email }, select: { id: true, passwordHash: true } });
+/**
+ * Vérifie les identifiants : `identifier` est un email ou un pseudo (insensible à la casse).
+ * Renvoie null sans préciser lequel est faux, avec le même coût de calcul dans tous les cas.
+ */
+export async function authenticate(identifier: string, password: string): Promise<{ id: string } | null> {
+  const where = loginLookup(identifier);
+  const user = where ? await db.user.findUnique({ where, select: { id: true, passwordHash: true } }) : null;
   const ok = await verifyPassword(password, user?.passwordHash ?? (await (dummyHash ??= hashPassword("ralli-dummy"))));
   return user && ok ? { id: user.id } : null;
 }

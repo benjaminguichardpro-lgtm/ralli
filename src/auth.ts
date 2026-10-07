@@ -24,11 +24,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: "/connexion" },
   providers: [
     Credentials({
-      credentials: { email: {}, password: {} },
+      credentials: { identifier: {}, password: {} },
       async authorize(raw) {
         const parsed = signInSchema.safeParse(raw);
         if (!parsed.success) return null;
-        return authenticate(parsed.data.email, parsed.data.password);
+        return authenticate(parsed.data.identifier, parsed.data.password);
       },
     }),
   ],

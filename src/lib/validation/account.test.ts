@@ -3,6 +3,7 @@ import {
   changePasswordSchema,
   displayNameKey,
   inviteCodeInputSchema,
+  loginLookup,
   signUpSchema,
 } from "./account";
 
@@ -60,5 +61,16 @@ describe("inviteCodeInputSchema", () => {
   });
   it("refuse une longueur incorrecte", () => {
     expect(inviteCodeInputSchema.safeParse("ABC").success).toBe(false);
+  });
+});
+
+describe("loginLookup (email ou pseudo)", () => {
+  it("reconnaît un email (normalisé) et un pseudo (clé insensible à la casse)", () => {
+    expect(loginLookup(" Alice@Club.FR ")).toEqual({ email: "alice@club.fr" });
+    expect(loginLookup("Alice Dupont")).toEqual({ displayNameKey: "alice dupont" });
+    expect(loginLookup("  ALICE   dupont ")).toEqual({ displayNameKey: "alice dupont" });
+  });
+  it("renvoie null pour ce qui n'est ni l'un ni l'autre", () => {
+    for (const bad of ["", "   ", "a@", "@b.fr", "pas un email@", "x", "a".repeat(30), "bob<script>"]) expect(loginLookup(bad), bad).toBeNull();
   });
 });

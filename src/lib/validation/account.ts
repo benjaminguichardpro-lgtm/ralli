@@ -44,8 +44,9 @@ export const signUpSchema = z.object({
 });
 export type SignUpInput = z.infer<typeof signUpSchema>;
 
+/** Connexion : un seul champ, email ou pseudo. Un email contient « @ », jamais un pseudo (voir DISPLAY_NAME_RE). */
 export const signInSchema = z.object({
-  email: emailSchema,
+  identifier: z.string({ error: "Email ou pseudo requis" }).trim().min(1, { error: "Email ou pseudo requis" }).max(254, { error: "Email ou pseudo invalide" }),
   password: z.string().min(1, { error: "Mot de passe requis" }),
 });
 
@@ -76,4 +77,14 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
     out[key] ??= issue.message;
   }
   return out;
+}
+
+/** Identifiant de connexion → critère de recherche du compte. null si le texte ne peut être ni un email ni un pseudo. */
+export function loginLookup(identifier: string): { email: string } | { displayNameKey: string } | null {
+  if (identifier.includes("@")) {
+    const email = emailSchema.safeParse(identifier);
+    return email.success ? { email: email.data } : null;
+  }
+  const name = displayNameSchema.safeParse(identifier);
+  return name.success ? { displayNameKey: displayNameKey(name.data) } : null;
 }

@@ -35,19 +35,19 @@ export async function signUpAction(_: FormState, fd: FormData): Promise<FormStat
     throw e;
   }
   // Connexion immédiate après inscription ; signIn redirige (exception de contrôle à laisser passer).
-  await signIn("credentials", { email: parsed.data.email, password: parsed.data.password, redirectTo: "/" });
+  await signIn("credentials", { identifier: parsed.data.email, password: parsed.data.password, redirectTo: "/" });
   return {};
 }
 
 export async function signInAction(_: FormState, fd: FormData): Promise<FormState> {
-  const raw = { email: str(fd, "email"), password: str(fd, "password") };
-  const values = { email: raw.email ?? "" };
+  const raw = { identifier: str(fd, "identifier"), password: str(fd, "password") };
+  const values = { identifier: raw.identifier ?? "" };
   const parsed = signInSchema.safeParse(raw);
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values };
   try {
     await signIn("credentials", { ...parsed.data, redirectTo: "/" });
   } catch (e) {
-    if (e instanceof AuthError) return { message: "Email ou mot de passe incorrect", values };
+    if (e instanceof AuthError) return { message: "Email, pseudo ou mot de passe incorrect", values };
     throw e;
   }
   return {};

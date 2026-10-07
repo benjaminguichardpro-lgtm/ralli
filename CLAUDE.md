@@ -47,11 +47,11 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 10. Écrans (design soigné, partage WhatsApp) | | |
 | 11. Seed de démo et tests E2E | | |
 
-État des tests au dernier commit : 335 tests Vitest, 52 scénarios Playwright, tous verts.
+État des tests au dernier commit : 340 tests Vitest, 53 scénarios Playwright, tous verts.
 
 ## Décisions prises (en plus du brief)
 
-**Comptes et clubs** : mot de passe ≥ 8 caractères (≤ 72 octets) ; pseudo 3 à 20 caractères, unique sans tenir compte de la casse ; 1000 Aces à l'inscription (ledger) ; pas d'email, donc dépannage par `npm run reset-password -- <email>` (mot de passe temporaire, changement forcé). Le créateur d'un club en est admin ; adhésion par code de 6 caractères sans 0/O/1/I ; **code visible des admins seulement** ; un club garde au moins un admin ; confirmation avant de retirer un rôle admin (le sien ou celui d'un autre). Un utilisateur peut être membre de plusieurs clubs.
+**Comptes et clubs** : mot de passe ≥ 8 caractères (≤ 72 octets) ; pseudo 3 à 20 caractères, unique sans tenir compte de la casse ; connexion avec l'email OU le pseudo dans un seul champ (un pseudo ne contient jamais « @ ») ; 1000 Aces à l'inscription (ledger) ; pas d'email, donc dépannage par `npm run reset-password -- <email>` (mot de passe temporaire, changement forcé). Le créateur d'un club en est admin ; adhésion par code de 6 caractères sans 0/O/1/I ; **code visible des admins seulement** ; un club garde au moins un admin ; confirmation avant de retirer un rôle admin (le sien ou celui d'un autre). Un utilisateur peut être membre de plusieurs clubs.
 
 **Équipes et joueurs** : l'admin crée les équipes du club avec un capitaine obligatoire. Équipes adverses (EXTERNAL) créées par l'admin ou un capitaine. Effectif géré par l'admin et le capitaine de l'équipe (équipe adverse : admin et tout capitaine). Un joueur peut être dans plusieurs équipes du club. Fiche supprimable seulement si jamais alignée. Lien fiche ↔ compte posé par l'admin ou le capitaine ; création ET retrait du lien refusés si le joueur est dans une rencontre OPEN (couvre LOCKED) ou SCORE_PROPOSED non réglée (DISPUTED volontairement non inclus).
 
