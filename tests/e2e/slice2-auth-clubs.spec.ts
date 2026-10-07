@@ -145,17 +145,35 @@ test("se retirer soi-même le rôle admin demande confirmation", async () => {
   await expect(bob.getByText("Votre rôle : membre")).toBeVisible();
 });
 
-test("retirer le rôle d'une autre personne ne demande pas de confirmation", async () => {
+test("retirer le rôle admin d'une autre personne demande aussi confirmation", async () => {
   await alice.goto(clubUrl);
-  await alice.getByRole("button", { name: "Nommer admin Bob" }).click();
-  let dialogShown = false;
-  alice.on("dialog", (d) => {
-    dialogShown = true;
+  // Nommer admin : pas de confirmation.
+  let promoteDialog = false;
+  alice.once("dialog", (d) => {
+    promoteDialog = true;
     void d.dismiss();
   });
-  await alice.getByRole("button", { name: "Retirer le rôle admin de Bob" }).click();
+  await alice.getByRole("button", { name: "Nommer admin Bob" }).click();
+  const demote = alice.getByRole("button", { name: "Retirer le rôle admin de Bob" });
+  await expect(demote).toBeVisible();
+  expect(promoteDialog).toBe(false);
+  alice.removeAllListeners("dialog");
+
+  // Annuler : Bob reste admin (vérifié après rechargement).
+  let message = "";
+  alice.once("dialog", (d) => {
+    message = d.message();
+    void d.dismiss();
+  });
+  await demote.click();
+  expect(message).toBe("Êtes-vous sûr de vouloir retirer le rôle admin à Bob ?");
+  await alice.reload();
+  await expect(demote).toBeVisible();
+
+  // Confirmer : Bob redevient membre.
+  alice.once("dialog", (d) => void d.accept());
+  await demote.click();
   await expect(alice.getByRole("button", { name: "Nommer admin Bob" })).toBeVisible();
-  expect(dialogShown).toBe(false);
 });
 
 test("déconnexion puis mauvais mot de passe", async () => {

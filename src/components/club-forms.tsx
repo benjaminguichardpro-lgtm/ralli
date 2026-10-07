@@ -73,14 +73,16 @@ export function MemberRoleForm({
 }) {
   const [state, action] = useActionState(setMemberRoleAction, initialFormState);
   const next = role === "ADMIN" ? "MEMBER" : "ADMIN";
-  // Se retirer soi-même le rôle admin est irréversible sans l'aide d'un autre admin : on demande confirmation.
-  const confirmSelfDemotion = (e: React.FormEvent<HTMLFormElement>) => {
-    if (isSelf && next === "MEMBER" && !window.confirm("Êtes-vous sûr de vouloir vous retirer le rôle admin ?")) {
-      e.preventDefault();
-    }
+  // Retirer un rôle admin (le sien ou celui d'un autre) demande toujours une confirmation.
+  const confirmDemotion = (e: React.FormEvent<HTMLFormElement>) => {
+    if (next !== "MEMBER") return;
+    const question = isSelf
+      ? "Êtes-vous sûr de vouloir vous retirer le rôle admin ?"
+      : `Êtes-vous sûr de vouloir retirer le rôle admin à ${displayName} ?`;
+    if (!window.confirm(question)) e.preventDefault();
   };
   return (
-    <form action={action} onSubmit={confirmSelfDemotion} className="space-y-1">
+    <form action={action} onSubmit={confirmDemotion} className="space-y-1">
       <input type="hidden" name="clubId" value={clubId} />
       <input type="hidden" name="userId" value={userId} />
       <input type="hidden" name="role" value={next} />
