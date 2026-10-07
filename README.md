@@ -77,6 +77,13 @@ Une équipe **externe** représente un adversaire qui n'utilise pas Ralli (pas d
 
 Entre deux équipes Ralli : un capitaine propose, le capitaine de l'autre équipe confirme ou conteste ; en cas de contestation, un admin de l'un des deux clubs tranche. Un admin peut confirmer à la place d'un capitaine adverse muet 48 h après la proposition.
 
+### Équipes et joueurs
+- **Équipes du club** : créées par l'admin, avec un capitaine obligatoire choisi parmi les membres. Seul l'admin change de capitaine.
+- **Équipes adverses (externes)** : adversaires hors Ralli, créées par l'admin ou n'importe quel capitaine du club. Elles n'ont pas de capitaine et leurs joueurs ne sont jamais liés à un compte.
+- **Effectif** : géré par l'admin et le capitaine de l'équipe (pour une équipe adverse : l'admin et tout capitaine du club). Un joueur peut figurer dans plusieurs équipes du club. Le niveau FFT se corrige à tout moment ; les cotes déjà figées ne changent pas.
+- **Fiche joueur** : elle existe sans compte. Retirer un joueur d'une équipe conserve sa fiche. La supprimer n'est possible que s'il n'a jamais été aligné dans un match, pour garder l'historique des cotes.
+- **Lien fiche ↔ compte** : posé par l'admin ou le capitaine, vers un membre du club ; personne ne se lie soi-même. Le lien ne peut ni être créé ni être retiré tant que le joueur figure dans une rencontre en cours (statut stocké `OPEN`, ce qui couvre `LOCKED`, ou `SCORE_PROPOSED`). Délier pendant une rencontre permettrait sinon à un joueur aligné de la pronostiquer.
+
 ### Anti-trucage (appliqué côté serveur)
 Ne peuvent pas pronostiquer une rencontre : les capitaines des deux équipes, les joueurs alignés dans un de ses matchs et les comptes liés à ces joueurs, ainsi que les admins des clubs concernés. Les autres membres des effectifs le peuvent.
 

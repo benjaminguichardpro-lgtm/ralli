@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import { type ComponentProps, type ReactNode, useId } from "react";
 import { useFormStatus } from "react-dom";
 
 // Composants d'interface partagés. Couleurs : uniquement via les tokens du thème (globals.css).
@@ -55,7 +55,7 @@ export function Field({
   hint,
   ...input
 }: { label: string; name: string; error?: string; hint?: string } & ComponentProps<"input">) {
-  const id = `f-${name}`;
+  const id = useId();
   const describedBy = error ? `${id}-err` : hint ? `${id}-hint` : undefined;
   return (
     <div className="space-y-1">
@@ -96,4 +96,50 @@ export function FormMessage({ children }: { children?: ReactNode }) {
       {children}
     </div>
   );
+}
+
+export function Select({
+  label,
+  name,
+  error,
+  options,
+  placeholder,
+  ...select
+}: {
+  label: string;
+  name: string;
+  error?: string;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+} & ComponentProps<"select">) {
+  const id = useId();
+  return (
+    <div className="space-y-1">
+      <label htmlFor={id} className="block font-medium">
+        {label}
+      </label>
+      <select
+        name={name}
+        aria-invalid={error ? true : undefined}
+        className="block min-h-11 w-full rounded-lg border border-ink-muted bg-surface px-3 text-ink focus-visible:outline-2 focus-visible:outline-primary"
+        {...select}
+        id={id}
+      >
+        {placeholder !== undefined && <option value="">{placeholder}</option>}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {error && <FieldError>{error}</FieldError>}
+    </div>
+  );
+}
+
+/** Empêche l'envoi du formulaire si l'utilisateur annule la confirmation. */
+export function confirmOnSubmit(message: string) {
+  return (e: React.FormEvent<HTMLFormElement>) => {
+    if (!window.confirm(message)) e.preventDefault();
+  };
 }

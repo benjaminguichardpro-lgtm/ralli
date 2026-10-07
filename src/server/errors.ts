@@ -7,7 +7,14 @@ export type DomainErrorCode =
   | "ALREADY_MEMBER"
   | "NOT_FOUND"
   | "FORBIDDEN"
-  | "LAST_ADMIN";
+  | "LAST_ADMIN"
+  | "TEAM_NAME_TAKEN"
+  | "NOT_A_MEMBER"
+  | "INVALID"
+  | "ALREADY_IN_TEAM"
+  | "PLAYER_HAS_MATCHES"
+  | "PLAYER_LOCKED"
+  | "ALREADY_LINKED";
 
 /** Erreur métier attendue, avec un message affichable tel quel à l'utilisateur. */
 export class DomainError extends Error {

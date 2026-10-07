@@ -2,31 +2,10 @@ import type { ClubRole } from "@/generated/prisma/client";
 import { generateInviteCode, isWellFormedInviteCode } from "@/lib/clubs/invite-code";
 import { db } from "@/lib/db";
 import { DomainError, isUniqueViolation } from "./errors";
+import { CLUB_NOT_FOUND, getClubRole, requireClubAdmin, requireClubMember } from "./permissions";
 
 // Toutes les fonctions prennent l'identifiant de l'acteur et vérifient ses droits en base :
 // l'UI peut masquer un bouton, mais c'est ici que le cloisonnement est garanti.
-
-const NOT_FOUND = new DomainError("NOT_FOUND", "Club introuvable");
-const FORBIDDEN = new DomainError("FORBIDDEN", "Action réservée aux admins du club");
-
-async function getRole(userId: string, clubId: string): Promise<ClubRole | null> {
-  const m = await db.clubMembership.findUnique({
-    where: { userId_clubId: { userId, clubId } },
-    select: { role: true },
-  });
-  return m?.role ?? null;
-}
-
-async function requireMember(userId: string, clubId: string): Promise<ClubRole> {
-  const role = await getRole(userId, clubId);
-  // Un non-membre ne doit pas pouvoir distinguer « club inexistant » de « club fermé ».
-  if (!role) throw NOT_FOUND;
-  return role;
-}
-
-async function requireAdmin(userId: string, clubId: string): Promise<void> {
-  if ((await requireMember(userId, clubId)) !== "ADMIN") throw FORBIDDEN;
-}
 
 /** Réessaie en cas de collision (rarissime) sur le code d'invitation. */
 async function withFreshInviteCode<T>(fn: (code: string) => Promise<T>): Promise<T> {
@@ -59,7 +38,7 @@ export async function joinClubByCode(actorId: string, rawCode: string): Promise<
   if (!isWellFormedInviteCode(rawCode)) throw invalid;
   const club = await db.club.findUnique({ where: { inviteCode: rawCode }, select: { id: true } });
   if (!club) throw invalid;
-  if (await getRole(actorId, club.id)) {
+  if (await getClubRole(actorId, club.id)) {
     throw new DomainError("ALREADY_MEMBER", "Vous êtes déjà membre de ce club");
   }
   try {
@@ -72,7 +51,7 @@ export async function joinClubByCode(actorId: string, rawCode: string): Promise<
 }
 
 export async function regenerateInviteCode(actorId: string, clubId: string): Promise<string> {
-  await requireAdmin(actorId, clubId);
+  await requireClubAdmin(actorId, clubId);
   const club = await withFreshInviteCode((inviteCode) =>
     db.club.update({ where: { id: clubId }, data: { inviteCode }, select: { inviteCode: true } }),
   );
@@ -80,7 +59,7 @@ export async function regenerateInviteCode(actorId: string, clubId: string): Pro
 }
 
 export async function setMemberRole(actorId: string, clubId: string, targetUserId: string, role: ClubRole): Promise<void> {
-  await requireAdmin(actorId, clubId);
+  await requireClubAdmin(actorId, clubId);
   await db.$transaction(async (tx) => {
     const target = await tx.clubMembership.findUnique({
       where: { userId_clubId: { userId: targetUserId, clubId } },
@@ -121,7 +100,7 @@ export type ClubView = {
 
 /** Page club : réservée aux membres. Les emails ne sont jamais exposés. */
 export async function getClubView(actorId: string, clubId: string): Promise<ClubView> {
-  const myRole = await requireMember(actorId, clubId);
+  const myRole = await requireClubMember(actorId, clubId);
   const club = await db.club.findUnique({
     where: { id: clubId },
     select: {
@@ -134,7 +113,7 @@ export async function getClubView(actorId: string, clubId: string): Promise<Club
       },
     },
   });
-  if (!club) throw NOT_FOUND;
+  if (!club) throw CLUB_NOT_FOUND;
   return {
     id: club.id,
     name: club.name,
