@@ -22,7 +22,8 @@
     "db:test:stop": "prisma dev stop ralli-test",
     "db:ls": "prisma dev ls",
     "reset-password": "tsx scripts/reset-password.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "odds:table": "tsx scripts/odds-table.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

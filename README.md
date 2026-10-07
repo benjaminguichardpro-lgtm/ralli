@@ -26,6 +26,7 @@ npm run dev
 | `npm run db:start` / `db:stop` | Démarre / arrête la base locale de dev |
 | `npm run db:test:start` / `db:test:stop` | Démarre / arrête la base locale de test |
 | `npm run db:ls` | Liste les bases locales et leurs ports |
+| `npm run odds:table` | Affiche les cotes produites par le modèle sur des cas types |
 | `npm run reset-password -- <email>` | Dépannage : génère un mot de passe temporaire, à changer à la connexion suivante |
 | `npm run db:migrate` | Crée/applique une migration (dev) |
 | `npm run db:deploy` | Applique les migrations existantes |
@@ -89,6 +90,20 @@ Ne peuvent pas pronostiquer une rencontre : les capitaines des deux équipes, le
 
 ### Portefeuille
 Le solde n'est jamais stocké : c'est la somme du ledger (`LedgerEntry`).
+
+## Modèle de cotes (`src/lib/odds/`, constantes dans `src/config/odds.ts`)
+
+⚠ **Constantes non calibrées** : valeurs de départ du brief, à valider par un backtest. Toute modification change `version`, enregistrée avec chaque cote figée.
+
+1. **Rating** : rang dans l'échelle FFT × 100. NC = 0, 40 = 100, … −30 = 2300, 1re série = 2400 (un seul échelon).
+2. **Forme** : sur les 5 derniers matchs confirmés du joueur, (victoires − défaites) × 10. Sans historique : 0.
+3. **Confrontations directes (H2H)** : s'il y en a au moins une, (victoires A − victoires B) × 15.
+4. **Écart unique** : d = (Ra + forme A) − (Rb + forme B) + H2H. P(A) = 1 / (1 + 10^(−d / 400)), et P(B) = 1 − P(A).
+5. **Bornes symétriques** : P(A) est ramenée dans [0,12 ; 0,88], donc P(B) aussi. Les cotes vont de 1,14 à 8,33 et P(A) + P(B) = 1.
+6. **Cote** = 1 / P, arrondie au centième et stockée en entier (156 = 1,56). Elle est figée sur le match à l'ouverture de la rencontre, puis copiée sur chaque pronostic.
+7. **Historique pris en compte** : matchs de rencontres confirmées, joués jusqu'au bout ou terminés sur abandon. Les WO et les matchs non joués sont ignorés.
+
+Le module est pur (aucun accès à la base ni à l'horloge). Il est testé sur l'égalité, les écarts croissants, l'écart extrême, les bornes, l'absence d'historique, la fenêtre de forme, le H2H et la symétrie (échanger A et B échange exactement les résultats).
 
 ## Garde-fous en base (SQL manuel de la migration `init`)
 
