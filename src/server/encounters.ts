@@ -24,7 +24,7 @@ type Tx = Prisma.TransactionClient;
 
 export const MAX_MATCHES = 8;
 
-const ENCOUNTER_NOT_FOUND = new DomainError("NOT_FOUND", "Rencontre introuvable");
+export const ENCOUNTER_NOT_FOUND = new DomainError("NOT_FOUND", "Rencontre introuvable");
 const MATCH_NOT_FOUND = new DomainError("NOT_FOUND", "Match introuvable");
 const STAFF_ONLY = new DomainError(
   "FORBIDDEN",
@@ -32,7 +32,7 @@ const STAFF_ONLY = new DomainError(
 );
 const CHANGED = new DomainError("CONFLICT", "La rencontre vient d'être modifiée : rechargez la page");
 
-function asDomain(e: unknown): never {
+export function asDomain(e: unknown): never {
   if (e instanceof InvalidTransitionError) throw new DomainError("INVALID_TRANSITION", e.message);
   throw e;
 }
@@ -41,7 +41,7 @@ function asDomain(e: unknown): never {
 
 const teamSelect = { id: true, name: true, kind: true, clubId: true, captainId: true, externalClubName: true, club: { select: { name: true } } } as const;
 
-async function loadEncounter(tx: Tx, id: string) {
+export async function loadEncounter(tx: Tx, id: string) {
   const e = await tx.encounter.findUnique({
     where: { id },
     select: {
@@ -58,7 +58,7 @@ async function loadEncounter(tx: Tx, id: string) {
   if (!e) throw ENCOUNTER_NOT_FOUND;
   return e;
 }
-type LoadedEncounter = Awaited<ReturnType<typeof loadEncounter>>;
+export type LoadedEncounter = Awaited<ReturnType<typeof loadEncounter>>;
 
 /** L'équipe du club organisateur dans la rencontre (l'autre est l'équipe adverse). */
 function clubTeamOf(e: LoadedEncounter) {
@@ -66,12 +66,12 @@ function clubTeamOf(e: LoadedEncounter) {
 }
 
 /** Gestion (composer, publier, reporter, annuler) : capitaine de l'équipe du club dans la rencontre, ou admin du club (R7). */
-async function isStaff(actorId: string, e: LoadedEncounter, client: Tx = db): Promise<boolean> {
+export async function isStaff(actorId: string, e: LoadedEncounter, client: Tx = db): Promise<boolean> {
   if (clubTeamOf(e).captainId === actorId) return true;
   return (await getClubRole(actorId, e.organizerClubId, client)) === "ADMIN";
 }
 
-async function requireStaff(tx: Tx, actorId: string, e: LoadedEncounter): Promise<void> {
+export async function requireStaff(tx: Tx, actorId: string, e: LoadedEncounter): Promise<void> {
   if (await isStaff(actorId, e, tx)) return;
   // Un non-membre ne distingue pas « inexistante » de « interdite ».
   if (!(await getClubRole(actorId, e.organizerClubId, tx))) throw ENCOUNTER_NOT_FOUND;
@@ -93,7 +93,7 @@ function requireFuture(startsAt: Date, now: Date) {
 }
 
 /** Passe d'un statut stocké attendu à un autre, en échouant si quelqu'un l'a changé entre-temps. */
-async function guardedStatusUpdate(
+export async function guardedStatusUpdate(
   tx: Tx,
   id: string,
   expected: EncounterStatus,
@@ -103,7 +103,7 @@ async function guardedStatusUpdate(
   if (r.count === 0) throw CHANGED;
 }
 
-async function logEvent(
+export async function logEvent(
   tx: Tx,
   e: { id: string; status: EncounterStatus },
   toStatus: EncounterStatus,
@@ -407,7 +407,7 @@ export async function deleteDraft(actorId: string, encounterId: string, now = ne
 
 // ─────────────────────────────── Lecture ───────────────────────────────
 
-function sideLabel(t: { name: string; kind: TeamKind; externalClubName: string | null; club: { name: string } }) {
+export function sideLabel(t: { name: string; kind: TeamKind; externalClubName: string | null; club: { name: string } }) {
   return t.kind === "CLUB" ? `${t.club.name} · ${t.name}` : t.name;
 }
 

@@ -14,12 +14,13 @@ import {
 } from "./state";
 
 const ALL: EffectiveStatus[] = ["DRAFT", "OPEN", "LOCKED", "SCORE_PROPOSED", "DISPUTED", "CONFIRMED", "CANCELLED"];
-const ACTIONS: EncounterAction[] = ["publish", "proposeScore", "confirmScore", "disputeScore", "resolveDispute", "cancel"];
+const ACTIONS: EncounterAction[] = ["publish", "proposeScore", "withdrawScore", "confirmScore", "disputeScore", "resolveDispute", "cancel"];
 
 // Table attendue, écrite indépendamment du module : action → { état de départ → état d'arrivée }.
 const EXPECTED: Record<EncounterAction, Partial<Record<EffectiveStatus, string>>> = {
   publish: { DRAFT: "OPEN" },
   proposeScore: { LOCKED: "SCORE_PROPOSED" },
+  withdrawScore: { SCORE_PROPOSED: "OPEN" },
   confirmScore: { SCORE_PROPOSED: "CONFIRMED" },
   disputeScore: { SCORE_PROPOSED: "DISPUTED" },
   resolveDispute: { DISPUTED: "CONFIRMED" },

@@ -25,7 +25,7 @@ export function effectiveStatus(
   return e.status;
 }
 
-export type EncounterAction = "publish" | "proposeScore" | "confirmScore" | "disputeScore" | "resolveDispute" | "cancel";
+export type EncounterAction = "publish" | "proposeScore" | "withdrawScore" | "confirmScore" | "disputeScore" | "resolveDispute" | "cancel";
 
 /**
  * Liste exhaustive des transitions autorisées.
@@ -34,6 +34,8 @@ export type EncounterAction = "publish" | "proposeScore" | "confirmScore" | "dis
 export const TRANSITIONS: readonly { action: EncounterAction; from: readonly EffectiveStatus[]; to: EncounterStatus }[] = [
   { action: "publish", from: ["DRAFT"], to: "OPEN" },
   { action: "proposeScore", from: ["LOCKED"], to: "SCORE_PROPOSED" },
+  // Retrait d'une proposition par son auteur : retour à OPEN stocké, donc LOCKED à l'affichage (l'heure de fermeture est passée).
+  { action: "withdrawScore", from: ["SCORE_PROPOSED"], to: "OPEN" },
   { action: "confirmScore", from: ["SCORE_PROPOSED"], to: "CONFIRMED" },
   { action: "disputeScore", from: ["SCORE_PROPOSED"], to: "DISPUTED" },
   { action: "resolveDispute", from: ["DISPUTED"], to: "CONFIRMED" },
@@ -43,6 +45,7 @@ export const TRANSITIONS: readonly { action: EncounterAction; from: readonly Eff
 const ACTION_LABELS: Record<EncounterAction, string> = {
   publish: "publier",
   proposeScore: "proposer le score",
+  withdrawScore: "retirer la proposition de score",
   confirmScore: "confirmer le score",
   disputeScore: "contester le score",
   resolveDispute: "trancher le litige",

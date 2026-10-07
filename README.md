@@ -85,10 +85,17 @@ Quand un compte Neon existera :
 - **Visibilité** : un brouillon n'est visible que des admins et capitaines du club. Une fois publiée, la page de la rencontre est **publique** (lien partageable, sans compte), affiche les joueurs en « Prénom N. », n'est pas indexée par les moteurs de recherche, et a un identifiant non devinable.
 
 ### Machine à états (`src/lib/encounters/state.ts`, seul endroit où les transitions sont définies)
-`DRAFT → OPEN → LOCKED → SCORE_PROPOSED → CONFIRMED`, ou `SCORE_PROPOSED → DISPUTED → CONFIRMED`, et `DRAFT | OPEN | LOCKED → CANCELLED`. Toute autre transition est rejetée avec un message clair. `LOCKED` n'est jamais stocké : c'est `OPEN` avec l'heure de fermeture des pronostics atteinte, calculé à la lecture, sans cron.
+`DRAFT → OPEN → LOCKED → SCORE_PROPOSED → CONFIRMED`, `SCORE_PROPOSED → OPEN` (retrait de la proposition), `SCORE_PROPOSED → DISPUTED → CONFIRMED`, et `DRAFT | OPEN | LOCKED → CANCELLED`. Toute autre transition est rejetée avec un message clair. `LOCKED` n'est jamais stocké : c'est `OPEN` avec l'heure de fermeture des pronostics atteinte, calculé à la lecture, sans cron.
 
-### Confirmation du score (tranche 7)
-Toutes les rencontres opposant une équipe du club à une équipe adverse de sa liste, le score est proposé puis confirmé par **deux personnes distinctes** ayant le rôle **ADMIN** du club organisateur ou **capitaine** d'une équipe de ce club. La même personne ne peut jamais proposer et confirmer.
+### Scores (tranche 7, `src/server/scores.ts`, contrôles purs dans `src/lib/scores/result.ts`)
+- **Proposer** : capitaine de l'équipe du club dans la rencontre, ou admin du club, seulement une fois les pronostics fermés (heure de début atteinte). La proposition couvre tous les matchs actifs d'un coup : issue (joué, abandon, WO, non joué), vainqueur (aucun si non joué) et sets facultatifs (`6-4 3-6 10-8`, le troisième set à 10 points est un super tie-break).
+- **Contrôle léger des sets** : joué jusqu'au bout avec sets = 2 ou 3 sets, scores plausibles (4 à 7 jeux, super tie-break à 10 points et 2 d'écart), vainqueur = celui qui gagne 2 sets. Abandon et WO : sets libres.
+- **Confirmer ou contester** : une personne **différente** de l'auteur, admin du club ou capitaine d'une équipe du club (pas forcément celle de la rencontre). Contestation avec motif obligatoire.
+- **Retirer** : l'auteur seul, tant que personne n'a confirmé ni contesté. Les résultats saisis sont effacés (retour à `OPEN` stocké, donc « pronostics fermés »).
+- **Trancher un litige** : un admin du club (même s'il a proposé ou contesté) saisit le score définitif. L'écran affiche : « Chaque triche sera suivie d'un bannissement à vie de Ralli. » (il n'existe pas d'outil de bannissement dans l'app : voir EXCLUSIONS.md).
+- **Confirmé = définitif** : plus aucune modification. La confirmation ne règle pas encore les pronostics (tranche 8).
+- **Visibilité** : tant que le score n'est pas confirmé, le public voit seulement « Score proposé, en attente de confirmation » ; les résultats saisis, l'auteur, le motif et le journal ne sont visibles que des admins et capitaines du club. Une fois confirmé : scores et décompte publics, journal toujours réservé.
+- Chaque action est écrite dans le journal de la rencontre (`EncounterEvent`) avec l'auteur, la date, le motif et les résultats.
 
 ### Remboursements
 Un pronostic remboursé passe au statut `REFUNDED` et donne lieu à une écriture `PREDICTION_REFUND` au ledger. C'est idempotent : un filtre sur les pronostics en attente, une mise à jour conditionnelle et la clé unique `refund:<id>` du ledger empêchent tout double crédit.

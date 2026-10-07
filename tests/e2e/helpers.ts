@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { type Page, expect } from "@playwright/test";
 import { parse } from "dotenv";
+import { Client } from "pg";
 import { findForbiddenWords } from "../../src/lib/vocabulary";
 
 const SHOTS = "test-results/screens";
@@ -53,4 +54,16 @@ export function resetPassword(email: string): string {
   const m = /Mot de passe temporaire : (\S+)/.exec(out);
   if (!m?.[1]) throw new Error(`Sortie inattendue : ${out}`);
   return m[1];
+}
+
+/**
+ * Fait « commencer » une rencontre : recule l'heure de début et de fermeture des pronostics d'une heure.
+ * Aucun écran ne permet de saisir une date passée, donc on passe par la base de TEST.
+ */
+export async function forceStarted(encounterUrl: string) {
+  const id = encounterUrl.split("/").pop()!;
+  const c = new Client({ connectionString: parse(readFileSync(".env.test")).DATABASE_URL });
+  await c.connect();
+  await c.query(`UPDATE "Encounter" SET "startsAt" = now() - interval '1 hour', "predictionsCloseAt" = now() - interval '1 hour' WHERE id = $1`, [id]);
+  await c.end();
 }
