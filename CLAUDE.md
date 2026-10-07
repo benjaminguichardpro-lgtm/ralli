@@ -40,14 +40,14 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 3. Équipes et joueurs (niveau FFT) | ✅ | 9abc307 |
 | 4. Module de cotes pur | ✅ | 24207d3 |
 | 5. Rencontres et matchs | ✅ | 174324a |
-| 6. Pronostics et ledger | **prochaine** | |
-| 7. Workflow de scores | | |
+| 6. Pronostics et portefeuille (bonus du lundi inclus) | ✅ | voir `git log` |
+| 7. Workflow de scores | **prochaine** | |
 | 8. Règlement atomique et idempotent | | |
 | 9. Classements | | |
 | 10. Écrans (design soigné, partage WhatsApp) | | |
 | 11. Seed de démo et tests E2E | | |
 
-État des tests au dernier commit : 244 tests Vitest, 34 scénarios Playwright, tous verts.
+État des tests au dernier commit : 273 tests Vitest, 41 scénarios Playwright, tous verts.
 
 ## Décisions prises (en plus du brief)
 
@@ -61,7 +61,7 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 
 ## À faire ensuite
 
-- **Tranche 6 (pronostics et ledger)** : commencer par présenter les règles à trancher (montant mini 10 Aces et plafond = solde ; une seule fois par match ; cote copiée depuis le match ; verrou par utilisateur contre le double engagement ; anti-trucage côté serveur ; bonus du lundi +200 si solde < 500, idempotent par semaine ISO, via Vercel Cron + route protégée par `CRON_SECRET`, déclenchable à la main en dev). Le remboursement existe déjà (`src/server/refunds.ts`).
+- **Tranche 7 (workflow de scores)** : commencer par présenter les règles à trancher (proposition, confirmation par deux personnes distinctes, contestation, arbitrage admin). Tranche 6 faite : `src/server/predictions.ts`, `src/server/weekly-bonus.ts`, route `/api/cron/weekly-bonus`, page `/portefeuille`. Le verrou par utilisateur (`FOR UPDATE`) n'est pas prouvé par les tests locaux (mutation non détectée) : à tester sur un vrai Postgres.
 - Les tests de concurrence (double engagement simultané) devront être refaits sur un vrai Postgres (PGlite traite les requêtes une à une).
 - Neon (staging et prod) : plus tard, procédure dans le README.
 - Design plus moderne prévu en tranche 10 : demander à Benjamin 2 ou 3 apps de référence, puis proposer une maquette avant de coder.

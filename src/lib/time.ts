@@ -63,3 +63,15 @@ export function formatParis(date: Date): string {
   return displayFormatter.format(date);
 }
 
+
+/** Semaine ISO de l'instant, lue en heure de Paris : « 2026-W41 » (clé d'idempotence du bonus du lundi). */
+export function isoWeekKey(date: Date): string {
+  const p = parisParts(date);
+  const day = new Date(Date.UTC(p.y, p.mo - 1, p.d));
+  // Le jeudi de la semaine détermine l'année ISO.
+  const dow = day.getUTCDay() || 7;
+  day.setUTCDate(day.getUTCDate() + 4 - dow);
+  const year = day.getUTCFullYear();
+  const week = Math.ceil(((day.getTime() - Date.UTC(year, 0, 1)) / 86_400_000 + 1) / 7);
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}

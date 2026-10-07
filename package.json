@@ -21,6 +21,7 @@
     "db:test:start": "prisma dev --name ralli-test --detach",
     "db:test:stop": "prisma dev stop ralli-test",
     "db:ls": "prisma dev ls",
+    "weekly-bonus": "tsx scripts/weekly-bonus.ts",
     "reset-password": "tsx scripts/reset-password.ts",
     "test:e2e": "playwright test",
     "odds:table": "tsx scripts/odds-table.ts"

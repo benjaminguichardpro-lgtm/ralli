@@ -13,7 +13,10 @@ export async function UserNav() {
   }
   return (
     <div className="flex items-center gap-2">
-      <span data-testid="nav-user" className="max-w-32 truncate text-sm">
+      <Link href="/portefeuille" className="inline-flex min-h-11 items-center px-2 text-sm font-semibold underline">
+        Portefeuille
+      </Link>
+      <span data-testid="nav-user" className="max-w-24 truncate text-sm">
         {user.displayName}
       </span>
       <form action={signOutAction}>

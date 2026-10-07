@@ -10,11 +10,14 @@ import {
   PublishForm,
   RescheduleForm,
 } from "@/components/encounter-forms";
+import { PredictionForm } from "@/components/prediction-form";
 import { StatusBadge } from "@/components/encounter-list";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { formatParis, toParisLocalInput } from "@/lib/time";
 import { type EncounterPageView, getEncounterPage } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
+import { getPredictionPanel } from "@/server/predictions";
+import { predictionSideLabel } from "@/lib/predictions/labels";
 
 // Page publique (lien partageable) : jamais indexée par les moteurs de recherche (décision 23).
 export const metadata: Metadata = { title: "Rencontre · Ralli", robots: { index: false, follow: false } };
@@ -37,6 +40,7 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
     if (err instanceof DomainError && err.code === "NOT_FOUND") notFound();
     throw err;
   }
+  const panel = await getPredictionPanel(viewer?.id ?? null, encounterId);
   const published = e.status !== "DRAFT";
   const m = e.manage;
 
@@ -85,6 +89,12 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
                     </span>
                   )}
                 </div>
+                <PredictionArea
+                  match={x}
+                  open={e.status === "OPEN"}
+                  loggedIn={viewer !== null}
+                  panel={panel}
+                />
               </li>
             ))}
           </ol>
@@ -153,5 +163,54 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
         </Link>
       )}
     </section>
+  );
+}
+
+function PredictionArea({
+  match,
+  open,
+  loggedIn,
+  panel,
+}: {
+  match: EncounterPageView["matches"][number];
+  open: boolean;
+  loggedIn: boolean;
+  panel: Awaited<ReturnType<typeof getPredictionPanel>>;
+}) {
+  const mine = panel.mine[match.id];
+  if (mine) {
+    const picked = mine.side === "HOME" ? match.home.name : match.away.name;
+    return (
+      <p data-testid="my-prediction" className="rounded-lg bg-canvas p-3 text-sm">
+        Votre pronostic : <strong>{picked}</strong>, {mine.committedAces.toLocaleString("fr-FR")} Aces engagés à la cote {mine.odds}.{" "}
+        {predictionSideLabel(mine.status, mine.payoutAces)}
+      </p>
+    );
+  }
+  if (!open || !match.oddsHome || !match.oddsAway) return null;
+  if (!loggedIn) {
+    return (
+      <p className="text-sm text-ink-muted">
+        <Link href="/connexion" className="font-semibold text-primary underline">
+          Connectez-vous
+        </Link>{" "}
+        pour pronostiquer.
+      </p>
+    );
+  }
+  if (!panel.isMember) return <p className="text-sm text-ink-muted">Réservé aux membres du club organisateur.</p>;
+  if (panel.blockedReason) return <p className="text-sm text-ink-muted" data-testid="blocked">{panel.blockedReason}</p>;
+  return (
+    <details data-testid="predict">
+      <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Pronostiquer ce match</summary>
+      <PredictionForm
+        matchId={match.id}
+        homeName={match.home.name}
+        awayName={match.away.name}
+        oddsHome={match.oddsHome}
+        oddsAway={match.oddsAway}
+        balance={panel.balance}
+      />
+    </details>
   );
 }
