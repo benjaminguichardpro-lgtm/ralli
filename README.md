@@ -27,6 +27,7 @@ npm run dev
 | `npm run db:test:start` / `db:test:stop` | Démarre / arrête la base locale de test |
 | `npm run db:ls` | Liste les bases locales et leurs ports |
 | `npm run odds:table` | Affiche les cotes produites par le modèle sur des cas types |
+| `npm run settle -- <id rencontre>` | Filet de sécurité : règle les pronostics d'une rencontre confirmée non réglée |
 | `npm run reset-password -- <email>` | Dépannage : génère un mot de passe temporaire, à changer à la connexion suivante |
 | `npm run db:migrate` | Crée/applique une migration (dev) |
 | `npm run db:deploy` | Applique les migrations existantes |
@@ -96,6 +97,13 @@ Quand un compte Neon existera :
 - **Confirmé = définitif** : plus aucune modification. La confirmation ne règle pas encore les pronostics (tranche 8).
 - **Visibilité** : tant que le score n'est pas confirmé, le public voit seulement « Score proposé, en attente de confirmation » ; les résultats saisis, l'auteur, le motif et le journal ne sont visibles que des admins et capitaines du club. Une fois confirmé : scores et décompte publics, journal toujours réservé.
 - Chaque action est écrite dans le journal de la rencontre (`EncounterEvent`) avec l'auteur, la date, le motif et les résultats.
+
+### Règlement des pronostics (tranche 8, `src/server/settlement.ts`)
+- Déclenché **dans la transaction** qui rend le score définitif (confirmation, ou arbitrage d'un litige) : si le règlement échoue, la confirmation est annulée avec lui. Jamais sur un score seulement proposé ou contesté.
+- **Gagné** : le joueur choisi est le vainqueur (match joué, abandon ou WO). Aces gagnés = `computePayout(engagés, cote figée)`, soit engagés × cote, engagés compris, écriture `PREDICTION_PAYOUT` clé `payout:<id>`. **Perdu** : statut LOST, rien n'est rendu. **Non joué** : remboursement. Un match retiré avant le début a déjà été remboursé et est ignoré.
+- **Idempotent** : `Encounter.settledAt` posé une seule fois (mise à jour conditionnelle), pronostic réglé seulement s'il est encore PENDING, clé unique au ledger.
+- Filet de sécurité : `npm run settle -- <identifiant de rencontre>` règle une rencontre confirmée qui ne l'aurait pas été (sans effet si elle l'est déjà).
+- Après règlement, une rencontre confirmée ne peut plus être corrigée dans l'app (voir EXCLUSIONS.md).
 
 ### Remboursements
 Un pronostic remboursé passe au statut `REFUNDED` et donne lieu à une écriture `PREDICTION_REFUND` au ledger. C'est idempotent : un filtre sur les pronostics en attente, une mise à jour conditionnelle et la clé unique `refund:<id>` du ledger empêchent tout double crédit.

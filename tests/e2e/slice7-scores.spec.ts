@@ -93,6 +93,20 @@ test("mise en place : club, deux équipes, deux rencontres publiées", async () 
   url2 = await newEncounter(tess, "2027-03-21T14:00");
 });
 
+test("Vera pronostique la seconde rencontre avant le début (perdant et gagnant)", async () => {
+  await vera.goto(url2);
+  const bet = async (n: number, pick: RegExp, aces: string) => {
+    const area = vera.getByTestId("matches").locator("li").nth(n).getByTestId("predict");
+    await area.locator("summary").click();
+    await area.getByLabel(pick).check();
+    await area.getByLabel("Aces engagés").fill(aces);
+    await area.getByRole("button", { name: "Valider mon pronostic" }).click();
+    await expect(vera.getByTestId("my-prediction").nth(n === 0 ? 0 : 1)).toBeVisible();
+  };
+  await bet(0, /Léa M\. gagne/, "100");
+  await bet(1, /Marc L\. gagne, cote 2,78/, "50");
+});
+
 test("avant le début : aucun bouton de score", async () => {
   await tess.goto(url1);
   await expect(tess.getByTestId("propose-score")).toHaveCount(0);
@@ -237,4 +251,22 @@ test("seconde rencontre : retrait puis nouvelle proposition, confirmée par une 
   await expect(ugo.getByText("Terminée", { exact: true })).toBeVisible();
   await expect(ugo.getByTestId("tally")).toContainText("0 – 2");
   await checkPage(ugo, "44-score-confirme");
+});
+
+test("règlement : Vera voit son pronostic perdu et son pronostic gagné", async () => {
+  await vera.goto(url2);
+  const mine = vera.getByTestId("my-prediction");
+  await expect(mine.nth(0)).toContainText("Perdu.");
+  await expect(mine.nth(1)).toContainText("Gagné : 139 Aces.");
+  await vera.goto("/portefeuille");
+  // 1000 − 100 − 50 + 139
+  await expect(vera.getByTestId("balance")).toHaveText("989 Aces");
+  await expect(vera.getByTestId("pending")).toHaveCount(0);
+  const settled = vera.getByTestId("settled").locator("li");
+  await expect(settled).toHaveCount(2);
+  await expect(vera.getByTestId("settled")).toContainText("Perdu.");
+  await expect(vera.getByTestId("settled")).toContainText("Gagné : 139 Aces.");
+  await expect(vera.getByTestId("ledger")).toContainText("Aces gagnés");
+  await expect(vera.getByTestId("ledger")).toContainText("+139 Aces");
+  await checkPage(vera, "45-portefeuille-apres-reglement");
 });

@@ -185,6 +185,8 @@ export const LEDGER_LABELS = {
 
 export type WalletView = {
   balance: number;
+  /** 20 derniers pronostics terminés (gagnés, perdus, remboursés). */
+  settled: { id: string; encounterId: string; matchLabel: string; pickedName: string; committedAces: number; odds: string; status: PredictionStatus; payoutAces: number | null }[];
   /** Aces engagés dans des pronostics en attente. */
   pendingAces: number;
   entries: { id: string; label: string; amount: number; createdAt: Date; encounterId: string | null }[];
@@ -199,7 +201,7 @@ export type WalletView = {
 };
 
 export async function getWallet(userId: string): Promise<WalletView> {
-  const [balance, entries, pending] = await Promise.all([
+  const [balance, entries, pending, settled] = await Promise.all([
     balanceIn(db, userId),
     db.ledgerEntry.findMany({
       where: { userId },
@@ -225,6 +227,26 @@ export async function getWallet(userId: string): Promise<WalletView> {
         },
       },
     }),
+    db.prediction.findMany({
+      where: { userId, status: { not: "PENDING" } },
+      orderBy: [{ settledAt: "desc" }, { id: "desc" }],
+      take: 20,
+      select: {
+        id: true,
+        pickedSide: true,
+        committedAces: true,
+        oddsX100: true,
+        status: true,
+        payoutAces: true,
+        match: {
+          select: {
+            encounterId: true,
+            homePlayer: { select: { firstName: true, lastName: true } },
+            awayPlayer: { select: { firstName: true, lastName: true } },
+          },
+        },
+      },
+    }),
   ]);
   const initial = (p: { firstName: string; lastName: string }) => publicPlayerName(p.firstName, p.lastName);
   return {
@@ -236,6 +258,16 @@ export async function getWallet(userId: string): Promise<WalletView> {
       amount: x.amount,
       createdAt: x.createdAt,
       encounterId: x.prediction?.match.encounterId ?? null,
+    })),
+    settled: settled.map((p) => ({
+      id: p.id,
+      encounterId: p.match.encounterId,
+      matchLabel: `${initial(p.match.homePlayer)} contre ${initial(p.match.awayPlayer)}`,
+      pickedName: initial(p.pickedSide === "HOME" ? p.match.homePlayer : p.match.awayPlayer),
+      committedAces: p.committedAces,
+      odds: formatOdds(p.oddsX100),
+      status: p.status,
+      payoutAces: p.payoutAces,
     })),
     pending: pending.map((p) => ({
       id: p.id,

@@ -42,12 +42,12 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 5. Rencontres et matchs | ✅ | 174324a |
 | 6. Pronostics et portefeuille (bonus du lundi inclus) | ✅ | voir `git log` |
 | 7. Workflow de scores | ✅ | voir `git log` |
-| 8. Règlement atomique et idempotent | **prochaine** | |
-| 9. Classements | | |
+| 8. Règlement atomique et idempotent | ✅ | voir `git log` |
+| 9. Classements | **prochaine** | |
 | 10. Écrans (design soigné, partage WhatsApp) | | |
 | 11. Seed de démo et tests E2E | | |
 
-État des tests au dernier commit : 321 tests Vitest, 50 scénarios Playwright, tous verts.
+État des tests au dernier commit : 335 tests Vitest, 52 scénarios Playwright, tous verts.
 
 ## Décisions prises (en plus du brief)
 
@@ -61,7 +61,7 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 
 ## À faire ensuite
 
-- **Tranche 8 (règlement)** : commencer par présenter les règles à trancher (règlement déclenché à la confirmation ou à l'arbitrage dans la même transaction que le passage à CONFIRMED ; WON/LOST selon `winnerSide`, REFUNDED si `NOT_PLAYED` ; idempotence via `settledAt` et clés `payout:<id>` ; `computePayout`). Tranche 7 faite : `src/server/scores.ts` (propose/withdraw/confirm/dispute/resolve), `src/lib/scores/result.ts`, section « Score » de la page rencontre. Les résultats sont déjà stockés sur `Match` (outcome, winnerSide, sets) dès la proposition ; seul `CONFIRMED` doit déclencher le règlement.
+- **Tranche 9 (classements)** : commencer par présenter les règles à trancher (classement par club, périmètre : général / semaine / saison, tri et égalités, ce qui est public, ce qui compte : solde, Aces gagnés, taux de réussite, etc.). Tranche 8 faite : `src/server/settlement.ts` (`settleEncounter` appelé dans `confirmScore` et `resolveDispute`, `settleConfirmedEncounter` pour `npm run settle`), liste « Pronostics terminés » du portefeuille.
 - Les tests de concurrence (double engagement simultané) devront être refaits sur un vrai Postgres (PGlite traite les requêtes une à une).
 - Neon (staging et prod) : plus tard, procédure dans le README.
 - Design plus moderne prévu en tranche 10 : demander à Benjamin 2 ou 3 apps de référence, puis proposer une maquette avant de coder.

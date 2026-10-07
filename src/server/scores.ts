@@ -15,6 +15,7 @@ import {
   requireStaff,
 } from "./encounters";
 import { ADMIN_ONLY, getClubRole, isCaptainInClub } from "./permissions";
+import { settleEncounter } from "./settlement";
 
 type Tx = Prisma.TransactionClient;
 
@@ -116,6 +117,7 @@ export async function confirmScore(actorId: string, encounterId: string, now = n
       await requireReviewer(tx, actorId, e, "le confirmer");
       await guardedStatusUpdate(tx, e.id, e.status, { status: to });
       await logEvent(tx, e, to, actorId, "Score confirmé");
+      await settleEncounter(tx, e.id, now); // même transaction : pas de score confirmé sans pronostics réglés
     })
     .catch(asDomain);
 }
@@ -147,6 +149,7 @@ export async function resolveDispute(actorId: string, encounterId: string, resul
       const clean = await writeResults(tx, e.id, results);
       await guardedStatusUpdate(tx, e.id, e.status, { status: to });
       await logEvent(tx, e, to, actorId, "Litige tranché", payloadOf(clean));
+      await settleEncounter(tx, e.id, now);
     })
     .catch(asDomain);
 }

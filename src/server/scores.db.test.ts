@@ -147,15 +147,16 @@ describe("confirmer", () => {
     expect(await db.encounterEvent.count({ where: { encounterId: enc, toStatus: "CONFIRMED" } })).toBe(1);
   });
 
-  it("ne règle encore aucun pronostic (tranche 8)", async () => {
+  it("la confirmation règle les pronostics dans la même opération", async () => {
     await withdrawScore(capA, enc, NOW);
-    // pronostic posé avant la fermeture
     await placePrediction(member, { matchId: mA, side: "HOME", committedAces: 100 }, BEFORE);
     await proposeScore(capA, enc, full(), NOW);
+    expect((await db.prediction.findFirstOrThrow({ where: { userId: member } })).status).toBe("PENDING"); // pas avant la confirmation
     await confirmScore(capB, enc, NOW);
-    expect((await db.prediction.findFirstOrThrow({ where: { userId: member } })).status).toBe("PENDING");
-    expect(await getBalance(member)).toBe(900);
+    expect((await db.prediction.findFirstOrThrow({ where: { userId: member } })).status).toBe("WON");
+    expect(await getBalance(member)).toBeGreaterThan(1000);
   });
+
 });
 
 describe("contester et trancher", () => {

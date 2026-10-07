@@ -28,5 +28,6 @@ Ces fonctionnalités sont volontairement absentes. Aucune n'est cachée : si ell
 - **Suppression de compte et export des données** : hors MVP. **À faire avant toute ouverture publique.**
 
 ## Modération et exploitation
+- **Correction après règlement** : une rencontre confirmée et réglée est définitive. Une erreur découverte plus tard se corrige à la main en base (écritures de compensation au ledger), hors MVP.
 - **Modération avancée** : pas d'outil de signalement ni de bannissement. Seuls les litiges de score sont arbitrés, par les admins de club.
 - **Calibrage des cotes** : les constantes du modèle ne sont pas calibrées tant qu'aucun backtest n'a été fait.
