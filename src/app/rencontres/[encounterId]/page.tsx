@@ -250,8 +250,10 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
       )}
       {a.canWithdraw && <WithdrawScoreForm encounterId={e.id} />}
       {a.canResolve && (
-        <details className="border-t border-line pt-2" open data-testid="resolve-dispute">
-          <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Trancher le litige</summary>
+        <details className="space-y-3 border-t border-line pt-3" open data-testid="resolve-dispute">
+          <summary className="flex min-h-12 cursor-pointer items-center justify-center rounded-lg bg-primary px-4 font-semibold text-on-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+            Trancher le litige
+          </summary>
           <ResolveDisputeForm encounterId={e.id} matches={forms} />
         </details>
       )}
