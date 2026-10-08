@@ -50,6 +50,26 @@ const checks: Check[] = [
     expect: "error",
   },
   {
+    label: "INSERT ledger DAILY_LOGIN_BONUS valide (+10)",
+    sql: `INSERT INTO "LedgerEntry"(id,"userId",type,amount,"idempotencyKey") VALUES ('verif_d1','verif_u','DAILY_LOGIN_BONUS',10,'verif:daily:1')`,
+    expect: "ok",
+  },
+  {
+    label: "INSERT ledger STREAK_BONUS valide (+50)",
+    sql: `INSERT INTO "LedgerEntry"(id,"userId",type,amount,"idempotencyKey") VALUES ('verif_s1','verif_u','STREAK_BONUS',50,'verif:streak:1')`,
+    expect: "ok",
+  },
+  {
+    label: "INSERT ledger DAILY_LOGIN_BONUS avec montant négatif (-10)",
+    sql: `INSERT INTO "LedgerEntry"(id,"userId",type,amount,"idempotencyKey") VALUES ('verif_d2','verif_u','DAILY_LOGIN_BONUS',-10,'verif:daily:2')`,
+    expect: "error",
+  },
+  {
+    label: "INSERT ledger STREAK_BONUS avec montant nul (0)",
+    sql: `INSERT INTO "LedgerEntry"(id,"userId",type,amount,"idempotencyKey") VALUES ('verif_s2','verif_u','STREAK_BONUS',0,'verif:streak:2')`,
+    expect: "error",
+  },
+  {
     label: "INSERT ledger PREDICTION_PAYOUT avec montant nul (0)",
     sql: `INSERT INTO "LedgerEntry"(id,"userId",type,amount,"idempotencyKey") VALUES ('verif_po','verif_u','PREDICTION_PAYOUT',0,'verif:po')`,
     expect: "error",

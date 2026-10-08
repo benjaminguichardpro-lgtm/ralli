@@ -118,3 +118,10 @@ export function relativeDayLabel(date: Date, now: Date): string | null {
   if (days >= 2 && days <= 6) return `dans ${days} jours`;
   return null;
 }
+
+/** Jour calendaire de Paris sous la forme « 2026-10-12 » (clé d'idempotence du bonus de connexion). */
+export function parisDateKey(date: Date): string {
+  const p = parisParts(date);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${p.y}-${pad(p.mo)}-${pad(p.d)}`;
+}

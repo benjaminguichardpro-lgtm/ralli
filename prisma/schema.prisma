@@ -85,6 +85,8 @@ enum PredictionStatus {
 enum LedgerType {
   SIGNUP_BONUS // +1000 à l'inscription
   WEEKLY_BONUS // +200 le lundi si solde < 500
+  DAILY_LOGIN_BONUS // +10 à la première ouverture de l'app de chaque jour (heure de Paris)
+  STREAK_BONUS // +50 en plus au 7e jour de connexion d'affilée (puis tous les 7 jours)
   PREDICTION_COMMIT // Aces engagés (montant négatif)
   PREDICTION_PAYOUT // Aces gagnés = engagés × cote (positif)
   PREDICTION_REFUND // remboursement (match non joué, rencontre annulée)
@@ -305,7 +307,8 @@ model LedgerEntry {
   amount         Int // signé : négatif pour un engagement, positif sinon
   predictionId   String?
   // Clé d'idempotence unique, ex. « signup:<userId> », « weekly:<userId>:2026-W41 »,
-  // « commit:<predictionId> », « payout:<predictionId> », « refund:<predictionId> ».
+  // « commit:<predictionId> », « payout:<predictionId> », « refund:<predictionId> »,
+  // « daily:<userId>:2026-10-12 » et « streak:<userId>:2026-10-12 » (jour de Paris).
   idempotencyKey String     @unique
   createdAt      DateTime   @default(now())
 

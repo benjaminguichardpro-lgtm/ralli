@@ -47,7 +47,7 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 10. Écrans (design soigné, partage WhatsApp) | ✅ | voir `git log` |
 | 11. Seed de démo et tests E2E | **prochaine** | |
 
-État des tests au dernier commit : 389 tests Vitest, 60 scénarios Playwright, tous verts.
+État des tests au dernier commit : 420 tests Vitest, 65 scénarios Playwright, tous verts.
 
 ## Décisions prises (en plus du brief)
 
@@ -62,6 +62,7 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 ## À faire ensuite
 
 - **Tranche 11 (seed de démo et tests E2E)** : proposer un jeu de données de démonstration (clubs, équipes, joueurs, rencontres à venir et passées, pronostics) et un parcours E2E complet multi-rôles ; présenter d'abord les règles à trancher. Tranche 10 faite : design dans `docs/DESIGN.md`, `src/components/match-picks.tsx` (cotes + panneau + partage), `tab-bar.tsx`, `balance-pill.tsx`, `src/server/feed.ts`, pages `/clubs` et `/classement`.
+- **Bonus de connexion** (hors tranches, demandé par Benjamin) : +10 Aces par jour à la première ouverture (jour de Paris), +50 de plus tous les 7 jours d'affilée, rien le jour de l'inscription ; popup « Connexion quotidienne X/7 » (`src/components/daily-bonus-popup.tsx`) ; migrations `20261008150000_login_bonus_types` et `20261008150100_login_bonus_sign_check` (deux fichiers : Postgres interdit d'utiliser une valeur d'enum ajoutée dans la même transaction). Le bonus du lundi est conservé.
 - **Piège local** : `prisma dev` se mélange quand plusieurs requêtes arrivent en même temps (« bind message supplies N parameters »). `DATABASE_POOL_MAX="1"` dans `.env` et `.env.test` impose une connexion unique ; à laisser vide avec Neon. `getCurrentUser` est mis en cache par requête (React `cache`).
 - Les tests de concurrence (double engagement simultané) devront être refaits sur un vrai Postgres (PGlite traite les requêtes une à une).
 - Neon (staging et prod) : plus tard, procédure dans le README.

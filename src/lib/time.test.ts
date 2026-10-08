@@ -74,3 +74,15 @@ describe("relativeDayLabel (jours calendaires de Paris)", () => {
     expect(relativeDayLabel(new Date("2026-10-25T12:00:00Z"), new Date("2026-10-24T12:00:00Z"))).toBe("demain");
   });
 });
+
+import { parisDateKey } from "./time";
+
+describe("parisDateKey (jour de Paris)", () => {
+  it.each([
+    ["2026-10-12T06:00:00Z", "2026-10-12"],
+    ["2026-10-11T21:59:00Z", "2026-10-11"], // 23:59 à Paris (UTC+2)
+    ["2026-10-11T22:00:00Z", "2026-10-12"], // minuit à Paris
+    ["2026-12-31T23:30:00Z", "2027-01-01"], // 00:30 à Paris (UTC+1)
+    ["2026-10-25T00:30:00Z", "2026-10-25"],
+  ])("%s → %s", (iso, key) => expect(parisDateKey(new Date(iso))).toBe(key));
+});

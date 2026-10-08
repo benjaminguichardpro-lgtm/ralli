@@ -178,6 +178,8 @@ export async function getPredictionPanel(viewerId: string | null, encounterId: s
 export const LEDGER_LABELS = {
   SIGNUP_BONUS: "Bonus d'inscription",
   WEEKLY_BONUS: "Bonus du lundi",
+  DAILY_LOGIN_BONUS: "Connexion quotidienne",
+  STREAK_BONUS: "Bonus de 7 jours d'affilée",
   PREDICTION_COMMIT: "Aces engagés",
   PREDICTION_PAYOUT: "Aces gagnés",
   PREDICTION_REFUND: "Remboursement",

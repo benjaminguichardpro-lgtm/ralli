@@ -123,6 +123,13 @@ Quand un compte Neon existera :
 - **Partage WhatsApp** : « Partager la rencontre » (page publique) et « Partager mon pronostic » (liens `wa.me`).
 - Polices : Fraunces (titres), DM Sans (texte), Geist (chiffres tabulaires). Nouvelles couleurs : vert nuit, jaune balle (jamais seul sur blanc), vérifiées par `npm run contrast`.
 
+### Bonus de connexion (`src/server/daily-bonus.ts`, série dans `src/lib/bonus/streak.ts`, montants dans `src/config/game.ts`)
+- **+10 Aces** à la **première ouverture de l'app de chaque jour** (jour de Paris, minuit à minuit) par un compte connecté : l'app appelle le serveur au chargement (`claimDailyBonusAction`) et affiche la popup « Connexion quotidienne X/7 +10 Aces ». Les sessions durent 30 jours, donc la saisie du mot de passe n'est pas ce qui compte.
+- **+50 Aces en plus** le jour qui complète **7 jours d'affilée** (soit +60 ce jour-là) ; la série repart à 1/7 le lendemain, et le +50 revient aux jours 14, 21… Un jour manqué remet la série à 1.
+- **Le jour de l'inscription ne donne rien** (le compte reçoit déjà 1000 Aces) : la série démarre le lendemain.
+- Deux types d'écriture au ledger : `DAILY_LOGIN_BONUS` (+10, clé `daily:<compte>:<jour>`) et `STREAK_BONUS` (+50, clé `streak:<compte>:<jour>`). **Idempotent** : la clé unique du ledger empêche tout double crédit, même en cas d'ouvertures simultanées. La série se calcule à partir de ces écritures (pas de table dédiée).
+- Se cumule avec le bonus du lundi (+200 sous 500 Aces).
+
 ### Remboursements
 Un pronostic remboursé passe au statut `REFUNDED` et donne lieu à une écriture `PREDICTION_REFUND` au ledger. C'est idempotent : un filtre sur les pronostics en attente, une mise à jour conditionnelle et la clé unique `refund:<id>` du ledger empêchent tout double crédit.
 

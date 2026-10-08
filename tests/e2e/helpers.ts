@@ -81,3 +81,27 @@ export async function placeBet(page: Page, match: Locator, pick: RegExp, aces: s
   await sheet.getByRole("button", { name: "Valider mon ralli" }).click();
   await expect(sheet).toBeHidden();
 }
+
+/** Recule la date de création d'un compte (le jour de l'inscription ne donne pas de bonus de connexion). */
+export async function backdateAccount(displayName: string, days: number) {
+  const c = new Client({ connectionString: parse(readFileSync(".env.test")).DATABASE_URL });
+  await c.connect();
+  await c.query(`UPDATE "User" SET "createdAt" = now() - ($2 || ' days')::interval WHERE "displayName" = $1`, [displayName, String(days)]);
+  await c.end();
+}
+
+/** Insère au ledger les bonus de connexion des `days` derniers jours (hier, avant-hier…), comme si le compte s'était connecté chaque jour. */
+export async function seedLoginStreak(displayName: string, days: number) {
+  const c = new Client({ connectionString: parse(readFileSync(".env.test")).DATABASE_URL });
+  await c.connect();
+  const u = await c.query(`SELECT id FROM "User" WHERE "displayName" = $1`, [displayName]);
+  const id = u.rows[0].id as string;
+  for (let i = 1; i <= days; i++) {
+    const d = await c.query(`SELECT to_char((now() AT TIME ZONE 'Europe/Paris')::date - $1::int, 'YYYY-MM-DD') AS d`, [i]);
+    await c.query(
+      `INSERT INTO "LedgerEntry"(id,"userId",type,amount,"idempotencyKey") VALUES ($1,$2,'DAILY_LOGIN_BONUS',10,$3)`,
+      [`seed_${id}_${i}`, id, `daily:${id}:${d.rows[0].d}`],
+    );
+  }
+  await c.end();
+}

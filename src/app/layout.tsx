@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DM_Sans, Fraunces, Geist } from "next/font/google";
 import { Suspense } from "react";
 import { AppNav } from "@/components/app-nav";
+import { DailyBonus } from "@/components/daily-bonus";
 import { UserNav } from "@/components/user-nav";
 import "./globals.css";
 
@@ -35,6 +36,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </footer>
         <Suspense fallback={null}>
           <AppNav />
+        </Suspense>
+        <Suspense fallback={null}>
+          <DailyBonus />
         </Suspense>
       </body>
     </html>
