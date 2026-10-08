@@ -116,8 +116,8 @@ Quand un compte Neon existera :
 - Calculé à la lecture (aucune table de cache) : à jour dès le règlement.
 
 ### Interface (tranche 10, `docs/DESIGN.md`, aperçu `docs/design-preview.html`)
-- **Accueil = fil des rencontres** de vos clubs : la prochaine en grand (l'heure d'abord, le jour en clair, sans compte à rebours), puis les simples avec deux boutons de cote.
-- **Pronostic en trois gestes** : toucher la cote, choisir un montant (50, 100, 250, Tout, ou un montant libre), « Valider mon ralli ». Le panneau du bas (`<dialog>` natif) affiche le récapitulatif (Aces engagés, Aces gagnés si vous avez raison, solde après). Même panneau sur la page d'une rencontre. Définitif une fois validé.
+- **Accueil = cartes des rencontres** de vos clubs : la prochaine en grand (l'heure d'abord, le jour en clair, sans compte à rebours), les suivantes en cartes plus petites. Ni joueurs ni cotes sur l'accueil : on touche la carte pour ouvrir la rencontre.
+- **Pronostic** : toucher la carte de la rencontre, puis la cote, choisir un montant (50, 100, 250, Tout, ou un montant libre), « Valider mon ralli ». Le panneau du bas (`<dialog>` natif) affiche le récapitulatif (Aces engagés, Aces gagnés si vous avez raison, solde après). Même panneau sur la page d'une rencontre. Définitif une fois validé.
 - **Barre du bas** (connecté) : Matchs, Classement, Portefeuille, Club. Avec un seul club, Classement et Club y mènent directement ; sinon `/classement` et `/clubs` proposent la liste. Pas de sélecteur de club actif.
 - **Solde dans l'en-tête**, relu à chaque navigation.
 - **Partage WhatsApp** : « Partager la rencontre » (page publique) et « Partager mon pronostic » (liens `wa.me`).

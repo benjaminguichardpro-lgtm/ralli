@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { StatusBadge } from "@/components/encounter-list";
-import { type Access, MatchPicks } from "@/components/match-picks";
 import { ButtonLink } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { formatParisDay, formatParisTime, relativeDayLabel } from "@/lib/time";
@@ -23,6 +22,7 @@ async function HomeContent() {
   const now = new Date();
   const feed = await getHomeFeed(user.id, now);
   const next = feed.encounters.find((e) => e.status === "OPEN");
+  const others = feed.encounters.filter((e) => e !== next);
 
   return (
     <section className="space-y-5">
@@ -50,16 +50,18 @@ async function HomeContent() {
           </ButtonLink>
         </div>
       ) : (
-        <>
+        <div className="space-y-4" data-testid="feed">
           {next && <NextEncounter e={next} now={now} />}
-          <ul className="space-y-4" data-testid="feed">
-            {feed.encounters.map((e) => (
-              <li key={e.id}>
-                <EncounterCard e={e} balance={feed.balance} now={now} />
-              </li>
-            ))}
-          </ul>
-        </>
+          {others.length > 0 && (
+            <ul className="space-y-4">
+              {others.map((e) => (
+                <li key={e.id}>
+                  <EncounterCard e={e} now={now} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </section>
   );
@@ -86,46 +88,40 @@ function NextEncounter({ e, now }: { e: FeedEncounter; now: Date }) {
       <p className="pt-1 text-on-primary-soft">
         <strong className="font-semibold text-on-primary">{e.home}</strong> contre {e.away}
       </p>
-      <p className="pt-2">
+      <p className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-2">
         <span className="inline-block rounded-full bg-gold px-3 py-1 text-[0.8125rem] font-bold text-on-gold">
           Pronostics ouverts jusqu&apos;à {formatParisTime(e.predictionsCloseAt)}
+        </span>
+        <span className="font-semibold text-gold" aria-hidden="true">
+          {e.blockedReason ? "Voir la rencontre ›" : "Pronostiquer ›"}
         </span>
       </p>
     </Link>
   );
 }
 
-function EncounterCard({ e, balance, now }: { e: FeedEncounter; balance: number; now: Date }) {
-  const share = { title: `${e.home} – ${e.away}`, whenLabel: `${formatParisDay(e.startsAt)} à ${formatParisTime(e.startsAt)}`, path: `/rencontres/${e.id}` };
-  const access: Access =
-    e.status !== "OPEN" ? { kind: "none" } : e.blockedReason ? { kind: "note", text: e.blockedReason, testId: "blocked" } : { kind: "predict", balance };
+/** Rencontre suivante : une carte à toucher. Les cotes et le pronostic sont sur la page de la rencontre. */
+function EncounterCard({ e, now }: { e: FeedEncounter; now: Date }) {
   const rel = relativeDayLabel(e.startsAt, now);
   return (
-    <article className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-      <Link href={`/rencontres/${e.id}`} className="block space-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-        <span className="flex flex-wrap items-baseline justify-between gap-x-3">
-          <span className="font-semibold">
-            {e.home} – {e.away}
-          </span>
-          <span className="font-data font-bold text-accent">
-            {formatParisTime(e.startsAt)}
-            <span className="font-sans text-sm font-medium"> · {rel ?? formatParisDay(e.startsAt)}</span>
-          </span>
+    <Link
+      href={`/rencontres/${e.id}`}
+      className="block space-y-1 rounded-2xl bg-surface p-4 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >
+      <span className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <span className="font-semibold">
+          {e.home} – {e.away}
         </span>
-        <span className="flex items-center gap-2 text-sm text-ink-muted">
-          <StatusBadge status={e.status} label={e.statusLabel} />
-          {e.matches.length} simple{e.matches.length > 1 ? "s" : ""}
+        <span className="font-data font-bold text-accent">
+          {formatParisTime(e.startsAt)}
+          <span className="font-sans text-sm font-medium"> · {rel ?? formatParisDay(e.startsAt)}</span>
         </span>
-      </Link>
-      <ol className="divide-y divide-line">
-        {e.matches.map((m) => (
-          <li key={m.id} className="space-y-1.5 py-3">
-            <p className="text-xs text-ink-muted">Simple {m.number}</p>
-            <MatchPicks matchId={m.id} home={m.home} away={m.away} access={access} mine={m.mine} share={share} />
-          </li>
-        ))}
-      </ol>
-    </article>
+      </span>
+      <span className="flex items-center gap-2 text-sm text-ink-muted">
+        <StatusBadge status={e.status} label={e.statusLabel} />
+        {e.matches.length} simple{e.matches.length > 1 ? "s" : ""}
+      </span>
+    </Link>
   );
 }
 

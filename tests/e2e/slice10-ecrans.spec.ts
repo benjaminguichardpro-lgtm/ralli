@@ -75,26 +75,47 @@ test("mise en place : club, équipe, rencontre publiée à 15:30", async () => {
   await expect(zoe.getByText("Pronostics ouverts", { exact: true })).toBeVisible();
 });
 
-test("accueil de Yanis : l'heure de la prochaine rencontre en grand, solde en haut", async () => {
+test("accueil de Yanis : uniquement la carte de la rencontre, l'heure en grand, solde en haut, pas de cotes", async () => {
   await yanis.goto("/");
   await expect(yanis.getByTestId("next-time")).toHaveText("15:30");
   await expect(yanis.getByTestId("next-encounter")).toContainText("dimanche 2 mai");
   await expect(yanis.getByTestId("next-encounter")).toContainText("Pronostics ouverts jusqu'à 15:30");
+  await expect(yanis.getByTestId("next-encounter")).toContainText("Pronostiquer");
   await expect(yanis.getByTestId("balance")).toHaveText("1 000 Aces");
-  await expect(yanis.getByTestId("feed")).toContainText("Eva M.");
-  await expect(yanis.getByTestId("odds")).toHaveText(["1,56", "2,78"]);
+  await expect(yanis.getByTestId("feed")).toContainText("TC Voisin D1");
+  // Ni cotes ni joueurs sur l'accueil, et la rencontre n'apparaît qu'une fois.
+  await expect(yanis.getByTestId("odds")).toHaveCount(0);
+  await expect(yanis.getByTestId("feed")).not.toContainText("Eva M.");
+  await expect(yanis.getByTestId("feed").locator('a[href^="/rencontres/"]')).toHaveCount(1);
   await noHorizontalScroll(yanis);
   await checkPage(yanis, "50-accueil-fil");
 });
 
-test("pronostic en trois gestes depuis l'accueil, le solde de l'en-tête suit", async () => {
-  await placeBet(yanis, yanis.getByTestId("feed").locator("li li").first(), /Lou P\. gagne/, "100");
+test("un admin qui ne peut pas pronostiquer voit « Voir la rencontre »", async () => {
+  await zoe.goto("/");
+  await expect(zoe.getByTestId("next-encounter")).toContainText("Voir la rencontre");
+  await expect(zoe.getByTestId("next-encounter")).not.toContainText("Pronostiquer");
+});
+
+test("pour pronostiquer : toucher la carte, puis la cote, le montant, valider ; le solde de l'en-tête suit", async () => {
+  await yanis.goto("/");
+  await yanis.getByTestId("next-encounter").click();
+  await expect(yanis).toHaveURL(encounterUrl);
+  await placeBet(yanis, yanis.getByTestId("matches").locator("li").first(), /Lou P\. gagne/, "100");
   await expect(yanis.getByTestId("my-prediction")).toContainText("100 Aces engagés à la cote 2,78");
   await expect(yanis.getByTestId("balance")).toHaveText("900 Aces");
   await yanis.getByRole("link", { name: "Portefeuille" }).first().click();
   await expect(yanis).toHaveURL(/\/portefeuille$/);
   await expect(yanis.getByTestId("wallet-balance")).toHaveText("900 Aces");
   await expect(yanis.getByTestId("balance")).toHaveText("900 Aces");
+});
+
+test("après le pronostic, l'accueil reste une simple carte vers la rencontre", async () => {
+  await yanis.goto("/");
+  await expect(yanis.getByTestId("odds")).toHaveCount(0);
+  await expect(yanis.getByTestId("my-prediction")).toHaveCount(0);
+  await yanis.getByTestId("next-encounter").click();
+  await expect(yanis.getByTestId("my-prediction")).toContainText("Lou P.");
 });
 
 test("barre du bas : un seul club mène directement au classement et au club, onglet actif signalé", async () => {

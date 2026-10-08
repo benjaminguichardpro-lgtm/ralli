@@ -51,12 +51,13 @@
 - **Approche** : minimale et fonctionnelle. Le panneau monte en 250 ms. Rien ne clignote. Respecte `prefers-reduced-motion`.
 
 ## Parcours clé
-Accueil (fil des simples) → toucher une cote → panneau (montants 50 / 100 / 250 / Tout ou champ libre, récapitulatif) → « Valider mon ralli ». Définitif une fois validé.
+Accueil (une carte par rencontre, la prochaine en grand) → toucher la carte → page de la rencontre (simples et cotes) → toucher une cote → panneau (montants 50 / 100 / 250 / Tout ou champ libre, récapitulatif) → « Valider mon ralli ». Définitif une fois validé. L'accueil n'affiche ni joueurs ni cotes : il sert à repérer l'heure de la rencontre.
 
 ## Decisions Log
 | Date | Décision | Rationale |
 |------|----------|-----------|
 | 2026-10-08 | Création initiale | /design avec Benjamin : sobre, intuitif, hyper simple, joueurs d'abord. Maquette validée : `docs/design-preview.html`. |
+| 2026-10-09 | Accueil = cartes de rencontre seulement | Demande de Benjamin : pour pronostiquer, on touche la carte ; les cotes sont sur la page de la rencontre. Une rencontre n'apparaît qu'une fois. |
 | 2026-10-08 | Palette de couleurs de la démo Ralli (vert Ralli, vert action, or) | Choix de Benjamin (remplace vert Wimbledon, terre battue, jaune balle, crème). `ball` renommé `gold`, ajout de `brand` et `pale`. Mode sombre non implémenté. |
 | 2026-10-08 | Polices : Norican, Cormorant Garamond, DM Sans | Choix de Benjamin (remplace Fraunces, DM Sans, Geist). Cotes en DM Sans ; Cormorant pour les titres, noms et grands chiffres. |
 | 2026-10-08 | Pas de sélecteur de club actif | Classement et Club mènent au club s'il n'y en a qu'un, sinon à une liste. Plus simple, rien à mémoriser. |
