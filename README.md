@@ -27,6 +27,7 @@ npm run dev
 | `npm run db:test:start` / `db:test:stop` | Démarre / arrête la base locale de test |
 | `npm run db:ls` | Liste les bases locales et leurs ports |
 | `npm run odds:table` | Affiche les cotes produites par le modèle sur des cas types |
+| `npm run seed:demo` | Charge la démo (3 clubs, 14 comptes, rencontres dans chaque état) dans la base **locale** de dev. `-- --reset` la refait à neuf (vide toute la base) |
 | `npm run settle -- <id rencontre>` | Filet de sécurité : règle les pronostics d'une rencontre confirmée non réglée |
 | `npm run reset-password -- <email>` | Dépannage : génère un mot de passe temporaire, à changer à la connexion suivante |
 | `npm run db:migrate` | Crée/applique une migration (dev) |
@@ -171,6 +172,15 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
   - `Prediction.oddsX100` entre 100 et 1000 ;
   - `LedgerEntry.amount < 0` pour `PREDICTION_COMMIT`, `> 0` pour `SIGNUP_BONUS`, `WEEKLY_BONUS`, `PREDICTION_PAYOUT` et `PREDICTION_REFUND`.
 - **Calcul du gain** : uniquement via `computePayout` (`src/lib/predictions/payout.ts`), en arithmétique entière : `floor((committedAces × oddsX100 + 50) / 100)`.
+
+## Démo (tranche 11, `src/server/demo-seed.ts`, commande `scripts/seed-demo.ts`)
+
+`npm run seed:demo` remplit la base de dev avec des données de démonstration, en passant par les **vraies fonctions** du produit (soldes, ledger, cotes et classements sont donc cohérents). Les dates sont relatives à l'instant du lancement : relancer le matin d'une démo remet tout à neuf.
+
+- **Garde-fous** : refuse toute base qui n'est pas locale (`localhost`) ; refuse si la démo est déjà chargée ; `-- --reset` vide **toute** la base (le ledger est append-only, on ne peut pas supprimer que les lignes de démo) et exige `-- --reset --tout-effacer` si des comptes non démo existent.
+- **Comptes** (mot de passe commun `demo-ralli-2026`, connexion par pseudo ou `pseudo@demo.ralli.test`) : `admin_lyon`, `capitaine_lyon`, `capitaine_dames_lyon`, `joueur_lyon` (fiche liée, aligné en Messieurs 1), `admin_nantes`, `capitaine_nantes`, `joueur_nantes`, `admin_bordeaux` (club vide), `parieur1` à `parieur6`. Les comptes sont créés « il y a 30 jours » : la popup de connexion quotidienne apparaît à la première ouverture.
+- **TC Démo-Lyon** (Messieurs 1, Dames 1, 5 équipes adverses) : 4 rencontres terminées (dont une réglée il y a quelques heures, pour le classement « semaine »), 1 score contesté, 1 score proposé, 1 verrouillée, 1 annulée avec remboursements, 1 ouverte à venir, 1 brouillon. **TC Démo-Nantes** : 1 terminée, 1 ouverte. Les codes d'invitation sont affichés à la fin de la commande.
+- Tests : `src/server/demo-seed.db.test.ts` (états, soldes jamais négatifs, classements, anti-trucage, relance après vidage) ; E2E `slice11-demo.spec.ts` (charge la vraie commande dans la base de test, parcourt les écrans en format téléphone) et `slice11-parcours-complet.spec.ts` (club → équipe → rencontre → pronostics → score → règlement → classement, 4 rôles + visiteur).
 
 ## Documents
 

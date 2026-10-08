@@ -45,9 +45,9 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 8. Règlement atomique et idempotent | ✅ | voir `git log` |
 | 9. Classements | ✅ | voir `git log` |
 | 10. Écrans (design soigné, partage WhatsApp) | ✅ | voir `git log` |
-| 11. Seed de démo et tests E2E | **prochaine** | |
+| 11. Seed de démo et tests E2E | ✅ (en attente de validation Benjamin) | voir `git log` |
 
-État des tests au dernier commit : 420 tests Vitest, 65 scénarios Playwright, tous verts.
+État des tests au dernier commit : 426 tests Vitest, 69 scénarios Playwright, tous verts.
 
 ## Décisions prises (en plus du brief)
 
@@ -59,11 +59,19 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 
 **Rencontres** : adversaire toujours pris dans la liste des équipes adverses du club (pas de liaison entre deux clubs Ralli : le score est confirmé par deux personnes distinctes du club organisateur, admin ou capitaine). Création par le capitaine de l'équipe ou un admin, qui choisit domicile ou extérieur. 1 à 8 simples, un simple par joueur. Publication : au moins un match, début futur, cotes figées. Avant le début : ajout, modification (match remplacé, pronostics remboursés), retrait et report possibles. Après le début : report possible mais les pronostics restent fermés (`predictionsCloseAt`). Annulation (brouillon, ouverte, verrouillée) par le capitaine de l'équipe du club ou un admin, avec remboursement. Brouillon visible des admins et capitaines ; page publique ensuite (« Prénom N. », noindex, identifiant cuid).
 
+## État du design (tranche 10 et après, voir `docs/DESIGN.md`)
+
+- **Accueil** : une carte par rencontre (la prochaine en grand avec l'heure, « Pronostiquer › »). Ni joueurs ni cotes sur l'accueil : on touche la carte, puis la cote sur la page de la rencontre, puis le panneau du bas (montants 50 / 100 / 250 / Tout), bouton **« Valider mon ralli »**. La case touchée se remplit de terre battue `#b4502b` avant le panneau (animation 350 ms, instantanée avec « réduire les animations »).
+- **Palette** de la démo Ralli (vert Ralli `brand`, vert action `primary`, or `gold` sur vert et `accent` sur clair, `pale`, `clay`). **Polices** : Norican (logo), Cormorant Garamond (titres, noms, grands chiffres), DM Sans (le reste). Ces choix viennent de Benjamin : ne pas les modifier sans son accord.
+- **Mode sombre : pas implémenté.** Benjamin a donné fond `#0c1912` et boutons `#7fdba6` ; j'ai proposé le reste (cartes `#14271d`, pâle `#1d3a2b`, bordures `#2f4d3d`, texte `#e8f1ea` / `#a7bbad`, en-tête `#154a33`, carte « prochaine rencontre » `#1b5a3c`, or `#e6c872`, gagné `#4fbf80`) : **en attente de sa validation**. La cote sélectionnée doit passer en texte foncé sur vert clair.
+- **Barre du bas** (connecté) : Matchs, Classement, Portefeuille, Club ; avec un seul club, Classement et Club y mènent directement, sinon `/classement` et `/clubs` listent les clubs. Solde toujours en haut (relu à chaque navigation).
+
 ## À faire ensuite
 
-- **Tranche 11 (seed de démo et tests E2E)** : proposer un jeu de données de démonstration (clubs, équipes, joueurs, rencontres à venir et passées, pronostics) et un parcours E2E complet multi-rôles ; présenter d'abord les règles à trancher. Tranche 10 faite : design dans `docs/DESIGN.md`, `src/components/match-picks.tsx` (cotes + panneau + partage), `tab-bar.tsx`, `balance-pill.tsx`, `src/server/feed.ts`, pages `/clubs` et `/classement`.
-- **Bonus de connexion** (hors tranches, demandé par Benjamin) : +10 Aces par jour à la première ouverture (jour de Paris), +50 de plus tous les 7 jours d'affilée, rien le jour de l'inscription ; popup « Connexion quotidienne X/7 » (`src/components/daily-bonus-popup.tsx`) ; migrations `20261008150000_login_bonus_types` et `20261008150100_login_bonus_sign_check` (deux fichiers : Postgres interdit d'utiliser une valeur d'enum ajoutée dans la même transaction). Le bonus du lundi est conservé.
+- **Tranche 11 faite** : `npm run seed:demo` (`scripts/seed-demo.ts`, logique dans `src/server/demo-seed.ts`), détail dans le README, section « Démo ». Décisions de Benjamin : base locale uniquement, 2 clubs + un club vide, mot de passe commun `demo-ralli-2026`, dates relatives, pronostics posés par les vraies fonctions, rencontres contestée et annulée incluses, contraste = `npm run contrast` suffit. Le `--reset` vide **toute** la base (ledger append-only). Design de la tranche 10 : `docs/DESIGN.md`, `src/components/match-picks.tsx`, `tab-bar.tsx`, `balance-pill.tsx`, `src/server/feed.ts`, pages `/clubs` et `/classement`.
+- **Après la tranche 11** : pilote avec 2 ou 3 clubs réels ; Neon (staging, prod) et tests de concurrence sur vrai Postgres restent à faire.
+- **Bonus de connexion** (hors tranches, demandé par Benjamin) : +10 Aces par jour à la première ouverture (jour de Paris), +50 de plus tous les 7 jours d'affilée, rien le jour de l'inscription ; popup « Connexion quotidienne X/7 » (`src/components/daily-bonus-popup.tsx`) ; migrations `20261008150000_login_bonus_types` et `20261008150100_login_bonus_sign_check` (deux fichiers : Postgres interdit d'utiliser une valeur d'enum ajoutée dans la même transaction). Le bonus du lundi est conservé. Pour tester la popup d'un compte, il faut antidater `createdAt` (voir `backdateAccount` et `seedLoginStreak` dans `tests/e2e/helpers.ts`).
 - **Piège local** : `prisma dev` se mélange quand plusieurs requêtes arrivent en même temps (« bind message supplies N parameters »). `DATABASE_POOL_MAX="1"` dans `.env` et `.env.test` impose une connexion unique ; à laisser vide avec Neon. `getCurrentUser` est mis en cache par requête (React `cache`).
+- **Tests E2E** : un fichier par thème (`tests/e2e/slice2` à `slice11`), chacun avec ses propres pseudos (la base de test est partagée : deux fichiers ne doivent pas réutiliser le même pseudo). `forceStarted(url)` fait commencer une rencontre (aucun écran ne permet une date passée).
 - Les tests de concurrence (double engagement simultané) devront être refaits sur un vrai Postgres (PGlite traite les requêtes une à une).
 - Neon (staging et prod) : plus tard, procédure dans le README.
-- Design plus moderne prévu en tranche 10 : demander à Benjamin 2 ou 3 apps de référence, puis proposer une maquette avant de coder.

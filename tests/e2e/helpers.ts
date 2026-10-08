@@ -105,3 +105,31 @@ export async function seedLoginStreak(displayName: string, days: number) {
   }
   await c.end();
 }
+
+/** Lance le vrai script `npm run seed:demo` contre la base de TEST (mots de passe à coût réduit, comme le reste des E2E). */
+export function seedDemoOnTestDb(): string {
+  const env = parse(readFileSync(".env.test"));
+  return execFileSync("npx", ["tsx", "scripts/seed-demo.ts"], {
+    env: { ...process.env, ...env, BCRYPT_ROUNDS: "4" },
+    encoding: "utf8",
+    timeout: 240_000,
+  });
+}
+
+/** Requête SQL directe sur la base de TEST (lecture des identifiants créés par le seed). */
+export async function queryTestDb<T extends Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
+  const c = new Client({ connectionString: parse(readFileSync(".env.test")).DATABASE_URL });
+  await c.connect();
+  try {
+    return (await c.query(sql, params)).rows as T[];
+  } finally {
+    await c.end();
+  }
+}
+
+/** Vide la base de TEST (les scénarios suivants créent leurs propres données). */
+export async function wipeTestDb() {
+  await queryTestDb(
+    `TRUNCATE "LedgerEntry","Prediction","Match","EncounterEvent","Encounter","TeamPlayer","Player","Team","ClubMembership","Club","User" CASCADE`,
+  );
+}
