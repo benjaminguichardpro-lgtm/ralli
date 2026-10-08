@@ -14,10 +14,12 @@
 - **Garde-fou** : on reprend la clarté des applications de pronostics (cote en gros bouton, panneau du bas), pas leurs mécaniques qui poussent à jouer plus.
 
 ## Typography
-- **Display** : Fraunces (500 à 700) — serif chaleureux, esprit club, titres seulement.
-- **Body** : DM Sans — lisible, neutre.
-- **Data** : Geist, chiffres tabulaires — cotes, heures, Aces, rangs.
-- **Loading** : `next/font/google` (Fraunces, DM Sans, Geist).
+- **Logo** : Norican (400) — manuscrite, effet pinceau, uniquement le mot « Ralli » de l'en-tête.
+- **Titres, noms, grands chiffres** : Cormorant Garamond (600, 700) — serif élégante, chiffres alignés sur la ligne de base.
+- **Texte, boutons, cotes, menus** : DM Sans (400, 500, 700), chiffres tabulaires pour les cotes, le solde et les montants. Un texte demandé en 600 s'affiche en 700.
+- **Polices de secours** : Brush Script MT, cursive (logo) ; Georgia, Times New Roman, serif (titres) ; -apple-system, system-ui, Segoe UI, sans-serif (texte).
+- **Licence** : SIL Open Font License (usage commercial autorisé), toutes trois gratuites sur Google Fonts.
+- **Loading** : `next/font/google` (Norican, Cormorant Garamond, DM Sans), seules les graisses utilisées sont chargées.
 - **Scale** : 12 / 14 / 16 / 18 / 20 / 24 / 32 / 44 px (l'heure de la prochaine rencontre est le plus grand élément de l'accueil).
 
 ## Color
@@ -50,4 +52,5 @@ Accueil (fil des simples) → toucher une cote → panneau (montants 50 / 100 / 
 | Date | Décision | Rationale |
 |------|----------|-----------|
 | 2026-10-08 | Création initiale | /design avec Benjamin : sobre, intuitif, hyper simple, joueurs d'abord. Maquette validée : `docs/design-preview.html`. |
+| 2026-10-08 | Polices : Norican, Cormorant Garamond, DM Sans | Choix de Benjamin (remplace Fraunces, DM Sans, Geist). Cotes en DM Sans ; Cormorant pour les titres, noms et grands chiffres. |
 | 2026-10-08 | Pas de sélecteur de club actif | Classement et Club mènent au club s'il n'y en a qu'un, sinon à une liste. Plus simple, rien à mémoriser. |

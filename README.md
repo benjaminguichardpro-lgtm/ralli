@@ -121,7 +121,7 @@ Quand un compte Neon existera :
 - **Barre du bas** (connecté) : Matchs, Classement, Portefeuille, Club. Avec un seul club, Classement et Club y mènent directement ; sinon `/classement` et `/clubs` proposent la liste. Pas de sélecteur de club actif.
 - **Solde dans l'en-tête**, relu à chaque navigation.
 - **Partage WhatsApp** : « Partager la rencontre » (page publique) et « Partager mon pronostic » (liens `wa.me`).
-- Polices : Fraunces (titres), DM Sans (texte), Geist (chiffres tabulaires). Nouvelles couleurs : vert nuit, jaune balle (jamais seul sur blanc), vérifiées par `npm run contrast`.
+- Polices : Norican (logo), Cormorant Garamond (titres, noms, grands chiffres), DM Sans (texte, boutons, cotes, menus). Nouvelles couleurs : vert nuit, jaune balle (jamais seul sur blanc), vérifiées par `npm run contrast`.
 
 ### Bonus de connexion (`src/server/daily-bonus.ts`, série dans `src/lib/bonus/streak.ts`, montants dans `src/config/game.ts`)
 - **+10 Aces** à la **première ouverture de l'app de chaque jour** (jour de Paris, minuit à minuit) par un compte connecté : l'app appelle le serveur au chargement (`claimDailyBonusAction`) et affiche la popup « Connexion quotidienne X/7 +10 Aces ». Les sessions durent 30 jours, donc la saisie du mot de passe n'est pas ce qui compte.

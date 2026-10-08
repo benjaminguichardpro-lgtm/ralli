@@ -60,7 +60,7 @@ export function DailyBonusPopup() {
             />
           ))}
         </ol>
-        <p className="font-data text-5xl font-bold text-ball" data-testid="daily-total">
+        <p className="font-figures text-5xl font-bold text-ball" data-testid="daily-total">
           +{aces(bonus.total)} Aces
         </p>
         {bonus.streakBonus > 0 ? (

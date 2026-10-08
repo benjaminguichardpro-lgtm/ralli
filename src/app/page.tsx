@@ -75,7 +75,7 @@ function NextEncounter({ e, now }: { e: FeedEncounter; now: Date }) {
     >
       <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-on-primary-soft">Prochaine rencontre</p>
       <p className="flex flex-wrap items-baseline gap-x-3">
-        <span className="font-data text-[2.75rem] font-bold leading-none" data-testid="next-time">
+        <span className="font-figures text-[2.75rem] font-bold leading-none" data-testid="next-time">
           {formatParisTime(e.startsAt)}
         </span>
         <span className="text-lg font-semibold">

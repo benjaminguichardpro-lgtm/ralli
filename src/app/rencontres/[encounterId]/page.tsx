@@ -58,7 +58,7 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
         </h1>
         <p className="flex flex-wrap items-baseline gap-x-3">
           <span className="sr-only">Début : </span>
-          <span className="font-data text-4xl font-bold leading-none">{formatParisTime(e.startsAt)}</span>
+          <span className="font-figures text-4xl font-bold leading-none">{formatParisTime(e.startsAt)}</span>
           <span className="text-lg font-semibold">
             {formatParisDay(e.startsAt)}
             {rel && <span className="font-normal text-on-primary-soft"> · {rel}</span>}
