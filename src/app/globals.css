@@ -17,6 +17,8 @@
   --color-on-gold: #14281d;
   --color-accent: #9a6f12; /* Or sur fond clair : heures, séries, CTA secondaires, bordures d'alerte */
   --color-on-accent: #ffffff;
+  --color-clay: #b4502b; /* Terre battue de Roland-Garros : remplissage de la case touchée avant le panneau de pronostic */
+  --color-on-clay: #ffffff;
   --color-line: #b9cbbd; /* Bordures : contours des cartes, filets */
   --color-pale: #e2efe5; /* Vert pâle : fonds d'encadrés et d'étiquettes */
   --color-canvas: #f3f7f3; /* Fond de page : blanc légèrement teinté de vert */

@@ -97,6 +97,72 @@ test("un admin qui ne peut pas pronostiquer voit « Voir la rencontre »", async
   await expect(zoe.getByTestId("next-encounter")).not.toContainText("Pronostiquer");
 });
 
+test("la case touchée se remplit de terre battue avant l'ouverture du panneau, puis se vide à la fermeture", async () => {
+  await yanis.goto(encounterUrl);
+  const match = yanis.getByTestId("matches").locator("li").first();
+  const picked = match.getByRole("button", { name: /Lou P\. gagne/ });
+  const other = match.getByRole("button", { name: /Eva M\. gagne/ });
+  const fillOf = (b: typeof picked) => b.getByTestId("clay-fill");
+  const hidden = /^inset\(0(px)? 100% 0(px)? 0(px)?\)$/;
+
+  await expect(picked).toHaveAttribute("data-fill", "idle");
+  await expect(fillOf(picked)).toHaveCSS("clip-path", hidden);
+
+  // On note l'état de la case à l'instant précis où le panneau s'ouvre.
+  await yanis.evaluate(() => {
+    const dialog = document.querySelector("dialog.sheet")!;
+    // Deuxième case du premier simple : celle de « Lou P. », que le test touche.
+    const fill = document.querySelectorAll('[data-testid="matches"] li [data-testid="clay-fill"]')[1] as HTMLElement;
+    new MutationObserver(() => {
+      if ((dialog as HTMLDialogElement).open) (window as unknown as Record<string, string>).__fillWhenOpened = getComputedStyle(fill).clipPath;
+    }).observe(dialog, { attributes: true, attributeFilter: ["open"] });
+  });
+
+  await picked.click();
+  const sheet = yanis.getByRole("dialog", { name: "Votre pronostic" });
+  await expect(sheet).toBeVisible();
+  // Le panneau ne s'est ouvert qu'une fois la case entièrement remplie.
+  const atOpen = await yanis.evaluate(() => (window as unknown as Record<string, string>).__fillWhenOpened);
+  expect(atOpen).toMatch(/^inset\(0(px)?( 0(px)?){0,3}\)$/);
+  // Terre battue #b4502b, nom et cote en blanc, case voisine inchangée.
+  await expect(picked).toHaveAttribute("data-fill", "open");
+  await expect(fillOf(picked)).toHaveCSS("background-color", "rgb(180, 80, 43)");
+  await expect(fillOf(picked)).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(picked).toHaveCSS("border-top-color", "rgb(180, 80, 43)");
+  await expect(other).toHaveAttribute("data-fill", "idle");
+  await expect(fillOf(other)).toHaveCSS("clip-path", hidden);
+  await checkPage(yanis, "53-case-terre-battue");
+
+  // Fermeture : la case redevient normale.
+  await sheet.getByRole("button", { name: "Annuler" }).click();
+  await expect(sheet).toBeHidden();
+  await expect(picked).toHaveAttribute("data-fill", "idle");
+  await expect(fillOf(picked)).toHaveCSS("clip-path", hidden);
+  await expect(picked).toHaveCSS("border-top-color", "rgb(23, 80, 58)");
+
+  // On peut recommencer, et la touche Échap referme aussi.
+  await picked.click();
+  await expect(sheet).toBeVisible();
+  await yanis.keyboard.press("Escape");
+  await expect(sheet).toBeHidden();
+  await expect(picked).toHaveAttribute("data-fill", "idle");
+});
+
+test("« réduire les animations » : case pleine et panneau ouvert immédiatement, sans transition", async () => {
+  await yanis.emulateMedia({ reducedMotion: "reduce" });
+  await yanis.goto(encounterUrl);
+  const picked = yanis.getByTestId("matches").locator("li").first().getByRole("button", { name: /Lou P\. gagne/ });
+  await expect(picked.getByTestId("clay-fill")).toHaveCSS("transition-property", "none");
+  await picked.click();
+  const sheet = yanis.getByRole("dialog", { name: "Votre pronostic" });
+  await expect(sheet).toBeVisible();
+  await expect(picked).toHaveAttribute("data-fill", "open");
+  await expect(picked.getByTestId("clay-fill")).toHaveCSS("background-color", "rgb(180, 80, 43)");
+  await sheet.getByRole("button", { name: "Annuler" }).click();
+  await expect(picked).toHaveAttribute("data-fill", "idle");
+  await yanis.emulateMedia({ reducedMotion: "no-preference" });
+});
+
 test("pour pronostiquer : toucher la carte, puis la cote, le montant, valider ; le solde de l'en-tête suit", async () => {
   await yanis.goto("/");
   await yanis.getByTestId("next-encounter").click();

@@ -30,6 +30,7 @@
 - **Vert nuit** `#0b2c1d` — token `primary-dark` : prochaine rencontre, panneau de pronostic, solde. (Teinte « bas du dégradé story » de la palette.)
 - **Or sur fond vert** `#e6c872` — token `gold` : cote sélectionnée, bouton « Valider mon ralli », gain, touches trophée. Jamais sur fond clair (ratio 1,6).
 - **Or sur fond clair** `#9a6f12` — token `accent` : heures des rencontres, CTA secondaires, bordures d'alerte. Texte seulement sur carte blanche (ratio 4,5).
+- **Terre battue de Roland-Garros** `#b4502b` — token `clay` (texte `on-clay` blanc, ratio 5,1) : remplissage de la case du joueur touché, avant l'ouverture du panneau de pronostic.
 - **Vert « gagné »** `#2b7a4b` — tokens `success` et `success-ink`.
 - **Vert pâle** `#e2efe5` — token `pale` : fonds d'encadrés et d'étiquettes.
 - **Fond de page** `#f3f7f3` (`canvas`), cartes `#ffffff` (`surface`), bordures `#b9cbbd` (`line`).
@@ -49,6 +50,7 @@
 
 ## Motion
 - **Approche** : minimale et fonctionnelle. Le panneau monte en 250 ms. Rien ne clignote. Respecte `prefers-reduced-motion`.
+- **Case touchée** : elle se remplit de gauche à droite de terre battue (350 ms), le nom et la cote passent en blanc au fur et à mesure, puis le panneau de pronostic monte. La case reste pleine tant que le panneau est ouvert et se vide à sa fermeture (Annuler, Échap, fond). Avec « réduire les animations » : case pleine et panneau ouvert immédiatement.
 
 ## Parcours clé
 Accueil (une carte par rencontre, la prochaine en grand) → toucher la carte → page de la rencontre (simples et cotes) → toucher une cote → panneau (montants 50 / 100 / 250 / Tout ou champ libre, récapitulatif) → « Valider mon ralli ». Définitif une fois validé. L'accueil n'affiche ni joueurs ni cotes : il sert à repérer l'heure de la rencontre.
@@ -57,6 +59,7 @@ Accueil (une carte par rencontre, la prochaine en grand) → toucher la carte �
 | Date | Décision | Rationale |
 |------|----------|-----------|
 | 2026-10-08 | Création initiale | /design avec Benjamin : sobre, intuitif, hyper simple, joueurs d'abord. Maquette validée : `docs/design-preview.html`. |
+| 2026-10-09 | Remplissage terre battue de la case touchée | Demande de Benjamin : `#b4502b` (terre battue orangée), sens gauche-droite, 350 ms, texte blanc, case pleine tant que le panneau est ouvert, instantané en « réduire les animations ». |
 | 2026-10-09 | Accueil = cartes de rencontre seulement | Demande de Benjamin : pour pronostiquer, on touche la carte ; les cotes sont sur la page de la rencontre. Une rencontre n'apparaît qu'une fois. |
 | 2026-10-08 | Palette de couleurs de la démo Ralli (vert Ralli, vert action, or) | Choix de Benjamin (remplace vert Wimbledon, terre battue, jaune balle, crème). `ball` renommé `gold`, ajout de `brand` et `pale`. Mode sombre non implémenté. |
 | 2026-10-08 | Polices : Norican, Cormorant Garamond, DM Sans | Choix de Benjamin (remplace Fraunces, DM Sans, Geist). Cotes en DM Sans ; Cormorant pour les titres, noms et grands chiffres. |

@@ -27,19 +27,66 @@ const odd = "grid min-h-14 grid-cols-[1fr_auto] items-center gap-x-2 rounded-xl 
 const oddBase = `${odd} bg-surface text-primary`;
 const oddOn = `${odd} bg-primary text-on-primary`;
 
-function OddsFace({ pick, on }: { pick: Pick; on?: boolean }) {
+function OddsFace({ pick, on, onClay }: { pick: Pick; on?: boolean; onClay?: boolean }) {
   return (
     <>
       <span className="font-semibold leading-tight">
         {pick.name}
-        <span className={`block text-xs font-medium ${on ? "text-on-primary-soft" : "text-ink-muted"}`}>{pick.rank}</span>
+        <span className={`block text-xs font-medium ${onClay ? "" : on ? "text-on-primary-soft" : "text-ink-muted"}`}>{pick.rank}</span>
       </span>
       {pick.odds && (
-        <span data-testid="odds" className={`font-data text-xl font-bold ${on ? "text-gold" : ""}`}>
+        <span data-testid={onClay ? undefined : "odds"} className={`font-data text-xl font-bold ${on && !onClay ? "text-gold" : ""}`}>
           {pick.odds}
         </span>
       )}
     </>
+  );
+}
+
+const FILL_MS = 350;
+
+/**
+ * Case d'un joueur à toucher. Au toucher, elle se remplit de gauche à droite de terre battue (le texte devient blanc
+ * au fur et à mesure grâce à une seconde couche rognée), puis le panneau de pronostic s'ouvre. Elle reste remplie
+ * tant que le panneau est ouvert et se vide à sa fermeture.
+ */
+function OddButton({
+  pick,
+  label,
+  phase,
+  onTouch,
+  onFilled,
+}: {
+  pick: Pick;
+  label: string;
+  phase: "idle" | "filling" | "open";
+  onTouch: () => void;
+  onFilled: () => void;
+}) {
+  const filled = phase !== "idle";
+  return (
+    <button
+      type="button"
+      onClick={onTouch}
+      aria-label={label}
+      data-fill={phase}
+      className={`${oddBase} relative cursor-pointer overflow-hidden transition-colors duration-[350ms] motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+        filled ? "!border-clay" : ""
+      }`}
+    >
+      <OddsFace pick={pick} />
+      <span
+        aria-hidden="true"
+        data-testid="clay-fill"
+        className="absolute inset-0 grid grid-cols-[1fr_auto] items-center gap-x-2 bg-clay px-3 py-1.5 text-on-clay transition-[clip-path] duration-[350ms] ease-out motion-reduce:transition-none"
+        style={{ clipPath: filled ? "inset(0 0 0 0)" : "inset(0 100% 0 0)" }}
+        onTransitionEnd={(e) => {
+          if (e.propertyName === "clip-path" && phase === "filling") onFilled();
+        }}
+      >
+        <OddsFace pick={pick} onClay />
+      </span>
+    </button>
   );
 }
 
@@ -66,10 +113,25 @@ export function MatchPicks({
   const [side, setSide] = useState<Side>("HOME");
   const [amount, setAmount] = useState("");
   const [state, action] = useActionState(placePredictionAction, initialFormState);
+  // Remplissage terre battue de la case touchée, avant l'ouverture du panneau.
+  const [fill, setFill] = useState<{ side: Side; phase: "filling" | "open" } | null>(null);
 
   useEffect(() => {
     if (state.ok) dialog.current?.close();
   }, [state.ok]);
+
+  const openSheet = () => {
+    if (!dialog.current || dialog.current.open) return;
+    setFill((f) => f && { ...f, phase: "open" });
+    dialog.current.showModal();
+  };
+
+  // Filet de sécurité : si la transition ne se termine pas (onglet masqué…), le panneau s'ouvre quand même.
+  useEffect(() => {
+    if (fill?.phase !== "filling") return;
+    const t = window.setTimeout(openSheet, FILL_MS + 350);
+    return () => window.clearTimeout(t);
+  });
 
   const picks = { HOME: home, AWAY: away } as const;
   const hasOdds = home.odds !== null && away.odds !== null;
@@ -113,9 +175,16 @@ export function MatchPicks({
     );
   }
 
-  const open = (s: Side) => {
+  const touch = (s: Side) => {
+    if (fill) return; // déjà en cours : on ignore les doubles touchers
     setSide(s);
-    dialog.current?.showModal();
+    // « Réduire les animations » : pas de remplissage progressif, la case est pleine et le panneau s'ouvre tout de suite.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setFill({ side: s, phase: "open" });
+      dialog.current?.showModal();
+      return;
+    }
+    setFill({ side: s, phase: "filling" });
   };
 
   const value = Number(amount);
@@ -135,15 +204,14 @@ export function MatchPicks({
       <div className="grid grid-cols-2 gap-2.5" data-testid={interactive ? "predict" : undefined}>
         {(["HOME", "AWAY"] as const).map((s) =>
           interactive ? (
-            <button
+            <OddButton
               key={s}
-              type="button"
-              onClick={() => open(s)}
-              aria-label={`${picks[s].name} gagne, cote ${picks[s].odds}`}
-              className={`${oddBase} cursor-pointer transition-colors active:bg-pale focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`}
-            >
-              <OddsFace pick={picks[s]} />
-            </button>
+              pick={picks[s]}
+              label={`${picks[s].name} gagne, cote ${picks[s].odds}`}
+              phase={fill?.side === s ? fill.phase : "idle"}
+              onTouch={() => touch(s)}
+              onFilled={openSheet}
+            />
           ) : (
             <div key={s} className={oddBase}>
               <OddsFace pick={picks[s]} />
@@ -172,6 +240,7 @@ export function MatchPicks({
           className="sheet"
           aria-label="Votre pronostic"
           onClick={(e) => e.target === dialog.current && dialog.current?.close()}
+          onClose={() => setFill(null)}
         >
           <form action={action} className="mx-auto grid w-full max-w-xl gap-4 rounded-t-3xl bg-primary-dark px-5 pb-6 pt-3 text-on-primary" noValidate>
             <input type="hidden" name="matchId" value={matchId} />

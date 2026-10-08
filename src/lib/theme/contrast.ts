@@ -65,6 +65,7 @@ export const ALLOWED_PAIRS: ContrastPair[] = [
   { fg: "primary-dark", bg: "gold", min: 4.5, usage: "Texte vert nuit sur or" },
   { fg: "on-accent", bg: "accent", min: 4.5, usage: "CTA secondaire (or sur fond clair)" },
   { fg: "accent", bg: "surface", min: 4.5, usage: "Heures et séries en or sur carte" },
+  { fg: "on-clay", bg: "clay", min: 4.5, usage: "Nom et cote du joueur pendant le remplissage terre battue" },
   { fg: "on-success", bg: "success", min: 4.5, usage: "Badge « Pronostics ouverts » et « gagné »" },
   { fg: "success-ink", bg: "surface", min: 4.5, usage: "Texte « gagné » sur carte" },
   { fg: "success-ink", bg: "canvas", min: 4.5, usage: "Texte « gagné » sur fond de page" },
