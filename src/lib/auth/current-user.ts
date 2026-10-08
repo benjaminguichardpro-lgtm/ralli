@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { auth } from "@/auth";
@@ -6,8 +7,12 @@ import { db } from "@/lib/db";
 
 export type CurrentUser = { id: string; displayName: string; mustChangePassword: boolean };
 
-/** Utilisateur connecté, relu en base (null si pas de session ou compte disparu). */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+/**
+ * Utilisateur connecté, relu en base (null si pas de session ou compte disparu).
+ * Calculé une seule fois par requête (l'en-tête, la barre du bas et la page l'appellent tous) :
+ * les lectures parallèles de la session se sont montrées instables, et c'est trois fois moins de requêtes.
+ */
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   // Rendu à la requête : Auth.js re-chiffre le cookie de session (aléa crypto), interdit pendant le prerender.
   await connection();
   const session = await auth();
@@ -17,7 +22,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     where: { id },
     select: { id: true, displayName: true, mustChangePassword: true },
   });
-}
+});
 
 /**
  * Exige une session. Redirige vers la connexion sinon, et vers le changement de

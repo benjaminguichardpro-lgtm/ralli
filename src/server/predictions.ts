@@ -19,7 +19,7 @@ async function lockUser(tx: Tx, userId: string): Promise<void> {
   await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
 }
 
-async function balanceIn(tx: Tx, userId: string): Promise<number> {
+export async function balanceIn(tx: Tx, userId: string): Promise<number> {
   const r = await tx.ledgerEntry.aggregate({ where: { userId }, _sum: { amount: true } });
   return r._sum.amount ?? 0;
 }
@@ -36,7 +36,7 @@ type EncounterForRules = {
  * Exclus : admins du club organisateur, capitaines des deux équipes, joueurs alignés dans la rencontre
  * et comptes liés à ces joueurs.
  */
-async function exclusionReason(tx: Tx, userId: string, e: EncounterForRules): Promise<string | null> {
+export async function exclusionReason(tx: Tx, userId: string, e: EncounterForRules): Promise<string | null> {
   if ((await getClubRole(userId, e.organizerClubId, tx)) === "ADMIN") {
     return "Les admins du club ne peuvent pas pronostiquer les rencontres de leur club.";
   }

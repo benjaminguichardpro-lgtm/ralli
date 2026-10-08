@@ -25,7 +25,7 @@ async function Content() {
           Vous vous êtes connecté avec un mot de passe temporaire. Choisissez-en un nouveau pour continuer.
         </p>
       )}
-      <div className="rounded-xl bg-surface p-4 shadow-sm">
+      <div className="rounded-2xl bg-surface p-4 shadow-sm">
         <ChangePasswordForm />
       </div>
     </>

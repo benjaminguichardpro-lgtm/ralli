@@ -33,7 +33,7 @@ async function Content({ params }: { params: Promise<{ clubId: string }> }) {
   }
   if (options.opponents.length === 0) {
     return (
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <p>Le club n&apos;a encore aucune équipe adverse. Ajoutez d&apos;abord l&apos;adversaire dans « Équipes adverses ».</p>
         <Link href={`/clubs/${clubId}`} className="inline-flex min-h-11 items-center font-semibold text-primary underline">
           Retour au club
@@ -42,7 +42,7 @@ async function Content({ params }: { params: Promise<{ clubId: string }> }) {
     );
   }
   return (
-    <div className="rounded-xl bg-surface p-4 shadow-sm">
+    <div className="rounded-2xl bg-surface p-4 shadow-sm">
       <CreateEncounterForm clubTeams={options.clubTeams} opponents={options.opponents} />
     </div>
   );

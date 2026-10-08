@@ -26,7 +26,7 @@ async function Wallet() {
       <div>
         <h1 className="font-serif text-3xl text-primary">Mon portefeuille</h1>
         <p className="text-ink-muted">
-          Solde disponible : <strong data-testid="balance" className="text-ink">{w.balance.toLocaleString("fr-FR")} Aces</strong>
+          Solde disponible : <strong data-testid="wallet-balance" className="font-data text-ink">{w.balance.toLocaleString("fr-FR")} Aces</strong>
         </p>
         {w.pendingAces > 0 && (
           <p className="text-sm text-ink-muted" data-testid="pending-aces">
@@ -35,12 +35,12 @@ async function Wallet() {
         )}
       </div>
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Pronostics en cours</h2>
         {w.pending.length === 0 ? (
           <p className="text-ink-muted">Aucun pronostic en attente.</p>
         ) : (
-          <ul className="divide-y divide-canvas" data-testid="pending">
+          <ul className="divide-y divide-line" data-testid="pending">
             {w.pending.map((p) => (
               <li key={p.id}>
                 <Link href={`/rencontres/${p.encounterId}`} className="block min-h-11 py-2">
@@ -55,12 +55,12 @@ async function Wallet() {
         )}
       </div>
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Pronostics terminés</h2>
         {w.settled.length === 0 ? (
           <p className="text-ink-muted">Aucun pronostic terminé pour l&apos;instant.</p>
         ) : (
-          <ul className="divide-y divide-canvas" data-testid="settled">
+          <ul className="divide-y divide-line" data-testid="settled">
             {w.settled.map((p) => (
               <li key={p.id}>
                 <Link href={`/rencontres/${p.encounterId}`} className="block min-h-11 py-2">
@@ -76,9 +76,9 @@ async function Wallet() {
         )}
       </div>
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Historique</h2>
-        <ul className="divide-y divide-canvas" data-testid="ledger">
+        <ul className="divide-y divide-line" data-testid="ledger">
           {w.entries.map((x) => (
             <li key={x.id} className="flex min-h-11 items-center justify-between gap-3 py-2">
               <span>

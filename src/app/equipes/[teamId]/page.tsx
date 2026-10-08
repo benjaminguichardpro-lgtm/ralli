@@ -47,17 +47,17 @@ async function Team({ params }: { params: Promise<{ teamId: string }> }) {
       </div>
 
       {team.isAdmin && !isExternal && (
-        <div className="rounded-xl bg-surface p-4 shadow-sm">
+        <div className="rounded-2xl bg-surface p-4 shadow-sm">
           <CaptainForm teamId={team.id} captainUserId={team.captain?.userId} members={team.members} />
         </div>
       )}
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Effectif ({team.players.length})</h2>
         {team.players.length === 0 ? (
           <p className="text-ink-muted">Aucun joueur pour l&apos;instant.</p>
         ) : (
-          <ul className="divide-y divide-canvas" data-testid="roster">
+          <ul className="divide-y divide-line" data-testid="roster">
             {team.players.map((p) => (
               <li key={p.id} className="py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -82,12 +82,12 @@ async function Team({ params }: { params: Promise<{ teamId: string }> }) {
       </div>
 
       {team.canManage && (
-        <div data-testid="add-player" className="space-y-4 rounded-xl bg-surface p-4 shadow-sm">
+        <div data-testid="add-player" className="space-y-4 rounded-2xl bg-surface p-4 shadow-sm">
           <h2 className="font-serif text-xl text-primary">Ajouter un joueur</h2>
           <AddPlayerForm teamId={team.id} />
           {team.addablePlayers.length > 0 && (
             <>
-              <hr className="border-canvas" />
+              <hr className="border-line" />
               <AddExistingPlayerForm
                 teamId={team.id}
                 players={team.addablePlayers.map((p) => ({ ...p, rankLabel: fftLabel(p.fftRank) }))}

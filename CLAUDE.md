@@ -19,7 +19,7 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 - Vocabulaire interdit dans l'UI : « pari », « mise », « gain en euros », « bookmaker ». Utiliser « pronostic », « Aces engagés », « Aces gagnés », « cote ». Contrôlé par `findForbiddenWords` sur le texte affiché (tests E2E), pas sur le code source.
 - 18+ : case obligatoire à l'inscription, mention en pied de page.
 - Anti-trucage côté serveur : ne peuvent pas pronostiquer une rencontre les capitaines des deux équipes, les joueurs alignés dans un de ses matchs et les comptes liés à ces joueurs, ainsi que les admins du club concerné.
-- Design : couleurs uniquement via les tokens de `src/app/globals.css` (aucune couleur en dur), boutons ≥ 44 px, contraste AA (`npm run contrast`).
+- Design : voir `docs/DESIGN.md` ; couleurs uniquement via les tokens de `src/app/globals.css` (aucune couleur en dur), boutons ≥ 44 px, contraste AA (`npm run contrast`).
 
 ## Stack et environnement
 
@@ -44,10 +44,10 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 7. Workflow de scores | ✅ | voir `git log` |
 | 8. Règlement atomique et idempotent | ✅ | voir `git log` |
 | 9. Classements | ✅ | voir `git log` |
-| 10. Écrans (design soigné, partage WhatsApp) | **prochaine** | |
-| 11. Seed de démo et tests E2E | | |
+| 10. Écrans (design soigné, partage WhatsApp) | ✅ | voir `git log` |
+| 11. Seed de démo et tests E2E | **prochaine** | |
 
-État des tests au dernier commit : 371 tests Vitest, 54 scénarios Playwright, tous verts.
+État des tests au dernier commit : 389 tests Vitest, 60 scénarios Playwright, tous verts.
 
 ## Décisions prises (en plus du brief)
 
@@ -61,7 +61,8 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 
 ## À faire ensuite
 
-- **Tranche 10 (écrans, design soigné, partage WhatsApp)** : demander à Benjamin 2 ou 3 apps de référence, puis proposer une maquette (couleurs via les tokens, boutons ≥ 44 px) avant de coder. Tranche 9 faite : `src/server/leaderboard.ts`, `src/lib/leaderboard/rank.ts`, `src/config/season.ts` (dates de saison à revoir après le pilote), page `/clubs/<id>/classement`.
+- **Tranche 11 (seed de démo et tests E2E)** : proposer un jeu de données de démonstration (clubs, équipes, joueurs, rencontres à venir et passées, pronostics) et un parcours E2E complet multi-rôles ; présenter d'abord les règles à trancher. Tranche 10 faite : design dans `docs/DESIGN.md`, `src/components/match-picks.tsx` (cotes + panneau + partage), `tab-bar.tsx`, `balance-pill.tsx`, `src/server/feed.ts`, pages `/clubs` et `/classement`.
+- **Piège local** : `prisma dev` se mélange quand plusieurs requêtes arrivent en même temps (« bind message supplies N parameters »). `DATABASE_POOL_MAX="1"` dans `.env` et `.env.test` impose une connexion unique ; à laisser vide avec Neon. `getCurrentUser` est mis en cache par requête (React `cache`).
 - Les tests de concurrence (double engagement simultané) devront être refaits sur un vrai Postgres (PGlite traite les requêtes une à une).
 - Neon (staging et prod) : plus tard, procédure dans le README.
 - Design plus moderne prévu en tranche 10 : demander à Benjamin 2 ou 3 apps de référence, puis proposer une maquette avant de coder.

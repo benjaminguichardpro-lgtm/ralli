@@ -10,16 +10,16 @@ import {
   PublishForm,
   RescheduleForm,
 } from "@/components/encounter-forms";
-import { PredictionForm } from "@/components/prediction-form";
+import { type Access, MatchPicks } from "@/components/match-picks";
+import { WhatsAppShare } from "@/components/share-link";
 import { ConfirmScoreForm, DisputeScoreForm, ProposeScoreForm, ResolveDisputeForm, WithdrawScoreForm } from "@/components/score-forms";
 import { StatusBadge } from "@/components/encounter-list";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { formatParis, toParisLocalInput } from "@/lib/time";
+import { formatParis, formatParisDay, formatParisTime, relativeDayLabel, toParisLocalInput } from "@/lib/time";
 import { type EncounterPageView, getEncounterPage } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
 import { getPredictionPanel } from "@/server/predictions";
 import { type ScoreView, getScoreView } from "@/server/scores";
-import { predictionSideLabel } from "@/lib/predictions/labels";
 
 // Page publique (lien partageable) : jamais indexée par les moteurs de recherche (décision 23).
 export const metadata: Metadata = { title: "Rencontre · Ralli", robots: { index: false, follow: false } };
@@ -44,58 +44,58 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
   }
   const [panel, score] = await Promise.all([getPredictionPanel(viewer?.id ?? null, encounterId), getScoreView(viewer?.id ?? null, encounterId)]);
   const published = e.status !== "DRAFT";
+  const rel = relativeDayLabel(e.startsAt, new Date());
   const m = e.manage;
 
   return (
     <section className="space-y-6">
-      <div className="space-y-2">
-        <StatusBadge status={e.status} label={e.statusLabel} />
-        <h1 className="font-serif text-2xl text-primary">
+      <div className="space-y-3 rounded-2xl bg-primary-dark p-5 text-on-primary">
+        <StatusBadge status={e.status} label={e.statusLabel} onDark />
+        <h1 className="font-serif text-2xl font-semibold leading-tight">
           <span className="block">{e.home}</span>
-          <span className="block text-base text-ink-muted">contre</span>
+          <span className="block text-base font-normal text-on-primary-soft">contre</span>
           <span className="block">{e.away}</span>
         </h1>
-        <p className="text-ink-muted">
+        <p className="flex flex-wrap items-baseline gap-x-3">
           <span className="sr-only">Début : </span>
-          <span data-testid="starts-at">{formatParis(e.startsAt)}</span>
-          {e.status === "LOCKED" && e.predictionsCloseAt.getTime() !== e.startsAt.getTime() && (
-            <span className="block text-sm">Rencontre reportée : les pronostics sont restés fermés.</span>
-          )}
+          <span className="font-data text-4xl font-bold leading-none">{formatParisTime(e.startsAt)}</span>
+          <span className="text-lg font-semibold">
+            {formatParisDay(e.startsAt)}
+            {rel && <span className="font-normal text-on-primary-soft"> · {rel}</span>}
+          </span>
+          {/* Texte complet pour les tests et les lecteurs d'écran. */}
+          <span data-testid="starts-at" className="sr-only">
+            {formatParis(e.startsAt)}
+          </span>
         </p>
+        {e.status === "LOCKED" && e.predictionsCloseAt.getTime() !== e.startsAt.getTime() && (
+          <p className="text-sm text-on-primary-soft">Rencontre reportée : les pronostics sont restés fermés.</p>
+        )}
       </div>
+      {published && e.status !== "CANCELLED" && (
+        <WhatsAppShare
+          text={`${e.home} – ${e.away}, ${formatParisDay(e.startsAt)} à ${formatParisTime(e.startsAt)} 🎾 Pronostiquez sur Ralli :`}
+          path={`/rencontres/${e.id}`}
+          label="Partager la rencontre"
+        />
+      )}
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Matchs en simple</h2>
         {e.matches.length === 0 ? (
           <p className="text-ink-muted">Aucun match pour l&apos;instant.</p>
         ) : (
-          <ol className="divide-y divide-canvas" data-testid="matches">
+          <ol className="divide-y divide-line" data-testid="matches">
             {e.matches.map((x) => (
               <li key={x.id} className="space-y-2 py-3">
                 <p className="text-sm text-ink-muted">Simple {x.number}</p>
-                <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2">
-                  <span>
-                    <span className="font-medium">{x.home.name}</span> <span className="text-sm text-ink-muted">({x.home.rank})</span>
-                  </span>
-                  {x.oddsHome && (
-                    <span data-testid="odds" className="rounded-full bg-accent px-3 py-1 text-sm font-semibold text-on-accent">
-                      {x.oddsHome}
-                    </span>
-                  )}
-                  <span>
-                    <span className="font-medium">{x.away.name}</span> <span className="text-sm text-ink-muted">({x.away.rank})</span>
-                  </span>
-                  {x.oddsAway && (
-                    <span data-testid="odds" className="rounded-full bg-accent px-3 py-1 text-sm font-semibold text-on-accent">
-                      {x.oddsAway}
-                    </span>
-                  )}
-                </div>
-                <PredictionArea
-                  match={x}
-                  open={e.status === "OPEN"}
-                  loggedIn={viewer !== null}
-                  panel={panel}
+                <MatchPicks
+                  matchId={x.id}
+                  home={{ name: x.home.name, rank: x.home.rank, oddsX100: x.oddsHomeX100, odds: x.oddsHome }}
+                  away={{ name: x.away.name, rank: x.away.rank, oddsX100: x.oddsAwayX100, odds: x.oddsAway }}
+                  access={accessFor(e, viewer !== null, panel)}
+                  mine={panel.mine[x.id] ?? null}
+                  share={{ title: `${e.home} – ${e.away}`, whenLabel: `${formatParisDay(e.startsAt)} à ${formatParisTime(e.startsAt)}`, path: `/rencontres/${e.id}` }}
                 />
               </li>
             ))}
@@ -107,7 +107,7 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
       <ScoreSection e={e} score={score} />
 
       {m && (
-        <div className="space-y-4 rounded-xl bg-surface p-4 shadow-sm" data-testid="manage">
+        <div className="space-y-4 rounded-2xl bg-surface p-4 shadow-sm" data-testid="manage">
           <h2 className="font-serif text-xl text-primary">Gestion de la rencontre</h2>
 
           {m.canPublish && (
@@ -117,7 +117,7 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
           {m.canEditComposition && (
             <>
               {m.matches.map((x, i) => (
-                <details key={x.id} className="border-t border-canvas pt-2">
+                <details key={x.id} className="border-t border-line pt-2">
                   <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">
                     Modifier le simple {i + 1}
                   </summary>
@@ -125,13 +125,13 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
                 </details>
               ))}
               {published ? (
-                <details className="border-t border-canvas pt-2" data-testid="add-match">
+                <details className="border-t border-line pt-2" data-testid="add-match">
                   <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Ajouter un match</summary>
                   <AddMatchForm encounterId={e.id} homeRoster={m.homeRoster} awayRoster={m.awayRoster} published />
                 </details>
               ) : (
                 // Brouillon : composer est la tâche principale, le formulaire reste ouvert.
-                <div className="space-y-2 border-t border-canvas pt-3" data-testid="add-match">
+                <div className="space-y-2 border-t border-line pt-3" data-testid="add-match">
                   <h3 className="font-semibold text-primary">Ajouter un match</h3>
                   <AddMatchForm encounterId={e.id} homeRoster={m.homeRoster} awayRoster={m.awayRoster} published={false} />
                 </div>
@@ -140,21 +140,21 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
           )}
 
           {m.canReschedule && (
-            <details className="border-t border-canvas pt-2">
+            <details className="border-t border-line pt-2">
               <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Reporter</summary>
               <RescheduleForm encounterId={e.id} currentLocal={toParisLocalInput(e.startsAt)} locked={e.status === "LOCKED"} />
             </details>
           )}
 
           {m.canCancel && (
-            <details className="border-t border-canvas pt-2">
+            <details className="border-t border-line pt-2">
               <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Annuler la rencontre</summary>
               <CancelForm encounterId={e.id} />
             </details>
           )}
 
           {m.canDelete && (
-            <div className="border-t border-canvas pt-3">
+            <div className="border-t border-line pt-3">
               <DeleteDraftForm encounterId={e.id} />
             </div>
           )}
@@ -170,53 +170,12 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
   );
 }
 
-function PredictionArea({
-  match,
-  open,
-  loggedIn,
-  panel,
-}: {
-  match: EncounterPageView["matches"][number];
-  open: boolean;
-  loggedIn: boolean;
-  panel: Awaited<ReturnType<typeof getPredictionPanel>>;
-}) {
-  const mine = panel.mine[match.id];
-  if (mine) {
-    const picked = mine.side === "HOME" ? match.home.name : match.away.name;
-    return (
-      <p data-testid="my-prediction" className="rounded-lg bg-canvas p-3 text-sm">
-        Votre pronostic : <strong>{picked}</strong>, {mine.committedAces.toLocaleString("fr-FR")} Aces engagés à la cote {mine.odds}.{" "}
-        {predictionSideLabel(mine.status, mine.payoutAces)}
-      </p>
-    );
-  }
-  if (!open || !match.oddsHome || !match.oddsAway) return null;
-  if (!loggedIn) {
-    return (
-      <p className="text-sm text-ink-muted">
-        <Link href="/connexion" className="font-semibold text-primary underline">
-          Connectez-vous
-        </Link>{" "}
-        pour pronostiquer.
-      </p>
-    );
-  }
-  if (!panel.isMember) return <p className="text-sm text-ink-muted">Réservé aux membres du club organisateur.</p>;
-  if (panel.blockedReason) return <p className="text-sm text-ink-muted" data-testid="blocked">{panel.blockedReason}</p>;
-  return (
-    <details data-testid="predict">
-      <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Pronostiquer ce match</summary>
-      <PredictionForm
-        matchId={match.id}
-        homeName={match.home.name}
-        awayName={match.away.name}
-        oddsHome={match.oddsHome}
-        oddsAway={match.oddsAway}
-        balance={panel.balance}
-      />
-    </details>
-  );
+function accessFor(e: EncounterPageView, loggedIn: boolean, panel: Awaited<ReturnType<typeof getPredictionPanel>>): Access {
+  if (e.status !== "OPEN") return { kind: "none" };
+  if (!loggedIn) return { kind: "login" };
+  if (!panel.isMember) return { kind: "note", text: "Réservé aux membres du club organisateur." };
+  if (panel.blockedReason) return { kind: "note", text: panel.blockedReason, testId: "blocked" };
+  return { kind: "predict", balance: panel.balance };
 }
 
 function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) {
@@ -232,7 +191,7 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
   const show = e.status === "SCORE_PROPOSED" || e.status === "DISPUTED" || e.status === "CONFIRMED" || hasForm;
   if (!show) return null;
   return (
-    <div className="space-y-4 rounded-xl bg-surface p-4 shadow-sm" data-testid="score-section">
+    <div className="space-y-4 rounded-2xl bg-surface p-4 shadow-sm" data-testid="score-section">
       <h2 className="font-serif text-xl text-primary">Score</h2>
 
       {score.tally && (
@@ -246,7 +205,7 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
       {e.status === "DISPUTED" && !score.resultsVisible && <p data-testid="score-pending">Score contesté : un admin du club va trancher.</p>}
 
       {score.resultsVisible && (
-        <ol className="divide-y divide-canvas" data-testid="results">
+        <ol className="divide-y divide-line" data-testid="results">
           {score.matches.map((x) => (
             <li key={x.id} className="py-2">
               <p className="text-sm text-ink-muted">
@@ -277,28 +236,28 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
       )}
 
       {a.canPropose && (
-        <details className="border-t border-canvas pt-2" data-testid="propose-score">
+        <details className="border-t border-line pt-2" data-testid="propose-score">
           <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Proposer le score</summary>
           <ProposeScoreForm encounterId={e.id} matches={forms} />
         </details>
       )}
       {a.canConfirm && <ConfirmScoreForm encounterId={e.id} />}
       {a.canDispute && (
-        <details className="border-t border-canvas pt-2" data-testid="dispute-score">
+        <details className="border-t border-line pt-2" data-testid="dispute-score">
           <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Contester le score</summary>
           <DisputeScoreForm encounterId={e.id} />
         </details>
       )}
       {a.canWithdraw && <WithdrawScoreForm encounterId={e.id} />}
       {a.canResolve && (
-        <details className="border-t border-canvas pt-2" open data-testid="resolve-dispute">
+        <details className="border-t border-line pt-2" open data-testid="resolve-dispute">
           <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Trancher le litige</summary>
           <ResolveDisputeForm encounterId={e.id} matches={forms} />
         </details>
       )}
 
       {score.journal.length > 0 && (
-        <details className="border-t border-canvas pt-2" data-testid="journal">
+        <details className="border-t border-line pt-2" data-testid="journal">
           <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Journal de la rencontre</summary>
           <ul className="space-y-1 pt-2 text-sm">
             {score.journal.map((j) => (

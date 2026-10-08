@@ -20,7 +20,7 @@ export default function NewClubPage() {
 async function Guarded() {
   await requireUser();
   return (
-    <div className="rounded-xl bg-surface p-4 shadow-sm">
+    <div className="rounded-2xl bg-surface p-4 shadow-sm">
       <CreateClubForm />
     </div>
   );

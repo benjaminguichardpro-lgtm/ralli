@@ -428,6 +428,8 @@ export type EncounterPageView = {
     away: { name: string; rank: string };
     oddsHome: string | null;
     oddsAway: string | null;
+    oddsHomeX100: number | null;
+    oddsAwayX100: number | null;
   }[];
   /** Présent seulement pour le staff (capitaine de l'équipe du club, admins). */
   manage: null | {
@@ -520,6 +522,8 @@ export async function getEncounterPage(viewerId: string | null, encounterId: str
       away: { name: publicPlayerName(m.awayPlayer.firstName, m.awayPlayer.lastName), rank: fftLabel(m.awayPlayer.fftRank) },
       oddsHome: m.oddsHomeX100 === null ? null : formatOdds(m.oddsHomeX100),
       oddsAway: m.oddsAwayX100 === null ? null : formatOdds(m.oddsAwayX100),
+      oddsHomeX100: m.oddsHomeX100,
+      oddsAwayX100: m.oddsAwayX100,
     })),
     manage,
   };

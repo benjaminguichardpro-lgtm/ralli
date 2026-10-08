@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { type Page, expect } from "@playwright/test";
+import { type Locator, type Page, expect } from "@playwright/test";
 import { parse } from "dotenv";
 import { Client } from "pg";
 import { findForbiddenWords } from "../../src/lib/vocabulary";
@@ -67,4 +67,17 @@ export async function forceStarted(encounterUrl: string) {
   await c.connect();
   await c.query(`UPDATE "Encounter" SET "startsAt" = now() - interval '1 hour', "predictionsCloseAt" = now() - interval '1 hour' WHERE id = $1`, [id]);
   await c.end();
+}
+
+/**
+ * Pronostic par le parcours en trois gestes : toucher la cote, saisir/choisir un montant, valider.
+ * `match` est la ligne du simple (un <li> de la page de la rencontre) ; `pick` désigne le bouton de cote, ex. /Léa M\. gagne/.
+ */
+export async function placeBet(page: Page, match: Locator, pick: RegExp, aces: string) {
+  await match.getByRole("button", { name: pick }).click();
+  const sheet = page.getByRole("dialog", { name: "Votre pronostic" });
+  await expect(sheet).toBeVisible();
+  await sheet.getByLabel("Aces engagés").fill(aces);
+  await sheet.getByRole("button", { name: "Valider mon ralli" }).click();
+  await expect(sheet).toBeHidden();
 }

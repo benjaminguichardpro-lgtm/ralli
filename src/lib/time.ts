@@ -91,3 +91,30 @@ export function parisWeekBounds(now: Date): { start: Date; end: Date } {
   };
   return { start: at(1 - dow), end: at(8 - dow) };
 }
+
+const timeFormatter = new Intl.DateTimeFormat("fr-FR", { timeZone: APP_TIME_ZONE, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const dayFormatter = new Intl.DateTimeFormat("fr-FR", { timeZone: APP_TIME_ZONE, weekday: "long", day: "numeric", month: "long" });
+
+/** « 14:00 » (heure de Paris). */
+export function formatParisTime(date: Date): string {
+  return timeFormatter.format(date);
+}
+
+/** « dimanche 14 mars » (jour de Paris). */
+export function formatParisDay(date: Date): string {
+  return dayFormatter.format(date);
+}
+
+/**
+ * Repère simple pour situer une date, sans compte à rebours : « aujourd'hui », « demain », « dans 3 jours »
+ * (jusqu'à 6 jours), sinon null. Comparaison par jour calendaire de Paris, pas par durée de 24 h.
+ */
+export function relativeDayLabel(date: Date, now: Date): string | null {
+  const a = parisParts(date);
+  const b = parisParts(now);
+  const days = Math.round((Date.UTC(a.y, a.mo - 1, a.d) - Date.UTC(b.y, b.mo - 1, b.d)) / 86_400_000);
+  if (days === 0) return "aujourd'hui";
+  if (days === 1) return "demain";
+  if (days >= 2 && days <= 6) return `dans ${days} jours`;
+  return null;
+}

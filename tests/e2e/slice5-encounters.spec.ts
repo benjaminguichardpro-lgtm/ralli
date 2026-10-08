@@ -141,7 +141,8 @@ test("Kevin voit la rencontre dans le club et sur l'accueil, sans gestion", asyn
   await kevin.goto(clubUrl);
   await expect(kevin.getByTestId("encounter-list")).toContainText("TC Voisin 1");
   await kevin.goto("/");
-  await expect(kevin.getByTestId("encounter-list")).toContainText("TC Voisin 1");
+  await expect(kevin.getByTestId("feed")).toContainText("TC Voisin 1");
+  await expect(kevin.getByTestId("next-encounter")).toBeVisible();
   await kevin.goto(encounterUrl);
   await expect(kevin.getByTestId("manage")).toHaveCount(0);
 });

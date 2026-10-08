@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ralli · aperçu du design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Geist:wght@500;600;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  /* Tokens : les mêmes que ceux prévus dans src/app/globals.css (3 nouveaux : primary-dark, ball, on-ball). */
+  :root {
+    --primary: #1b4d3e;
+    --primary-dark: #123629;
+    --on-primary: #ffffff;
+    --on-primary-soft: #cfe3d8;
+    --accent: #c4501b;
+    --on-accent: #ffffff;
+    --ball: #dfec3a;
+    --on-ball: #1f2421;
+    --canvas: #f5efe0;
+    --surface: #ffffff;
+    --ink: #1f2421;
+    --ink-muted: #5a5a52;
+    --success: #5e9c4b;
+    --success-ink: #3d7030;
+    --line: #e4dcc6;
+    --r-md: 12px;
+    --r-lg: 16px;
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "DM Sans", sans-serif;
+    --font-data: "Geist", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--canvas); color: var(--ink); font-family: var(--font-body); line-height: 1.5; }
+  .num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 48px 20px 80px; }
+  h1, h2, h3 { font-family: var(--font-display); color: var(--primary); margin: 0; }
+  .page-title { font-size: clamp(2.4rem, 6vw, 3.6rem); line-height: 1.05; font-weight: 600; letter-spacing: -0.01em; }
+  .lede { color: var(--ink-muted); max-width: 56ch; margin: 12px 0 0; font-size: 1.125rem; }
+  section { margin-top: 72px; }
+  .kicker { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: var(--accent); margin: 0 0 8px; }
+  h2 { font-size: 1.75rem; font-weight: 600; }
+  .card { background: var(--surface); border-radius: var(--r-lg); padding: 20px; box-shadow: 0 1px 2px rgba(31,36,33,.08); }
+  .grid { display: grid; gap: 16px; }
+  .spec { display: grid; gap: 16px; margin-top: 24px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .spec .label { font-size: .75rem; color: var(--ink-muted); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+
+  /* Palette */
+  .swatches { display: grid; gap: 12px; margin-top: 24px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .sw { border-radius: var(--r-md); overflow: hidden; background: var(--surface); box-shadow: 0 1px 2px rgba(31,36,33,.08); }
+  .sw i { display: block; height: 64px; }
+  .sw b { display: block; padding: 8px 10px 0; font-size: .875rem; }
+  .sw span { display: block; padding: 0 10px 10px; font-size: .75rem; color: var(--ink-muted); }
+
+  /* Composants */
+  .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 20px; border-radius: var(--r-md); font: 700 1rem var(--font-body); border: 2px solid transparent; cursor: pointer; }
+  .btn-primary { background: var(--primary); color: var(--on-primary); }
+  .btn-ball { background: var(--ball); color: var(--on-ball); }
+  .btn-ghost { background: var(--surface); color: var(--primary); border-color: var(--primary); }
+  .btn-accent { background: var(--accent); color: var(--on-accent); }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .field label { display: block; font-weight: 600; margin-bottom: 4px; }
+  .field input { width: 100%; min-height: 48px; border: 2px solid var(--ink-muted); border-radius: var(--r-md); padding: 0 12px; font: 500 1rem var(--font-data); background: var(--surface); color: var(--ink); }
+  .field input:focus { outline: 3px solid var(--primary); outline-offset: 2px; }
+  .alert { border-left: 4px solid var(--primary); background: var(--surface); padding: 12px 14px; border-radius: 0 var(--r-md) var(--r-md) 0; font-weight: 500; }
+  .alert.warn { border-color: var(--accent); }
+  .alert.ok { border-color: var(--success); }
+
+  /* Téléphones */
+  .phones { display: grid; gap: 32px; margin-top: 28px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); justify-items: center; }
+  .phone-label { text-align: center; font-weight: 700; color: var(--primary); margin-bottom: 10px; }
+  .phone { position: relative; width: 100%; max-width: 390px; height: 800px; border-radius: 36px; background: var(--canvas); border: 10px solid var(--ink); overflow: hidden; box-shadow: 0 20px 40px rgba(31,36,33,.2); display: flex; flex-direction: column; }
+  .app-head { background: var(--primary); color: var(--on-primary); height: 56px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; flex: none; }
+  .logo { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; }
+  .balance { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px 0 10px; border-radius: 999px; background: var(--primary-dark); font-weight: 700; font-size: .9375rem; }
+  .balance .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--ball); }
+  .scroll { flex: 1; overflow: hidden; padding: 16px; display: grid; gap: 16px; align-content: start; }
+  .hello { font-size: .9375rem; color: var(--ink-muted); }
+  .hello strong { color: var(--ink); }
+
+  .next { background: var(--primary-dark); color: var(--on-primary); border-radius: var(--r-lg); padding: 18px; }
+  .next .tag { font-size: .6875rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: var(--on-primary-soft); }
+  .next .when { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 2px; }
+  .next .time { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 2.75rem; font-weight: 700; line-height: 1; }
+  .next .day { font-weight: 600; font-size: 1.0625rem; }
+  .next .teams { margin: 8px 0 0; color: var(--on-primary-soft); font-size: .9375rem; }
+  .next .teams strong { color: var(--on-primary); }
+  .pill { display: inline-block; margin-top: 12px; padding: 4px 10px; border-radius: 999px; font-size: .8125rem; font-weight: 700; background: var(--ball); color: var(--on-ball); }
+
+  .enc { background: var(--surface); border-radius: var(--r-lg); padding: 14px 14px 6px; box-shadow: 0 1px 2px rgba(31,36,33,.08); }
+  .enc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .enc-head .t { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.125rem; color: var(--accent); }
+  .enc-head .n { font-weight: 600; font-size: .9375rem; }
+  .enc .sub { color: var(--ink-muted); font-size: .8125rem; margin: 2px 0 10px; }
+  .match { padding: 10px 0 12px; border-top: 1px solid var(--line); }
+  .match .lbl { font-size: .75rem; color: var(--ink-muted); margin-bottom: 6px; }
+  .odds { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .odd { min-height: 56px; border: 2px solid var(--primary); background: var(--surface); color: var(--primary); border-radius: var(--r-md); padding: 6px 10px; text-align: left; cursor: pointer; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 8px; font-family: var(--font-body); }
+  .odd .who { font-weight: 600; font-size: .9375rem; line-height: 1.15; }
+  .odd .who small { display: block; font-weight: 500; font-size: .75rem; color: var(--ink-muted); }
+  .odd .cote { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.25rem; }
+  .odd.on { background: var(--primary); color: var(--on-primary); }
+  .odd.on .who small { color: var(--on-primary-soft); }
+  .odd.on .cote { color: var(--ball); }
+
+  .legal { text-align: center; font-size: .75rem; color: var(--ink-muted); padding: 4px 16px 10px; }
+  .tabs { flex: none; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border-top: 1px solid var(--line); }
+  .tab { min-height: 64px; display: grid; place-items: center; align-content: center; gap: 2px; font-size: .75rem; font-weight: 600; color: var(--ink-muted); }
+  .tab svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .tab.on { color: var(--primary); position: relative; }
+  .tab.on::before { content: ""; position: absolute; top: 0; left: 28%; right: 28%; height: 3px; border-radius: 0 0 3px 3px; background: var(--primary); }
+
+  /* Panneau de pronostic */
+  .dim { position: absolute; inset: 0; background: rgba(18, 54, 41, .55); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--primary-dark); color: var(--on-primary); border-radius: 24px 24px 0 0; padding: 12px 18px 18px; display: grid; gap: 14px; }
+  .grab { width: 40px; height: 4px; border-radius: 4px; background: var(--on-primary-soft); opacity: .6; justify-self: center; }
+  .sheet .pick { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .sheet .pick .lead { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--on-primary-soft); font-weight: 700; }
+  .sheet .pick .nm { font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; line-height: 1.15; }
+  .sheet .pick .big { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 2rem; color: var(--ball); }
+  .chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .chip { min-height: 48px; border-radius: var(--r-md); border: 2px solid var(--on-primary-soft); background: transparent; color: var(--on-primary); font: 700 1rem var(--font-data); cursor: pointer; }
+  .chip.on { background: var(--ball); border-color: var(--ball); color: var(--on-ball); }
+  .sheet .free { display: grid; gap: 4px; }
+  .sheet .free label { font-size: .875rem; color: var(--on-primary-soft); font-weight: 600; }
+  .sheet .free input { min-height: 48px; border-radius: var(--r-md); border: 2px solid var(--on-primary-soft); background: var(--primary); color: var(--on-primary); padding: 0 12px; font: 600 1.125rem var(--font-data); width: 100%; }
+  .recap { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: .9375rem; padding: 12px 0 0; border-top: 1px solid rgba(207, 227, 216, .35); }
+  .recap dt { color: var(--on-primary-soft); }
+  .recap dd { margin: 0; font-family: var(--font-data); font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; }
+  .recap dd.win { color: var(--ball); font-size: 1.125rem; }
+  .sheet .note { font-size: .8125rem; color: var(--on-primary-soft); margin: 0; }
+  .sheet .btn { width: 100%; }
+  .sheet .btn-quiet { background: transparent; color: var(--on-primary); border-color: transparent; text-decoration: underline; min-height: 44px; }
+
+  .principles { display: grid; gap: 12px; margin-top: 20px; }
+  .principles li { background: var(--surface); border-radius: var(--r-md); padding: 14px 16px; list-style: none; }
+  .principles { padding: 0; }
+  .principles b { color: var(--primary); }
+  footer.note { margin-top: 64px; color: var(--ink-muted); font-size: .875rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">Aperçu du design · à valider avant de coder</p>
+  <h1 class="page-title">Ralli</h1>
+  <p class="lede">Je vois à quelle heure joue mon club, et je pronostique en trois gestes. Sobre, lisible, sans pression.</p>
+
+  <ul class="principles">
+    <li><b>Un seul élément jaune : ce sur quoi on peut agir.</b> Les cotes (sur vert foncé) et le bouton « Valider ».</li>
+    <li><b>L'heure d'abord.</b> La prochaine rencontre ouvre l'accueil, en grand, avec le jour en clair (« dimanche », pas de compte à rebours).</li>
+    <li><b>Trois gestes.</b> Toucher la cote, choisir un montant, valider. Le récapitulatif est sous les yeux, car un pronostic est définitif.</li>
+  </ul>
+
+  <!-- 1. Typographie -->
+  <section>
+    <p class="kicker">1 · Typographie</p>
+    <h2>Trois polices, trois rôles</h2>
+    <div class="spec">
+      <div class="card">
+        <div class="label">Titres · Fraunces</div>
+        <div style="font-family:var(--font-display);font-weight:600;font-size:2.25rem;line-height:1.1;color:var(--primary)">Dimanche à Roland-Garros ? Non, au TC Ralli.</div>
+        <p style="font-family:var(--font-display);font-weight:500;font-size:1.25rem;margin:12px 0 0;color:var(--primary)">Classement de la saison</p>
+      </div>
+      <div class="card">
+        <div class="label">Texte · DM Sans</div>
+        <p style="margin:0 0 8px;font-size:1rem">Pronostiquez les rencontres d'interclubs de votre club avec vos Aces, une monnaie fictive sans aucune valeur. Chaque pronostic est définitif une fois validé.</p>
+        <p style="margin:0;font-size:.875rem;color:var(--ink-muted)">Texte secondaire : le niveau FFT, l'heure de fermeture, les aides.</p>
+      </div>
+      <div class="card">
+        <div class="label">Chiffres · Geist (chiffres tabulaires)</div>
+        <table class="num" style="width:100%;border-collapse:collapse;font-size:1rem">
+          <tr style="color:var(--ink-muted);font-size:.8125rem"><th align="left">Joueur</th><th align="right">Cote</th><th align="right">Aces</th></tr>
+          <tr><td>Léa M.</td><td align="right">1,56</td><td align="right">+156</td></tr>
+          <tr><td>Paul V.</td><td align="right">2,78</td><td align="right">+278</td></tr>
+          <tr><td>Hugo D.</td><td align="right">1,56</td><td align="right">−50</td></tr>
+        </table>
+        <p class="num" style="margin:14px 0 0;font-size:2.5rem;font-weight:700;color:var(--accent);line-height:1">14:00</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Palette -->
+  <section>
+    <p class="kicker">2 · Palette</p>
+    <h2>Vert profond, crème, et une touche de jaune</h2>
+    <div class="swatches">
+      <div class="sw"><i style="background:var(--primary)"></i><b>Vert Wimbledon</b><span>#1b4d3e · en-tête, boutons</span></div>
+      <div class="sw"><i style="background:var(--primary-dark)"></i><b>Vert nuit</b><span>#123629 · prochaine rencontre, panneau</span></div>
+      <div class="sw"><i style="background:var(--ball)"></i><b>Jaune balle</b><span>#dfec3a · cotes, « Valider »</span></div>
+      <div class="sw"><i style="background:var(--accent)"></i><b>Terre battue</b><span>#c4501b · heures des rencontres</span></div>
+      <div class="sw"><i style="background:var(--canvas);border-bottom:1px solid var(--line)"></i><b>Crème</b><span>#f5efe0 · fond</span></div>
+      <div class="sw"><i style="background:var(--surface);border-bottom:1px solid var(--line)"></i><b>Blanc</b><span>#ffffff · cartes</span></div>
+      <div class="sw"><i style="background:var(--ink)"></i><b>Encre</b><span>#1f2421 · texte</span></div>
+      <div class="sw"><i style="background:var(--ink-muted)"></i><b>Gris encre</b><span>#5a5a52 · texte secondaire</span></div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <div class="label" style="font-size:.75rem;color:var(--ink-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Composants</div>
+      <div class="row">
+        <button class="btn btn-primary">Rejoindre un club</button>
+        <button class="btn btn-ghost">Voir le classement</button>
+        <button class="btn btn-accent">Proposer le score</button>
+        <span style="background:var(--primary-dark);padding:10px;border-radius:var(--r-md)"><button class="btn btn-ball">Valider mon ralli</button></span>
+      </div>
+      <div class="grid" style="margin-top:20px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+        <div class="field"><label for="p1">Aces engagés</label><input id="p1" class="num" value="100"></div>
+        <div class="alert ok">Pronostic enregistré.</div>
+        <div class="alert warn">Solde insuffisant : vous avez 70 Aces.</div>
+        <div class="alert">Score proposé, en attente de confirmation.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Mockups -->
+  <section>
+    <p class="kicker">3 · Écrans</p>
+    <h2>L'accueil et le panneau de pronostic</h2>
+    <p class="lede" style="margin-top:8px">Touche une cote du premier écran pour voir le panneau, ou choisis un montant à droite : le récapitulatif se met à jour.</p>
+
+    <div class="phones">
+      <!-- Accueil -->
+      <div>
+        <div class="phone-label">Accueil · Matchs</div>
+        <div class="phone">
+          <div class="app-head"><span class="logo">Ralli</span><span class="balance"><span class="dot"></span><span class="num">1 000 Aces</span></span></div>
+          <div class="scroll">
+            <div class="hello">Bonjour <strong>Benjamin</strong></div>
+
+            <div class="next">
+              <div class="tag">Prochaine rencontre</div>
+              <div class="when"><span class="time">14:00</span><span class="day">dimanche 14 mars</span></div>
+              <p class="teams"><strong>TC Ralli · Messieurs 1</strong> contre TC Voisin 1</p>
+              <span class="pill">Pronostics ouverts jusqu'à 14:00</span>
+            </div>
+
+            <div class="enc">
+              <div class="enc-head"><span class="n">Messieurs 1 – TC Voisin 1</span><span class="t">14:00</span></div>
+              <div class="sub">2 simples · pronostics ouverts</div>
+              <div class="match">
+                <div class="lbl">Simple 1</div>
+                <div class="odds">
+                  <button class="odd on" data-who="Léa M." data-cote="156"><span class="who">Léa M.<small>30</small></span><span class="cote">1,56</span></button>
+                  <button class="odd" data-who="Paul V." data-cote="278"><span class="who">Paul V.<small>30/1</small></span><span class="cote">2,78</span></button>
+                </div>
+              </div>
+              <div class="match">
+                <div class="lbl">Simple 2</div>
+                <div class="odds">
+                  <button class="odd" data-who="Hugo D." data-cote="156"><span class="who">Hugo D.<small>30/1</small></span><span class="cote">1,56</span></button>
+                  <button class="odd" data-who="Marc L." data-cote="278"><span class="who">Marc L.<small>30/2</small></span><span class="cote">2,78</span></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="enc">
+              <div class="enc-head"><span class="n">Messieurs 2 – AS Ailleurs</span><span class="t">dim. 21 mars · 15:30</span></div>
+              <div class="sub">3 simples · ouvre bientôt</div>
+            </div>
+          </div>
+          <div class="legal">Jeu gratuit, sans argent réel, réservé aux 18 ans et plus.</div>
+          <nav class="tabs" aria-label="Navigation">
+            <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M4.5 8.5c4 1 7 4 8 8M19.5 15.5c-4-1-7-4-8-8"/></svg>Matchs</div>
+            <div class="tab"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Classement</div>
+            <div class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></svg>Portefeuille</div>
+            <div class="tab"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><path d="M3.5 19c.5-3 2.7-4.5 5.5-4.5s5 1.500 5.500 4.500M16 6.500a3 3 0 0 1 0 5.500M17.500 14.800c1.800.5 2.800 1.800 3 4.200"/></svg>Club</div>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Panneau -->
+      <div>
+        <div class="phone-label">Panneau de pronostic</div>
+        <div class="phone">
+          <div class="app-head"><span class="logo">Ralli</span><span class="balance"><span class="dot"></span><span class="num">1 000 Aces</span></span></div>
+          <div class="scroll" aria-hidden="true">
+            <div class="hello">Bonjour <strong>Benjamin</strong></div>
+            <div class="next">
+              <div class="tag">Prochaine rencontre</div>
+              <div class="when"><span class="time">14:00</span><span class="day">dimanche 14 mars</span></div>
+              <p class="teams"><strong>TC Ralli · Messieurs 1</strong> contre TC Voisin 1</p>
+            </div>
+            <div class="enc"><div class="enc-head"><span class="n">Messieurs 1 – TC Voisin 1</span><span class="t">14:00</span></div><div class="sub">2 simples · pronostics ouverts</div></div>
+          </div>
+          <div class="dim"></div>
+          <div class="sheet" role="dialog" aria-label="Pronostic">
+            <div class="grab"></div>
+            <div class="pick">
+              <div><div class="lead">Simple 1 · votre choix</div><div class="nm" id="who">Léa M. gagne</div></div>
+              <div class="big" id="cote">1,56</div>
+            </div>
+            <div class="chips" role="group" aria-label="Montants rapides">
+              <button class="chip" data-v="50">50</button>
+              <button class="chip on" data-v="100">100</button>
+              <button class="chip" data-v="250">250</button>
+              <button class="chip" data-v="1000">Tout</button>
+            </div>
+            <div class="free"><label for="amt">Ou un autre montant (Aces)</label><input id="amt" type="number" min="10" step="1" value="100" inputmode="numeric"></div>
+            <dl class="recap">
+              <dt>Aces engagés</dt><dd id="r-eng">100</dd>
+              <dt>Aces gagnés si vous avez raison</dt><dd class="win" id="r-win">156</dd>
+              <dt>Solde après validation</dt><dd id="r-bal">900</dd>
+            </dl>
+            <p class="note">Un pronostic est définitif une fois validé. Minimum 10 Aces.</p>
+            <button class="btn btn-ball">Valider mon ralli</button>
+            <button class="btn btn-quiet">Annuler</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="note">
+    Aperçu jetable : <code>docs/design-preview.html</code>. Aucun code de l'app n'a été modifié. Les trois couleurs nouvelles
+    (vert nuit, jaune balle, texte sur jaune) seront ajoutées aux tokens de <code>src/app/globals.css</code> et vérifiées par <code>npm run contrast</code>.
+  </footer>
+</div>
+
+<script>
+  // Démo du panneau : même arithmétique entière que l'app (arrondi au plus proche, demi vers le haut).
+  var balance = 1000, cote = 156;
+  var amt = document.getElementById('amt');
+  function fmt(n) { return n.toLocaleString('fr-FR'); }
+  function update() {
+    var v = parseInt(amt.value, 10);
+    var ok = Number.isFinite(v) && v >= 10 && v <= balance;
+    document.getElementById('r-eng').textContent = ok ? fmt(v) : '—';
+    document.getElementById('r-win').textContent = ok ? fmt(Math.floor((v * cote + 50) / 100)) : '—';
+    document.getElementById('r-bal').textContent = ok ? fmt(balance - v) : '—';
+    document.querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', ok && parseInt(c.dataset.v, 10) === v); });
+  }
+  document.querySelectorAll('.chip').forEach(function (c) {
+    c.addEventListener('click', function () { amt.value = c.dataset.v; update(); });
+  });
+  amt.addEventListener('input', update);
+  document.querySelectorAll('.odd').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.odd').forEach(function (o) { o.classList.remove('on'); });
+      b.classList.add('on');
+      cote = parseInt(b.dataset.cote, 10);
+      document.getElementById('who').textContent = b.dataset.who + ' gagne';
+      document.getElementById('cote').textContent = (cote / 100).toFixed(2).replace('.', ',');
+      update();
+    });
+  });
+  update();
+</script>
+</body>
+</html>

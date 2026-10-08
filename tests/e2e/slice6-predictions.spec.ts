@@ -36,14 +36,6 @@ async function addMatch(page: Page, home: string, away: string) {
 
 const balance = (page: Page) => page.getByTestId("balance");
 
-async function predict(page: Page, matchIndex: number, pick: RegExp, aces: string) {
-  const area = page.getByTestId("matches").locator("li").nth(matchIndex).getByTestId("predict");
-  if (!(await area.evaluate((el) => (el as HTMLDetailsElement).open))) await area.locator("summary").click();
-  await area.getByLabel(pick).check();
-  await area.getByLabel("Aces engagés").fill(aces);
-  await area.getByRole("button", { name: "Valider mon pronostic" }).click();
-}
-
 test.beforeAll(async ({ browser }) => {
   [ivan, jade, kevin, nina, anon] = await Promise.all([newPage(browser), newPage(browser), newPage(browser), newPage(browser), newPage(browser)]);
 });
@@ -93,40 +85,54 @@ test("mise en place : club, rencontre publiée avec deux simples", async () => {
   await expect(jade.getByText("Pronostics ouverts", { exact: true })).toBeVisible();
 });
 
-test("Kevin pronostique : validations de formulaire puis succès, solde débité", async () => {
+test("Kevin pronostique : validations dans le panneau, récapitulatif, puis succès, solde débité", async () => {
   await kevin.goto("/");
   await expect(balance(kevin)).toHaveText("1 000 Aces");
   await kevin.goto(encounterUrl);
-  const area = kevin.getByTestId("matches").locator("li").first().getByTestId("predict");
-  await area.locator("summary").click();
-  await checkPage(kevin, "30-pronostic-formulaire");
+  const match1 = kevin.getByTestId("matches").locator("li").first();
+  await match1.getByRole("button", { name: /Paul V\. gagne/ }).click();
+  const sheet = kevin.getByRole("dialog", { name: "Votre pronostic" });
+  await expect(sheet.getByTestId("sheet-odds")).toHaveText("2,78");
+  await checkPage(kevin, "30-pronostic-panneau");
 
-  await area.getByRole("button", { name: "Valider mon pronostic" }).click();
-  await expect(area.getByText("Choisissez un joueur")).toBeVisible();
-  await area.getByLabel(/Léa M\. gagne/).check();
-  await area.getByLabel("Aces engagés").fill("5");
-  await area.getByRole("button", { name: "Valider mon pronostic" }).click();
-  await expect(area.getByText("Minimum 10 Aces")).toBeVisible();
-  // React remet les champs à leur valeur une fois l'action terminée : on laisse ce reset passer avant de ressaisir.
-  await expect(area.getByLabel("Aces engagés")).toHaveValue("5");
-  await kevin.waitForTimeout(500);
-  await area.getByLabel("Aces engagés").fill("5000");
-  await expect(area.getByLabel("Aces engagés")).toHaveValue("5000");
-  await area.getByRole("button", { name: "Valider mon pronostic" }).click();
-  await expect(area.getByText(/Solde insuffisant/)).toBeVisible();
+  // Rien n'est possible sans montant.
+  const submit = sheet.getByRole("button", { name: "Valider mon ralli" });
+  await expect(submit).toBeDisabled();
+  await sheet.getByLabel("Aces engagés").fill("5");
+  await expect(sheet.getByText("Minimum 10 Aces, en nombre entier")).toBeVisible();
+  await expect(submit).toBeDisabled();
+  await sheet.getByLabel("Aces engagés").fill("5000");
+  await expect(sheet.getByText(/Solde insuffisant : vous avez 1\s000 Aces/)).toBeVisible();
+  await expect(submit).toBeDisabled();
 
-  await predict(kevin, 0, /Paul V\. gagne/, "300");
+  // Montants rapides : « 250 » puis « Tout », le récapitulatif suit.
+  await sheet.getByRole("button", { name: "250", exact: true }).click();
+  await expect(sheet.getByLabel("Aces engagés")).toHaveValue("250");
+  await expect(sheet.getByTestId("recap-win")).toHaveText("695"); // 250 × 2,78
+  await sheet.getByRole("button", { name: "Tout" }).click();
+  await expect(sheet.getByLabel("Aces engagés")).toHaveValue("1000");
+  await expect(sheet.getByTestId("recap-balance")).toHaveText("0");
+
+  await sheet.getByLabel("Aces engagés").fill("300");
+  await expect(sheet.getByTestId("recap-committed")).toHaveText("300");
+  await expect(sheet.getByTestId("recap-win")).toHaveText("834"); // 300 × 2,78
+  await expect(sheet.getByTestId("recap-balance")).toHaveText("700");
+  await submit.click();
+  await expect(sheet).toBeHidden();
+
   const mine = kevin.getByTestId("my-prediction");
   await expect(mine).toContainText("Paul V.");
   await expect(mine).toContainText("300 Aces engagés à la cote 2,78");
   await expect(mine).toContainText("En attente du résultat.");
-  // Définitif : plus de formulaire sur ce match, encore un sur l'autre.
+  await expect(balance(kevin)).toHaveText("700 Aces"); // le solde de l'en-tête suit
+  // Définitif : plus de cotes à toucher sur ce match, encore sur l'autre.
   await expect(kevin.getByTestId("predict")).toHaveCount(1);
+  await expect(kevin.getByRole("link", { name: "Partager mon pronostic" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=.*Paul%20V\..*%C3%A0%202%2C78/);
   await checkPage(kevin, "31-pronostic-enregistre");
 });
 
 test("portefeuille de Kevin : solde, en attente, historique", async () => {
-  await kevin.getByRole("link", { name: "Portefeuille" }).click();
+  await kevin.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Portefeuille" }).click();
   await expect(balance(kevin)).toHaveText("700 Aces");
   await expect(kevin.getByTestId("pending-aces")).toContainText("300 Aces");
   await expect(kevin.getByTestId("pending")).toContainText("Léa M. contre Paul V.");

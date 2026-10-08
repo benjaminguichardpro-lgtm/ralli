@@ -21,7 +21,7 @@ async function Guarded({ searchParams }: { searchParams: Promise<{ code?: string
   const { code } = await searchParams;
   const defaultCode = typeof code === "string" ? code.slice(0, 6).toUpperCase() : undefined;
   return (
-    <div className="rounded-xl bg-surface p-4 shadow-sm">
+    <div className="rounded-2xl bg-surface p-4 shadow-sm">
       <JoinClubForm defaultCode={defaultCode} />
     </div>
   );

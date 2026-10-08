@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, forceStarted, signUp } from "./helpers";
+import { checkPage, forceStarted, placeBet, signUp } from "./helpers";
 
 // Sacha (admin), Tess (capitaine Messieurs 1), Ugo (capitaine Messieurs 2), Vera (membre), un visiteur sans compte.
 
@@ -96,11 +96,7 @@ test("mise en place : club, deux équipes, deux rencontres publiées", async () 
 test("pronostics avant le début : Vera sur les deux rencontres, Ugo sur la première", async () => {
   const bet = async (page: Page, url: string, n: number, pick: RegExp, aces: string) => {
     await page.goto(url);
-    const area = page.getByTestId("matches").locator("li").nth(n).getByTestId("predict");
-    await area.locator("summary").click();
-    await area.getByLabel(pick).check();
-    await area.getByLabel("Aces engagés").fill(aces);
-    await area.getByRole("button", { name: "Valider mon pronostic" }).click();
+    await placeBet(page, page.getByTestId("matches").locator("li").nth(n), pick, aces);
     await expect(page.getByTestId("my-prediction").first()).toBeVisible();
   };
   await bet(vera, url2, 0, /Léa M\. gagne/, "100");

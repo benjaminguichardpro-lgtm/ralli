@@ -1,6 +1,7 @@
 "use server";
 
 import { AuthError } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { signIn, signOut } from "@/auth";
 import { requireUser } from "@/lib/auth/current-user";
@@ -62,5 +63,7 @@ export async function changePasswordAction(_: FormState, fd: FormData): Promise<
   const parsed = changePasswordSchema.safeParse({ password: str(fd, "password"), confirm: str(fd, "confirm") });
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
   await changePassword(user.id, parsed.data.password);
+  // L'en-tête et la barre du bas (solde, onglets) sont masqués tant que le mot de passe est temporaire : on les recharge.
+  revalidatePath("/", "layout");
   redirect("/");
 }

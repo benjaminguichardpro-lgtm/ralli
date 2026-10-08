@@ -38,5 +38,5 @@ export async function placePredictionAction(_: FormState, fd: FormData): Promise
     throw e;
   }
   refresh();
-  return { message: "Pronostic enregistré." };
+  return { message: "Pronostic enregistré.", ok: true };
 }

@@ -53,7 +53,7 @@ async function Leaderboard({ params, searchParams }: Props) {
         </Link>
       </nav>
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         {board.total === 0 ? (
           <p className="text-ink-muted" data-testid="leaderboard-empty">
             Personne n&apos;est encore classé{period === "season" ? " sur la saison" : " cette semaine"}.

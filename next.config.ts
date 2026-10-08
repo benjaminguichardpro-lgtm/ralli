@@ -2,6 +2,8 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Développement uniquement : autorise un téléphone du réseau domestique (192.168.x.x) à ouvrir le serveur de dev du Mac.
+  allowedDevOrigins: ["192.168.*.*"],
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

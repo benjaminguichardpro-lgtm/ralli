@@ -3,9 +3,10 @@ import type { EncounterListItem } from "@/server/encounters";
 import { formatParis } from "@/lib/time";
 
 /** Badge de statut : couleurs du thème uniquement. */
-export function StatusBadge({ status, label }: { status: EncounterListItem["status"]; label: string }) {
-  const style =
-    status === "OPEN"
+export function StatusBadge({ status, label, onDark = false }: { status: EncounterListItem["status"]; label: string; onDark?: boolean }) {
+  const style = onDark && status !== "OPEN"
+    ? "bg-surface text-primary"
+    : status === "OPEN"
       ? "bg-success text-on-success"
       : status === "DRAFT" || status === "CANCELLED"
         ? "bg-canvas text-ink"
@@ -16,7 +17,7 @@ export function StatusBadge({ status, label }: { status: EncounterListItem["stat
 export function EncounterList({ items, empty }: { items: EncounterListItem[]; empty: string }) {
   if (items.length === 0) return <p className="text-ink-muted">{empty}</p>;
   return (
-    <ul className="divide-y divide-canvas" data-testid="encounter-list">
+    <ul className="divide-y divide-line" data-testid="encounter-list">
       {items.map((e) => (
         <li key={e.id}>
           <Link href={`/rencontres/${e.id}`} className="block min-h-11 space-y-1 py-2">

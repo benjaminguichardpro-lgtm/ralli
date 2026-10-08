@@ -55,6 +55,14 @@ export const ALLOWED_PAIRS: ContrastPair[] = [
   { fg: "on-success", bg: "success", min: 4.5, usage: "Badge « gagné »" },
   { fg: "success-ink", bg: "surface", min: 4.5, usage: "Texte « gagné » sur carte" },
   { fg: "success-ink", bg: "canvas", min: 4.5, usage: "Texte « gagné » sur fond crème" },
+  { fg: "on-primary", bg: "primary-dark", min: 4.5, usage: "Texte blanc sur vert nuit (prochaine rencontre, panneau)" },
+  { fg: "on-primary-soft", bg: "primary-dark", min: 4.5, usage: "Texte secondaire sur vert nuit" },
+  { fg: "on-primary-soft", bg: "primary", min: 4.5, usage: "Texte secondaire sur vert Wimbledon" },
+  { fg: "ball", bg: "primary-dark", min: 4.5, usage: "Cote ou gain en jaune sur vert nuit" },
+  { fg: "ball", bg: "primary", min: 4.5, usage: "Cote sélectionnée en jaune sur vert Wimbledon" },
+  { fg: "on-ball", bg: "ball", min: 4.5, usage: "Bouton « Valider » et montant choisi" },
+  { fg: "on-primary", bg: "accent", min: 4.5, usage: "Texte blanc sur terre battue" },
+  { fg: "primary-dark", bg: "ball", min: 4.5, usage: "Texte vert nuit sur jaune" },
 ];
 
 /** Combinaisons interdites, listées pour mémoire avec leur ratio réel. */
@@ -62,4 +70,6 @@ export const FORBIDDEN_PAIRS: Omit<ContrastPair, "min">[] = [
   { fg: "accent", bg: "canvas", usage: "Texte terre battue sur crème" },
   { fg: "on-primary", bg: "success", usage: "Texte blanc sur vert gazon" },
   { fg: "success", bg: "surface", usage: "Texte vert gazon sur carte" },
+  { fg: "ball", bg: "surface", usage: "Jaune balle sur blanc (ratio 1,3) : réservé aux fonds vert foncé" },
+  { fg: "ball", bg: "canvas", usage: "Jaune balle sur crème" },
 ];

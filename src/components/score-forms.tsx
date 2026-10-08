@@ -27,7 +27,7 @@ function ScoreFields({ matches, values }: { matches: ScoreMatch[]; values?: Reco
   return (
     <>
       {matches.map((m) => (
-        <fieldset key={m.id} className="space-y-3 border-t border-canvas pt-3">
+        <fieldset key={m.id} className="space-y-3 border-t border-line pt-3">
           <legend className="font-semibold text-primary">
             Simple {m.number} : {m.home} contre {m.away}
           </legend>

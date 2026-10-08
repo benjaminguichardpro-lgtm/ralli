@@ -57,7 +57,7 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
       </div>
 
       {isAdmin && club.inviteCode && (
-        <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+        <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
           <h2 className="font-serif text-xl text-primary">Code d&apos;invitation</h2>
           <p data-testid="invite-code" className="font-mono text-3xl font-bold tracking-widest text-ink">
             {club.inviteCode}
@@ -67,7 +67,7 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
         </div>
       )}
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Rencontres</h2>
         <EncounterList items={encounters} empty="Aucune rencontre pour l'instant." />
         {(isAdmin || isCaptain) && (
@@ -75,7 +75,7 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
         )}
       </div>
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm" data-testid="club-top3">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="club-top3">
         <h2 className="font-serif text-xl text-primary">Classement</h2>
         {board.top.length === 0 ? (
           <p className="text-ink-muted">Personne n&apos;est encore classé sur la saison.</p>
@@ -87,12 +87,12 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
         </ButtonLink>
       </div>
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Équipes du club</h2>
         {clubTeams.length === 0 ? (
           <p className="text-ink-muted">Aucune équipe pour l&apos;instant.</p>
         ) : (
-          <ul className="divide-y divide-canvas">
+          <ul className="divide-y divide-line">
             {clubTeams.map((t) => (
               <li key={t.id}>
                 <Link href={`/equipes/${t.id}`} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
@@ -115,13 +115,13 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
         )}
       </div>
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Équipes adverses</h2>
         <p className="text-sm text-ink-muted">Adversaires qui n&apos;utilisent pas Ralli, saisis par le club.</p>
         {externalTeams.length === 0 ? (
           <p className="text-ink-muted">Aucune équipe adverse pour l&apos;instant.</p>
         ) : (
-          <ul className="divide-y divide-canvas">
+          <ul className="divide-y divide-line">
             {externalTeams.map((t) => (
               <li key={t.id}>
                 <Link href={`/equipes/${t.id}`} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
@@ -144,9 +144,9 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
         )}
       </div>
 
-      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Membres ({club.members.length})</h2>
-        <ul className="divide-y divide-canvas">
+        <ul className="divide-y divide-line">
           {club.members.map((m) => (
             <li key={m.userId} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
               <span>
