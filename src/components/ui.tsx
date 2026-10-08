@@ -12,7 +12,7 @@ const variants = {
   primary: "bg-primary text-on-primary",
   secondary: "bg-accent text-on-accent",
   ghost: "border border-primary bg-surface text-primary",
-  ball: "bg-ball text-on-ball", // jaune balle : seulement sur fond vert foncé (panneau de pronostic)
+  gold: "bg-gold text-on-gold", // or : seulement sur fond vert foncé (panneau de pronostic)
 } as const;
 type Variant = keyof typeof variants;
 

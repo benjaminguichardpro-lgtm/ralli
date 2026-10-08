@@ -230,7 +230,7 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
         </p>
       )}
       {score.disputeReason && (
-        <p className="rounded-lg border-l-4 border-accent bg-canvas p-3" data-testid="dispute-reason">
+        <p className="rounded-lg border-l-4 border-accent bg-pale p-3" data-testid="dispute-reason">
           Motif de la contestation : {score.disputeReason}
         </p>
       )}

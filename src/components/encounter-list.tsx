@@ -9,7 +9,7 @@ export function StatusBadge({ status, label, onDark = false }: { status: Encount
     : status === "OPEN"
       ? "bg-success text-on-success"
       : status === "DRAFT" || status === "CANCELLED"
-        ? "bg-canvas text-ink"
+        ? "bg-pale text-ink"
         : "bg-primary text-on-primary";
   return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${style}`}>{label}</span>;
 }

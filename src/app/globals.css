@@ -8,22 +8,24 @@
  * qui lisent ce fichier.
  */
 @theme {
-  --color-primary: #1b4d3e; /* Vert Wimbledon : en-têtes, boutons primaires */
+  --color-primary: #17503a; /* Vert action : boutons, cotes sélectionnées, onglet actif, liens, titres */
+  --color-brand: #1c5b3c; /* Vert Ralli : en-tête et bandeaux (couleur principale) */
   --color-on-primary: #ffffff;
-  --color-on-primary-soft: #cfe3d8; /* Texte secondaire sur vert foncé */
-  --color-primary-dark: #123629; /* Vert nuit : prochaine rencontre, panneau de pronostic */
-  --color-ball: #dfec3a; /* Jaune balle : cotes sélectionnées et « Valider », uniquement sur vert foncé */
-  --color-on-ball: #1f2421;
-  --color-line: #e4dcc6; /* Filets décoratifs entre lignes (jamais porteur de sens) */
-  --color-accent: #c4501b; /* Terre battue : fonds de badges de cotes, CTA secondaires */
+  --color-on-primary-soft: #b9cbbd; /* Texte secondaire sur vert */
+  --color-primary-dark: #0b2c1d; /* Vert nuit : prochaine rencontre, panneau de pronostic, solde */
+  --color-gold: #e6c872; /* Or sur fond vert : cotes sélectionnées, « Valider », touches trophée. Jamais sur fond clair */
+  --color-on-gold: #14281d;
+  --color-accent: #9a6f12; /* Or sur fond clair : heures, séries, CTA secondaires, bordures d'alerte */
   --color-on-accent: #ffffff;
-  --color-canvas: #f5efe0; /* Crème : fond de page */
+  --color-line: #b9cbbd; /* Bordures : contours des cartes, filets */
+  --color-pale: #e2efe5; /* Vert pâle : fonds d'encadrés et d'étiquettes */
+  --color-canvas: #f3f7f3; /* Fond de page : blanc légèrement teinté de vert */
   --color-surface: #ffffff; /* Cartes */
-  --color-success: #5e9c4b; /* Vert gazon : fonds et icônes de succès, jamais texte blanc */
-  --color-on-success: #1f2421;
-  --color-success-ink: #3d7030; /* Texte « gagné » sur blanc ou crème */
-  --color-ink: #1f2421; /* Texte principal */
-  --color-ink-muted: #5a5a52; /* Texte secondaire */
+  --color-success: #2b7a4b; /* Vert « gagné » : fonds et gains */
+  --color-on-success: #ffffff;
+  --color-success-ink: #2b7a4b; /* Texte « gagné » sur blanc ou fond de page */
+  --color-ink: #14281d; /* Texte principal */
+  --color-ink-muted: #46594d; /* Texte secondaire */
 
   --font-logo: var(--font-norican), "Brush Script MT", cursive; /* Logo « Ralli » */
   --font-serif: var(--font-cormorant), Georgia, "Times New Roman", serif; /* Titres, noms, grands chiffres */

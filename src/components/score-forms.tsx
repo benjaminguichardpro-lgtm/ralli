@@ -92,7 +92,7 @@ export function ResolveDisputeForm({ encounterId, matches }: { encounterId: stri
       noValidate
     >
       <input type="hidden" name="encounterId" value={encounterId} />
-      <p className="rounded-lg border-l-4 border-accent bg-canvas p-3 font-semibold" data-testid="cheat-warning">
+      <p className="rounded-lg border-l-4 border-accent bg-pale p-3 font-semibold" data-testid="cheat-warning">
         Chaque triche sera suivie d&apos;un bannissement à vie de Ralli.
       </p>
       <ScoreFields matches={matches} values={state.values} />

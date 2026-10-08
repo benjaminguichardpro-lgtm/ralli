@@ -87,7 +87,7 @@ function NextEncounter({ e, now }: { e: FeedEncounter; now: Date }) {
         <strong className="font-semibold text-on-primary">{e.home}</strong> contre {e.away}
       </p>
       <p className="pt-2">
-        <span className="inline-block rounded-full bg-ball px-3 py-1 text-[0.8125rem] font-bold text-on-ball">
+        <span className="inline-block rounded-full bg-gold px-3 py-1 text-[0.8125rem] font-bold text-on-gold">
           Pronostics ouverts jusqu&apos;à {formatParisTime(e.predictionsCloseAt)}
         </span>
       </p>

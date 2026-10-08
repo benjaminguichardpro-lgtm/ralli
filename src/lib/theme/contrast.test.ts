@@ -11,17 +11,20 @@ describe("contrastRatio", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 5);
   });
   it("est symétrique", () => {
-    expect(contrastRatio("#1b4d3e", "#f5efe0")).toBeCloseTo(contrastRatio("#f5efe0", "#1b4d3e"), 10);
+    expect(contrastRatio("#17503a", "#f3f7f3")).toBeCloseTo(contrastRatio("#f3f7f3", "#17503a"), 10);
   });
 });
 
 describe("thème Ralli", () => {
   it("contient les couleurs du brief", () => {
     expect(colors).toMatchObject({
-      primary: "#1b4d3e",
-      accent: "#c4501b",
-      canvas: "#f5efe0",
-      success: "#5e9c4b",
+      primary: "#17503a",
+      brand: "#1c5b3c",
+      accent: "#9a6f12",
+      gold: "#e6c872",
+      pale: "#e2efe5",
+      canvas: "#f3f7f3",
+      success: "#2b7a4b",
       surface: "#ffffff",
     });
   });

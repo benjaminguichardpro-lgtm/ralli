@@ -23,14 +23,19 @@
 - **Scale** : 12 / 14 / 16 / 18 / 20 / 24 / 32 / 44 px (l'heure de la prochaine rencontre est le plus grand élément de l'accueil).
 
 ## Color
-- **Approche** : restreinte. Un seul élément jaune : ce sur quoi on peut agir.
-- **Primary** : `#1b4d3e` vert Wimbledon — en-tête, boutons, contours des cotes.
-- **Primary dark** : `#123629` vert nuit — carte « prochaine rencontre », panneau de pronostic.
-- **Ball** : `#dfec3a` jaune balle — cote sélectionnée sur fond vert, bouton « Valider ». Jamais seul sur blanc (ratio 1,3).
-- **Accent** : `#c4501b` terre battue — heures des rencontres, appels secondaires.
-- **Neutrals** : crème `#f5efe0` (fond), blanc `#ffffff` (cartes), encre `#1f2421`, gris encre `#5a5a52`.
-- **Semantic** : succès `#5e9c4b` (fond) / `#3d7030` (texte).
-- **Dark mode** : aucun au MVP.
+- **Source** : palette de couleurs de la démo Ralli (feuille de style du 8 octobre 2026), choisie par Benjamin.
+- **Approche** : restreinte, tout en verts avec une touche d'or. L'or est réservé à ce sur quoi on peut agir (sur fond vert) et aux repères (sur fond clair).
+- **Vert Ralli (couleur principale)** `#1c5b3c` — token `brand` : en-tête, bandeaux.
+- **Vert action** `#17503a` — token `primary` : boutons, cotes sélectionnées, onglet actif, liens, titres.
+- **Vert nuit** `#0b2c1d` — token `primary-dark` : prochaine rencontre, panneau de pronostic, solde. (Teinte « bas du dégradé story » de la palette.)
+- **Or sur fond vert** `#e6c872` — token `gold` : cote sélectionnée, bouton « Valider mon ralli », gain, touches trophée. Jamais sur fond clair (ratio 1,6).
+- **Or sur fond clair** `#9a6f12` — token `accent` : heures des rencontres, CTA secondaires, bordures d'alerte. Texte seulement sur carte blanche (ratio 4,5).
+- **Vert « gagné »** `#2b7a4b` — tokens `success` et `success-ink`.
+- **Vert pâle** `#e2efe5` — token `pale` : fonds d'encadrés et d'étiquettes.
+- **Fond de page** `#f3f7f3` (`canvas`), cartes `#ffffff` (`surface`), bordures `#b9cbbd` (`line`).
+- **Texte** `#14281d` (`ink`), texte secondaire `#46594d` (`ink-muted`), texte secondaire sur vert `#b9cbbd` (`on-primary-soft`).
+- **Mode sombre** : pas implémenté. Valeurs de la palette, réservées : fond `#0c1912`, boutons et accents `#7fdba6`. Il manque des choix (cartes, texte, bordures) à décider avant de le coder.
+- **Images story** (futur partage) : dégradé `#1f6443` (haut) vers `#0b2c1d` (bas), pastille « gagné » `#4fbf80`. Non utilisées dans l'app.
 - **Règle** : couleurs uniquement via les tokens de `src/app/globals.css`, combinaisons déclarées dans `src/lib/theme/contrast.ts` et vérifiées par `npm run contrast`.
 
 ## Spacing
@@ -52,5 +57,6 @@ Accueil (fil des simples) → toucher une cote → panneau (montants 50 / 100 / 
 | Date | Décision | Rationale |
 |------|----------|-----------|
 | 2026-10-08 | Création initiale | /design avec Benjamin : sobre, intuitif, hyper simple, joueurs d'abord. Maquette validée : `docs/design-preview.html`. |
+| 2026-10-08 | Palette de couleurs de la démo Ralli (vert Ralli, vert action, or) | Choix de Benjamin (remplace vert Wimbledon, terre battue, jaune balle, crème). `ball` renommé `gold`, ajout de `brand` et `pale`. Mode sombre non implémenté. |
 | 2026-10-08 | Polices : Norican, Cormorant Garamond, DM Sans | Choix de Benjamin (remplace Fraunces, DM Sans, Geist). Cotes en DM Sans ; Cormorant pour les titres, noms et grands chiffres. |
 | 2026-10-08 | Pas de sélecteur de club actif | Classement et Club mènent au club s'il n'y en a qu'un, sinon à une liste. Plus simple, rien à mémoriser. |

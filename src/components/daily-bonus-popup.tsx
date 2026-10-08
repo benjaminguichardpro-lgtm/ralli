@@ -52,15 +52,15 @@ export function DailyBonusPopup() {
               key={i}
               className={`size-8 rounded-full border-2 ${
                 i + 1 < bonus.position
-                  ? "border-ball bg-ball/30"
+                  ? "border-gold bg-gold/30"
                   : i + 1 === bonus.position
-                    ? "border-ball bg-ball"
+                    ? "border-gold bg-gold"
                     : "border-on-primary-soft/60"
               }`}
             />
           ))}
         </ol>
-        <p className="font-figures text-5xl font-bold text-ball" data-testid="daily-total">
+        <p className="font-figures text-5xl font-bold text-gold" data-testid="daily-total">
           +{aces(bonus.total)} Aces
         </p>
         {bonus.streakBonus > 0 ? (
@@ -78,7 +78,7 @@ export function DailyBonusPopup() {
         <button
           type="button"
           onClick={() => dialog.current?.close()}
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-ball px-4 font-semibold text-on-ball focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ball"
+          className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-gold px-4 font-semibold text-on-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
         >
           Super
         </button>

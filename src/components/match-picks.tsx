@@ -35,7 +35,7 @@ function OddsFace({ pick, on }: { pick: Pick; on?: boolean }) {
         <span className={`block text-xs font-medium ${on ? "text-on-primary-soft" : "text-ink-muted"}`}>{pick.rank}</span>
       </span>
       {pick.odds && (
-        <span data-testid="odds" className={`font-data text-xl font-bold ${on ? "text-ball" : ""}`}>
+        <span data-testid="odds" className={`font-data text-xl font-bold ${on ? "text-gold" : ""}`}>
           {pick.odds}
         </span>
       )}
@@ -100,7 +100,7 @@ export function MatchPicks({
             <OddsFace pick={away} on={mine.side === "AWAY"} />
           </div>
         </div>
-        <p data-testid="my-prediction" className="rounded-lg bg-canvas p-3 text-sm">
+        <p data-testid="my-prediction" className="rounded-lg bg-pale p-3 text-sm">
           Votre pronostic : <strong>{pickedName}</strong>, {aces(mine.committedAces)} Aces engagés à la cote {mine.odds}.{" "}
           {predictionSideLabel(mine.status, mine.payoutAces)}
         </p>
@@ -140,7 +140,7 @@ export function MatchPicks({
               type="button"
               onClick={() => open(s)}
               aria-label={`${picks[s].name} gagne, cote ${picks[s].odds}`}
-              className={`${oddBase} cursor-pointer transition-colors active:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`}
+              className={`${oddBase} cursor-pointer transition-colors active:bg-pale focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`}
             >
               <OddsFace pick={picks[s]} />
             </button>
@@ -182,7 +182,7 @@ export function MatchPicks({
                 <p className="text-xs font-bold uppercase tracking-widest text-on-primary-soft">Votre choix</p>
                 <p className="font-serif text-2xl font-semibold leading-tight">{picked.name} gagne</p>
               </div>
-              <p className="font-data text-3xl font-bold text-ball" data-testid="sheet-odds">
+              <p className="font-data text-3xl font-bold text-gold" data-testid="sheet-odds">
                 {picked.odds}
               </p>
             </div>
@@ -199,8 +199,8 @@ export function MatchPicks({
                     disabled={off}
                     onClick={() => setAmount(String(v))}
                     aria-pressed={on}
-                    className={`font-data min-h-12 rounded-xl border-2 text-base font-bold disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ball ${
-                      on ? "border-ball bg-ball text-on-ball" : "border-on-primary-soft bg-transparent text-on-primary"
+                    className={`font-data min-h-12 rounded-xl border-2 text-base font-bold disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
+                      on ? "border-gold bg-gold text-on-gold" : "border-on-primary-soft bg-transparent text-on-primary"
                     }`}
                   >
                     {q === "all" ? "Tout" : q}
@@ -224,10 +224,10 @@ export function MatchPicks({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Un autre montant"
-                className="font-data min-h-12 w-full rounded-xl border-2 border-on-primary-soft bg-primary px-3 text-lg font-semibold text-on-primary placeholder:text-on-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ball"
+                className="font-data min-h-12 w-full rounded-xl border-2 border-on-primary-soft bg-primary px-3 text-lg font-semibold text-on-primary placeholder:text-on-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               />
               {hint && (
-                <p role="alert" className="text-sm font-semibold text-ball">
+                <p role="alert" className="text-sm font-semibold text-gold">
                   {hint}
                 </p>
               )}
@@ -239,7 +239,7 @@ export function MatchPicks({
                 {valid ? aces(value) : "—"}
               </dd>
               <dt className="text-on-primary-soft">Aces gagnés si vous avez raison</dt>
-              <dd className="font-data text-right text-lg font-bold text-ball" data-testid="recap-win">
+              <dd className="font-data text-right text-lg font-bold text-gold" data-testid="recap-win">
                 {win !== null ? aces(win) : "—"}
               </dd>
               <dt className="text-on-primary-soft">Solde après validation</dt>
@@ -250,12 +250,12 @@ export function MatchPicks({
 
             <p className="text-sm text-on-primary-soft">Un pronostic est définitif une fois validé. Minimum {MIN_COMMITTED_ACES} Aces.</p>
             {state.message && !state.ok && (
-              <div role="alert" className="rounded-lg border-l-4 border-ball bg-primary p-3 font-medium">
+              <div role="alert" className="rounded-lg border-l-4 border-gold bg-primary p-3 font-medium">
                 {state.message}
               </div>
             )}
             <SubmitButton
-              variant="ball"
+              variant="gold"
               className="w-full"
               pendingLabel="Validation…"
               disabled={!valid}
@@ -265,7 +265,7 @@ export function MatchPicks({
             <button
               type="button"
               onClick={() => dialog.current?.close()}
-              className="min-h-11 font-semibold text-on-primary underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ball"
+              className="min-h-11 font-semibold text-on-primary underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
               Annuler
             </button>

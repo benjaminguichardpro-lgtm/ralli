@@ -22,7 +22,7 @@ export function LeaderboardTable({ rows, viewerId, compact = false }: { rows: Ra
       </thead>
       <tbody>
         {rows.map((r) => (
-          <tr key={r.userId} data-testid="leaderboard-row" className={r.userId === viewerId ? "bg-canvas font-semibold" : ""}>
+          <tr key={r.userId} data-testid="leaderboard-row" className={r.userId === viewerId ? "bg-pale font-semibold" : ""}>
             <td className="py-2 pr-2">{r.rank}</td>
             <td className="py-2 pr-2">
               {r.displayName}

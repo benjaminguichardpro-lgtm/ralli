@@ -64,7 +64,7 @@ async function Team({ params }: { params: Promise<{ teamId: string }> }) {
                   <span className="font-medium">
                     {p.firstName} {p.lastName}
                   </span>
-                  <span data-testid="rank" className="rounded-full bg-canvas px-2 py-0.5 text-sm font-semibold text-ink">{fftLabel(p.fftRank)}</span>
+                  <span data-testid="rank" className="rounded-full bg-pale px-2 py-0.5 text-sm font-semibold text-ink">{fftLabel(p.fftRank)}</span>
                 </div>
                 {p.account && <p className="text-sm text-ink-muted">Compte : {p.account.displayName}</p>}
                 {team.canManage && (
