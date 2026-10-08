@@ -93,18 +93,20 @@ test("mise en place : club, deux équipes, deux rencontres publiées", async () 
   url2 = await newEncounter(tess, "2027-03-21T14:00");
 });
 
-test("Vera pronostique la seconde rencontre avant le début (perdant et gagnant)", async () => {
-  await vera.goto(url2);
-  const bet = async (n: number, pick: RegExp, aces: string) => {
-    const area = vera.getByTestId("matches").locator("li").nth(n).getByTestId("predict");
+test("pronostics avant le début : Vera sur les deux rencontres, Ugo sur la première", async () => {
+  const bet = async (page: Page, url: string, n: number, pick: RegExp, aces: string) => {
+    await page.goto(url);
+    const area = page.getByTestId("matches").locator("li").nth(n).getByTestId("predict");
     await area.locator("summary").click();
     await area.getByLabel(pick).check();
     await area.getByLabel("Aces engagés").fill(aces);
     await area.getByRole("button", { name: "Valider mon pronostic" }).click();
-    await expect(vera.getByTestId("my-prediction").nth(n === 0 ? 0 : 1)).toBeVisible();
+    await expect(page.getByTestId("my-prediction").first()).toBeVisible();
   };
-  await bet(0, /Léa M\. gagne/, "100");
-  await bet(1, /Marc L\. gagne, cote 2,78/, "50");
+  await bet(vera, url2, 0, /Léa M\. gagne/, "100");
+  await bet(vera, url2, 1, /Marc L\. gagne, cote 2,78/, "50");
+  await bet(vera, url1, 0, /Léa M\. gagne/, "40");
+  await bet(ugo, url1, 0, /Paul V\. gagne, cote 2,78/, "100");
 });
 
 test("avant le début : aucun bouton de score", async () => {
@@ -259,14 +261,49 @@ test("règlement : Vera voit son pronostic perdu et son pronostic gagné", async
   await expect(mine.nth(0)).toContainText("Perdu.");
   await expect(mine.nth(1)).toContainText("Gagné : 139 Aces.");
   await vera.goto("/portefeuille");
-  // 1000 − 100 − 50 + 139
-  await expect(vera.getByTestId("balance")).toHaveText("989 Aces");
+  // 1000 − 100 − 50 − 40 + 139
+  await expect(vera.getByTestId("balance")).toHaveText("949 Aces");
   await expect(vera.getByTestId("pending")).toHaveCount(0);
   const settled = vera.getByTestId("settled").locator("li");
-  await expect(settled).toHaveCount(2);
+  await expect(settled).toHaveCount(3);
   await expect(vera.getByTestId("settled")).toContainText("Perdu.");
   await expect(vera.getByTestId("settled")).toContainText("Gagné : 139 Aces.");
   await expect(vera.getByTestId("ledger")).toContainText("Aces gagnés");
   await expect(vera.getByTestId("ledger")).toContainText("+139 Aces");
   await checkPage(vera, "45-portefeuille-apres-reglement");
+});
+
+test("classement du club : saison (seuil de 3) et semaine (seuil de 1)", async () => {
+  // Vera : 3 pronostics terminés (−40, −100, +89), Ugo : 1 (+178).
+  await vera.goto(`${clubUrl}/classement`);
+  const rows = vera.getByTestId("leaderboard-row");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText("Vera");
+  await expect(rows.first()).toContainText("(vous)");
+  await expect(rows.first()).toContainText("−51 Aces");
+  await expect(rows.first()).toContainText("3");
+  await expect(rows.first()).toContainText("33 %");
+  await checkPage(vera, "46-classement-saison");
+
+  await vera.getByRole("link", { name: "Cette semaine" }).click();
+  await expect(vera).toHaveURL(/periode=semaine/);
+  await expect(vera.getByTestId("leaderboard-row")).toHaveText([/1\s*Ugo\s*\+178 Aces\s*1\s*100 %/, /2\s*Vera\s*\(vous\)\s*−51 Aces\s*3\s*33 %/]);
+  await checkPage(vera, "47-classement-semaine");
+
+  // Ugo : trop peu de pronostics terminés sur la saison, mais classé 1er de la semaine.
+  await ugo.goto(`${clubUrl}/classement`);
+  await expect(ugo.getByTestId("leaderboard-row")).toHaveCount(1); // Vera seule
+  await expect(ugo.getByTestId("my-progress")).toHaveText("Vous avez 1 pronostic terminé : il en faut 3 pour apparaître.");
+
+  // Sacha (admin) n'a aucun pronostic : message d'explication.
+  await sacha.goto(`${clubUrl}/classement`);
+  await expect(sacha.getByTestId("my-progress")).toHaveText("Il faut 3 pronostics terminés dans ce club pour apparaître.");
+
+  // Aperçu sur la page du club, et accès réservé aux membres.
+  await vera.goto(clubUrl);
+  await expect(vera.getByTestId("club-top3")).toContainText("Vera");
+  await vera.getByRole("link", { name: "Voir le classement" }).click();
+  await expect(vera).toHaveURL(/\/classement$/);
+  await anon.goto(`${clubUrl}/classement`);
+  await expect(anon).toHaveURL(/\/connexion/);
 });

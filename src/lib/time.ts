@@ -75,3 +75,19 @@ export function isoWeekKey(date: Date): string {
   const week = Math.ceil(((day.getTime() - Date.UTC(year, 0, 1)) / 86_400_000 + 1) / 7);
   return `${year}-W${String(week).padStart(2, "0")}`;
 }
+
+/**
+ * Semaine en cours, du lundi 00:00 (inclus) au lundi suivant 00:00 (exclu), heure de Paris.
+ * Minuit existe toujours à Paris (le changement d'heure a lieu à 2 h ou 3 h du matin).
+ */
+export function parisWeekBounds(now: Date): { start: Date; end: Date } {
+  const p = parisParts(now);
+  const day = new Date(Date.UTC(p.y, p.mo - 1, p.d));
+  const dow = day.getUTCDay() || 7; // lundi = 1 … dimanche = 7
+  const at = (offsetDays: number) => {
+    const d = new Date(day.getTime() + offsetDays * 86_400_000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return parseParisLocal(`${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T00:00`);
+  };
+  return { start: at(1 - dow), end: at(8 - dow) };
+}

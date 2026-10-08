@@ -43,11 +43,11 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 6. Pronostics et portefeuille (bonus du lundi inclus) | ✅ | voir `git log` |
 | 7. Workflow de scores | ✅ | voir `git log` |
 | 8. Règlement atomique et idempotent | ✅ | voir `git log` |
-| 9. Classements | **prochaine** | |
-| 10. Écrans (design soigné, partage WhatsApp) | | |
+| 9. Classements | ✅ | voir `git log` |
+| 10. Écrans (design soigné, partage WhatsApp) | **prochaine** | |
 | 11. Seed de démo et tests E2E | | |
 
-État des tests au dernier commit : 340 tests Vitest, 53 scénarios Playwright, tous verts.
+État des tests au dernier commit : 371 tests Vitest, 54 scénarios Playwright, tous verts.
 
 ## Décisions prises (en plus du brief)
 
@@ -61,7 +61,7 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 
 ## À faire ensuite
 
-- **Tranche 9 (classements)** : commencer par présenter les règles à trancher (classement par club, périmètre : général / semaine / saison, tri et égalités, ce qui est public, ce qui compte : solde, Aces gagnés, taux de réussite, etc.). Tranche 8 faite : `src/server/settlement.ts` (`settleEncounter` appelé dans `confirmScore` et `resolveDispute`, `settleConfirmedEncounter` pour `npm run settle`), liste « Pronostics terminés » du portefeuille.
+- **Tranche 10 (écrans, design soigné, partage WhatsApp)** : demander à Benjamin 2 ou 3 apps de référence, puis proposer une maquette (couleurs via les tokens, boutons ≥ 44 px) avant de coder. Tranche 9 faite : `src/server/leaderboard.ts`, `src/lib/leaderboard/rank.ts`, `src/config/season.ts` (dates de saison à revoir après le pilote), page `/clubs/<id>/classement`.
 - Les tests de concurrence (double engagement simultané) devront être refaits sur un vrai Postgres (PGlite traite les requêtes une à une).
 - Neon (staging et prod) : plus tard, procédure dans le README.
 - Design plus moderne prévu en tranche 10 : demander à Benjamin 2 ou 3 apps de référence, puis proposer une maquette avant de coder.

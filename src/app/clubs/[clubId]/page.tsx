@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { MemberRoleForm, RegenerateCodeForm } from "@/components/club-forms";
+import { LeaderboardTable } from "@/components/leaderboard";
 import { EncounterList } from "@/components/encounter-list";
 import { CreateExternalTeamForm, CreateTeamForm } from "@/components/team-forms";
 import { ButtonLink } from "@/components/ui";
@@ -10,6 +11,7 @@ import { requireUser } from "@/lib/auth/current-user";
 import { type ClubView, getClubView } from "@/server/clubs";
 import { listClubEncounters } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
+import { getLeaderboard } from "@/server/leaderboard";
 import { isCaptainInClub } from "@/server/permissions";
 import { listClubTeams } from "@/server/teams";
 
@@ -35,10 +37,11 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
     throw e;
   }
   const isAdmin = club.myRole === "ADMIN";
-  const [teams, isCaptain, encounters] = await Promise.all([
+  const [teams, isCaptain, encounters, board] = await Promise.all([
     listClubTeams(user.id, club.id),
     isCaptainInClub(user.id, club.id),
     listClubEncounters(user.id, club.id),
+    getLeaderboard(user.id, club.id, "season", { limit: 3 }),
   ]);
   const clubTeams = teams.filter((t) => t.kind === "CLUB");
   const externalTeams = teams.filter((t) => t.kind === "EXTERNAL");
@@ -70,6 +73,18 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
         {(isAdmin || isCaptain) && (
           <ButtonLink href={`/clubs/${club.id}/rencontres/nouvelle`}>Nouvelle rencontre</ButtonLink>
         )}
+      </div>
+
+      <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm" data-testid="club-top3">
+        <h2 className="font-serif text-xl text-primary">Classement</h2>
+        {board.top.length === 0 ? (
+          <p className="text-ink-muted">Personne n&apos;est encore classé sur la saison.</p>
+        ) : (
+          <LeaderboardTable rows={board.top} viewerId={user.id} compact />
+        )}
+        <ButtonLink href={`/clubs/${club.id}/classement`} variant="ghost">
+          Voir le classement
+        </ButtonLink>
       </div>
 
       <div className="space-y-3 rounded-xl bg-surface p-4 shadow-sm">
