@@ -16,14 +16,16 @@ export function DailyBonusPopup() {
   const dialog = useRef<HTMLDialogElement>(null);
   const [bonus, setBonus] = useState<Claimed | null>(null);
 
+  // Un seul appel par affichage : en développement, React lance chaque effet deux fois, et le second appel
+  // verrait « déjà reçu » alors que la réponse du premier (le vrai bonus) aurait été jetée.
+  const asked = useRef(false);
+
   useEffect(() => {
-    let live = true;
+    if (asked.current) return;
+    asked.current = true;
     void claimDailyBonusAction().then((r) => {
-      if (live && r.claimed) setBonus(r);
+      if (r.claimed) setBonus(r);
     });
-    return () => {
-      live = false;
-    };
   }, []);
 
   useEffect(() => {
