@@ -25,7 +25,7 @@ export default defineConfig({
     command: `npx next start -p ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
-    env: { ...testEnv, BCRYPT_ROUNDS: "4" },
+    env: { ...testEnv, BCRYPT_ROUNDS: "4", AVATAR_DIR: "test-results/avatar-e2e" },
     timeout: 60_000,
   },
 });

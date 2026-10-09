@@ -133,3 +133,9 @@ export async function wipeTestDb() {
     `TRUNCATE "LedgerEntry","Prediction","Match","EncounterEvent","Encounter","TeamPlayer","Player","Team","ClubMembership","Club","User" CASCADE`,
   );
 }
+
+/** Déconnexion : le bouton est sur la page « Mon profil » (touche l'avatar tout à droite de la bannière). */
+export async function signOut(page: Page) {
+  await page.getByRole("link", { name: "Mon profil" }).click();
+  await page.getByRole("button", { name: "Déconnexion" }).click();
+}

@@ -32,7 +32,7 @@ export default defineConfig({
           name: "db",
           include: ["src/**/*.db.test.ts"],
           environment: "node",
-          env: { ...loadTestEnv(), BCRYPT_ROUNDS: "4" },
+          env: { ...loadTestEnv(), BCRYPT_ROUNDS: "4", AVATAR_DIR: "test-results/avatar-db" },
           globalSetup: ["./tests/db/global-setup.ts"],
           setupFiles: ["./tests/db/reset.ts"],
           // Une seule base partagée : fichiers exécutés l'un après l'autre.

@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { MemberRoleForm, RegenerateCodeForm } from "@/components/club-forms";
+import { ResetAvatarForm } from "@/components/profile-forms";
 import { LeaderboardTable } from "@/components/leaderboard";
 import { EncounterList } from "@/components/encounter-list";
 import { CreateExternalTeamForm, CreateTeamForm } from "@/components/team-forms";
@@ -149,7 +151,8 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
         <ul className="divide-y divide-line">
           {club.members.map((m) => (
             <li key={m.userId} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
-              <span>
+              <span className="flex items-center gap-3">
+                <Avatar user={{ id: m.userId, avatarKey: m.avatarKey, avatarPhotoAt: m.avatarPhotoAt }} size={36} />
                 <span className="font-medium">{m.displayName}</span>
                 {m.role === "ADMIN" && (
                   <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-on-primary">admin</span>
@@ -157,7 +160,10 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
                 {m.userId === user.id && <span className="ml-2 text-sm text-ink-muted">(vous)</span>}
               </span>
               {isAdmin && (
-                <MemberRoleForm clubId={club.id} userId={m.userId} displayName={m.displayName} role={m.role} isSelf={m.userId === user.id} />
+                <span className="flex flex-wrap items-center gap-2">
+                  {m.avatarPhotoAt && m.userId !== user.id && <ResetAvatarForm clubId={club.id} userId={m.userId} displayName={m.displayName} />}
+                  <MemberRoleForm clubId={club.id} userId={m.userId} displayName={m.displayName} role={m.role} isSelf={m.userId === user.id} />
+                </span>
               )}
             </li>
           ))}

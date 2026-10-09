@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { backdateAccount, checkPage, seedLoginStreak, signIn, signUp } from "./helpers";
+import { backdateAccount, checkPage, seedLoginStreak, signIn, signUp, signOut } from "./helpers";
 
 // Gaspard : compte créé aujourd'hui (aucun bonus), puis « ancien » (jour 1), Hector : série de 6 jours (jour 7).
 
@@ -63,7 +63,7 @@ test("7e jour d'affilée : +10 et +50, popup 7/7 avec +60 Aces", async () => {
 });
 
 test("après une déconnexion puis reconnexion le même jour : aucun nouveau bonus", async () => {
-  await hector.getByRole("button", { name: "Déconnexion" }).click();
+  await signOut(hector);
   await signIn(hector, "Hector");
   await expect(hector.getByTestId("nav-user")).toHaveText("Hector");
   await hector.waitForTimeout(800);

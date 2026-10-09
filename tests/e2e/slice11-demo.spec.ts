@@ -100,7 +100,9 @@ test("parieur1 : portefeuille et classements (saison et semaine) bien remplis", 
   await checkPage(p, "77-demo-portefeuille");
 
   await p.goto(`/clubs/${clubId}/classement`);
-  expect(await p.getByTestId("leaderboard-row").count()).toBeGreaterThanOrEqual(5);
+  const rows = p.getByTestId("leaderboard-row");
+  expect(await rows.count()).toBeGreaterThanOrEqual(5);
+  expect(await rows.getByTestId("avatar").count(), "un avatar par ligne").toBe(await rows.count());
   await checkPage(p, "78-demo-classement-saison");
   await p.goto(`/clubs/${clubId}/classement?periode=semaine`);
   expect(await p.getByTestId("leaderboard-row").count()).toBeGreaterThanOrEqual(1);

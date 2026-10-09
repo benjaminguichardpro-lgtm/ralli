@@ -173,6 +173,15 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
   - `LedgerEntry.amount < 0` pour `PREDICTION_COMMIT`, `> 0` pour `SIGNUP_BONUS`, `WEEKLY_BONUS`, `PREDICTION_PAYOUT` et `PREDICTION_REFUND`.
 - **Calcul du gain** : uniquement via `computePayout` (`src/lib/predictions/payout.ts`), en arithmétique entière : `floor((committedAces × oddsX100 + 50) / 100)`.
 
+## Profil et avatars (tranche 12, `src/lib/avatars.ts`, `src/server/avatars.ts`, page `/profil`)
+
+- **Bannière** : logo, solde sur une ligne, avatar rond tout à droite (il mène à « Mon profil »). Le pseudo n'est plus affiché (il reste pour les lecteurs d'écran) ; « Déconnexion » est sur la page du profil.
+- **12 avatars prédéfinis** : personnages stylisés de tennis (pas de portraits de joueurs réels : droit à l'image), fichiers SVG dans `public/avatar/`. Un avatar tiré au hasard à l'inscription ; les comptes existants en ont reçu un par la migration `20261009100000_user_avatar`.
+- **Photo importée** : JPG, PNG ou WebP, 5 Mo au maximum ; le contenu est relu par `sharp` (le type annoncé ne compte pas), recadré au centre en carré, ramené à 256 px, enregistré en WebP dans le dossier **`avatar/`** (ignoré par git ; `AVATAR_DIR` pour le changer). Choisir un avatar prédéfini retire la photo. La limite des envois (`serverActions.bodySizeLimit`) est de 6 Mo dans `next.config.ts`.
+- **Visibilité** : la route `/api/avatar/<id>` sert la photo à son propriétaire et aux membres d'un club en commun (401 sans session, 404 sinon). Les avatars apparaissent dans la bannière, le profil, la liste des membres, le classement et son aperçu sur la page du club.
+- **Modération** : un admin voit « Retirer la photo » sur les membres de son club qui ont une photo (avec confirmation) ; l'avatar prédéfini revient.
+- **À savoir** : le dossier `avatar/` ne fonctionnera pas sur Vercel (disque en lecture seule). Pour la mise en ligne, remplacer uniquement `src/server/avatar-storage.ts` par un stockage de fichiers (Vercel Blob).
+
 ## Démo (tranche 11, `src/server/demo-seed.ts`, commande `scripts/seed-demo.ts`)
 
 `npm run seed:demo` remplit la base de dev avec des données de démonstration, en passant par les **vraies fonctions** du produit (soldes, ledger, cotes et classements sont donc cohérents). Les dates sont relatives à l'instant du lancement : relancer le matin d'une démo remet tout à neuf.

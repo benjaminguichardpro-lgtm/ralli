@@ -1,4 +1,6 @@
+import { DEFAULT_AVATAR_KEY } from "@/lib/avatars";
 import type { RankedRow } from "@/lib/leaderboard/rank";
+import { Avatar } from "./avatar";
 
 export const signedAces = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("fr-FR")} Aces`;
 
@@ -25,8 +27,13 @@ export function LeaderboardTable({ rows, viewerId, compact = false }: { rows: Ra
           <tr key={r.userId} data-testid="leaderboard-row" className={r.userId === viewerId ? "bg-pale font-semibold" : ""}>
             <td className="py-2 pr-2">{r.rank}</td>
             <td className="py-2 pr-2">
-              {r.displayName}
-              {r.userId === viewerId && <span className="ml-1 font-normal text-ink-muted">(vous)</span>}
+              <span className="flex items-center gap-2">
+                <Avatar user={{ id: r.userId, avatarKey: r.avatarKey ?? DEFAULT_AVATAR_KEY, avatarPhotoAt: r.avatarPhotoAt ?? null }} size={32} />
+                <span>
+                  {r.displayName}
+                  {r.userId === viewerId && <span className="ml-1 font-normal text-ink-muted">(vous)</span>}
+                </span>
+              </span>
             </td>
             <td className="py-2 pr-2 text-right">{signedAces(r.net)}</td>
             {!compact && (

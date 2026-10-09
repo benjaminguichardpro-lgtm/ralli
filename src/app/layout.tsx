@@ -22,7 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="fr" className={`${dmSans.variable} ${cormorant.variable} ${norican.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <header className="bg-brand text-on-primary">
-          <div className="mx-auto flex h-14 max-w-xl items-center justify-between px-4">
+          <div className="mx-auto flex h-16 max-w-xl items-center justify-between gap-3 px-5">
             <Link href="/" className="font-logo text-3xl leading-none">
               Ralli
             </Link>

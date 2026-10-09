@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, resetPassword, signIn, signUp } from "./helpers";
+import { checkPage, resetPassword, signIn, signUp, signOut } from "./helpers";
 
 // Scénario multi-rôles : Alice (admin), Bob (membre), Carole (extérieure).
 // Chaque personne a son propre contexte navigateur (cookies séparés).
@@ -177,7 +177,7 @@ test("retirer le rôle admin d'une autre personne demande aussi confirmation", a
 });
 
 test("déconnexion puis mauvais mot de passe", async () => {
-  await bob.getByRole("button", { name: "Déconnexion" }).click();
+  await signOut(bob);
   await expect(bob.getByRole("heading", { name: "Bienvenue sur Ralli" })).toBeVisible();
   await signIn(bob, "Bob", "mauvaismdp");
   await expect(bob.getByText("Email, pseudo ou mot de passe incorrect")).toBeVisible();
@@ -187,11 +187,11 @@ test("déconnexion puis mauvais mot de passe", async () => {
 });
 
 test("connexion par pseudo (casse libre) ou par email, même message d'erreur", async () => {
-  await bob.getByRole("button", { name: "Déconnexion" }).click();
+  await signOut(bob);
   await expect(bob.getByRole("heading", { name: "Bienvenue sur Ralli" })).toBeVisible();
   await signIn(bob, "Bob", "motdepasse", "  bOB ");
   await expect(bob.getByTestId("nav-user")).toHaveText("Bob");
-  await bob.getByRole("button", { name: "Déconnexion" }).click();
+  await signOut(bob);
   await signIn(bob, "Bob", "mauvaismdp", "Bob");
   await expect(bob.getByText("Email, pseudo ou mot de passe incorrect")).toBeVisible();
   await signIn(bob, "Bob", "motdepasse", "pseudo.inconnu");

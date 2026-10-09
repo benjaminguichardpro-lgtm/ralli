@@ -3,6 +3,9 @@
 export type PlayerTotals = {
   userId: string;
   displayName: string;
+  /** Pour afficher l'avatar (absent dans les tests purs). */
+  avatarKey?: string;
+  avatarPhotoAt?: Date | null;
   /** Aces gagnés moins Aces engagés, sur les pronostics terminés gagnés ou perdus (décision C2). */
   net: number;
   /** Pronostics terminés (gagnés + perdus ; les remboursés ne comptent pas). */

@@ -45,3 +45,6 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# photos de profil importées (voir src/server/avatar-storage.ts)
+/avatar/

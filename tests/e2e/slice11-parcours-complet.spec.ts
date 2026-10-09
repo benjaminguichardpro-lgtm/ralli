@@ -152,6 +152,9 @@ test("8. Classements : « cette semaine » classe Bruno premier ; la saison dema
     /1\s*Bruno\s*\(vous\)\s*\+145 Aces\s*2\s*100 %/,
     /2\s*Chloe\s*−140 Aces\s*2\s*0 %/,
   ]);
+  // Chaque ligne du classement porte l'avatar du joueur (prédéfini, ou la photo si elle existe).
+  await expect(bruno.getByTestId("leaderboard-row").getByTestId("avatar")).toHaveCount(2);
+  await expect(bruno.getByTestId("leaderboard-row").first().getByTestId("avatar")).toHaveAttribute("src", /^\/avatar\/[a-z-]+\.svg$/);
   await checkPage(bruno, "82-parcours-classement-semaine");
   await bruno.goto(`${clubUrl}/classement`);
   await expect(bruno.getByTestId("leaderboard-row")).toHaveCount(0);

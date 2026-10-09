@@ -29,7 +29,7 @@ export function BalancePill({ initial }: { initial: number }) {
     <Link
       href="/portefeuille"
       aria-label="Mon portefeuille"
-      className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary-dark px-3 text-[0.9375rem] font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+      className="inline-flex min-h-11 items-center gap-2 whitespace-nowrap rounded-full bg-primary-dark px-4 text-[0.9375rem] font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >
       <span aria-hidden="true" className="size-3.5 rounded-full bg-gold" />
       <span data-testid="balance" className="font-data">

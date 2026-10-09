@@ -45,9 +45,10 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 8. Règlement atomique et idempotent | ✅ | voir `git log` |
 | 9. Classements | ✅ | voir `git log` |
 | 10. Écrans (design soigné, partage WhatsApp) | ✅ | voir `git log` |
-| 11. Seed de démo et tests E2E | ✅ (en attente de validation Benjamin) | voir `git log` |
+| 11. Seed de démo et tests E2E | ✅ | voir `git log` |
+| 12. Profil et avatars (bannière aérée) | ✅ (en attente de validation Benjamin) | voir `git log` |
 
-État des tests au dernier commit : 426 tests Vitest, 69 scénarios Playwright, tous verts.
+État des tests (fin de tranche 12) : 442 tests Vitest, 93 scénarios Playwright, tous verts.
 
 ## Décisions prises (en plus du brief)
 
@@ -69,7 +70,8 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 ## À faire ensuite
 
 - **Tranche 11 faite** : `npm run seed:demo` (`scripts/seed-demo.ts`, logique dans `src/server/demo-seed.ts`), détail dans le README, section « Démo ». Décisions de Benjamin : base locale uniquement, 2 clubs + un club vide, mot de passe commun `demo-ralli-2026`, dates relatives, pronostics posés par les vraies fonctions, rencontres contestée et annulée incluses, contraste = `npm run contrast` suffit. Le `--reset` vide **toute** la base (ledger append-only). Design de la tranche 10 : `docs/DESIGN.md`, `src/components/match-picks.tsx`, `tab-bar.tsx`, `balance-pill.tsx`, `src/server/feed.ts`, pages `/clubs` et `/classement`.
-- **Après la tranche 11** : pilote avec 2 ou 3 clubs réels ; Neon (staging, prod) et tests de concurrence sur vrai Postgres restent à faire.
+- **Tranche 12 faite** : avatars (12 personnages SVG dans `public/avatar/`, photo importée dans le dossier `avatar/`), page `/profil`, bannière aérée, avatars dans classement et liste des membres ; détail dans le README, section « Profil et avatars ». Décisions de Benjamin : avatars de tennis stylisés (pas de portraits réels), dossier `avatar/` pour les photos, recadrage automatique au centre, « Mon profil » = l'avatar tout à droite de la bannière. **Limite connue** : le dossier `avatar/` ne marche pas sur Vercel, il faudra un stockage de fichiers avant la mise en ligne (un seul fichier à changer : `src/server/avatar-storage.ts`). Les photos peuvent être signalées/retirées par les admins du club.
+- **Après la tranche 12** : pilote avec 2 ou 3 clubs réels ; Neon (staging, prod) et tests de concurrence sur vrai Postgres restent à faire.
 - **Bonus de connexion** (hors tranches, demandé par Benjamin) : +10 Aces par jour à la première ouverture (jour de Paris), +50 de plus tous les 7 jours d'affilée, rien le jour de l'inscription ; popup « Connexion quotidienne X/7 » (`src/components/daily-bonus-popup.tsx`) ; migrations `20261008150000_login_bonus_types` et `20261008150100_login_bonus_sign_check` (deux fichiers : Postgres interdit d'utiliser une valeur d'enum ajoutée dans la même transaction). Le bonus du lundi est conservé. Pour tester la popup d'un compte, il faut antidater `createdAt` (voir `backdateAccount` et `seedLoginStreak` dans `tests/e2e/helpers.ts`).
 - **Piège local** : `prisma dev` se mélange quand plusieurs requêtes arrivent en même temps (« bind message supplies N parameters »). `DATABASE_POOL_MAX="1"` dans `.env` et `.env.test` impose une connexion unique ; à laisser vide avec Neon. `getCurrentUser` est mis en cache par requête (React `cache`).
 - **Tests E2E** : un fichier par thème (`tests/e2e/slice2` à `slice11`), chacun avec ses propres pseudos (la base de test est partagée : deux fichiers ne doivent pas réutiliser le même pseudo). `forceStarted(url)` fait commencer une rencontre (aucun écran ne permet une date passée).

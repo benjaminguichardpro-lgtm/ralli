@@ -1,4 +1,5 @@
 import { SIGNUP_BONUS_ACES } from "@/config/game";
+import { pickAvatarKey } from "@/lib/avatars";
 import { generateTemporaryPassword, hashPassword, verifyPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
 import { type SignUpInput, displayNameKey, loginLookup } from "@/lib/validation/account";
@@ -29,6 +30,7 @@ export async function registerUser(input: SignUpInput): Promise<{ id: string }> 
           displayName: input.displayName,
           displayNameKey: key,
           passwordHash,
+          avatarKey: pickAvatarKey(),
           ageConfirmedAt: new Date(),
         },
         select: { id: true },

@@ -102,6 +102,8 @@ model User {
   displayNameKey     String   @unique // pseudo en minuscules, pour l'unicité insensible à la casse
   ageConfirmedAt     DateTime // date de la case « J'ai 18 ans ou plus »
   mustChangePassword Boolean  @default(false) // posé par `npm run reset-password`
+  avatarKey          String   @default("service") // avatar prédéfini (src/lib/avatars.ts)
+  avatarPhotoAt      DateTime? // date de la photo importée (fichier dans le dossier avatar/) ; null = pas de photo
   createdAt          DateTime @default(now())
 
   memberships       ClubMembership[]

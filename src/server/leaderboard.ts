@@ -54,9 +54,12 @@ export async function clubTotals(clubId: string, from: Date, to: Date): Promise<
     if (g.status === "WON") t.wins += g._count._all;
     byUser.set(g.userId, t);
   }
-  const users = await db.user.findMany({ where: { id: { in: [...byUser.keys()] } }, select: { id: true, displayName: true } });
-  const names = new Map(users.map((u) => [u.id, u.displayName]));
-  return [...byUser].map(([userId, t]) => ({ userId, displayName: names.get(userId) ?? "?", ...t }));
+  const users = await db.user.findMany({ where: { id: { in: [...byUser.keys()] } }, select: { id: true, displayName: true, avatarKey: true, avatarPhotoAt: true } });
+  const byId = new Map(users.map((u) => [u.id, u]));
+  return [...byUser].map(([userId, t]) => {
+    const u = byId.get(userId);
+    return { userId, displayName: u?.displayName ?? "?", avatarKey: u?.avatarKey, avatarPhotoAt: u?.avatarPhotoAt ?? null, ...t };
+  });
 }
 
 /** Classement d'un club, réservé à ses membres (décisions C1, C10). */

@@ -95,7 +95,7 @@ export type ClubView = {
   myRole: ClubRole;
   /** Visible des admins uniquement. */
   inviteCode: string | null;
-  members: { userId: string; displayName: string; role: ClubRole; joinedAt: Date }[];
+  members: { userId: string; displayName: string; role: ClubRole; joinedAt: Date; avatarKey: string; avatarPhotoAt: Date | null }[];
 };
 
 /** Page club : réservée aux membres. Les emails ne sont jamais exposés. */
@@ -108,7 +108,7 @@ export async function getClubView(actorId: string, clubId: string): Promise<Club
       name: true,
       inviteCode: true,
       memberships: {
-        select: { role: true, joinedAt: true, user: { select: { id: true, displayName: true } } },
+        select: { role: true, joinedAt: true, user: { select: { id: true, displayName: true, avatarKey: true, avatarPhotoAt: true } } },
         orderBy: [{ role: "desc" }, { joinedAt: "asc" }], // ADMIN avant MEMBER (ordre de l'enum)
       },
     },
@@ -122,6 +122,8 @@ export async function getClubView(actorId: string, clubId: string): Promise<Club
     members: club.memberships.map((m) => ({
       userId: m.user.id,
       displayName: m.user.displayName,
+      avatarKey: m.user.avatarKey,
+      avatarPhotoAt: m.user.avatarPhotoAt,
       role: m.role,
       joinedAt: m.joinedAt,
     })),
