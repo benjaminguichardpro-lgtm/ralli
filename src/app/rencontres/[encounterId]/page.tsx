@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
+  AddDoubleForm,
   AddMatchForm,
   CancelForm,
   DeleteDraftForm,
@@ -15,6 +16,7 @@ import { WhatsAppShare } from "@/components/share-link";
 import { ConfirmScoreForm, DisputeScoreForm, ProposeScoreForm, ResolveDisputeForm, WithdrawScoreForm } from "@/components/score-forms";
 import { StatusBadge } from "@/components/encounter-list";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { kindTitle, kindWord, pointsLabel } from "@/lib/matches";
 import { formatParis, formatParisDay, formatParisTime, relativeDayLabel, toParisLocalInput } from "@/lib/time";
 import { type EncounterPageView, getEncounterPage } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
@@ -81,14 +83,17 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
       )}
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <h2 className="font-serif text-xl text-primary">Matchs en simple</h2>
+        <h2 className="font-serif text-xl text-primary">Matchs</h2>
         {e.matches.length === 0 ? (
           <p className="text-ink-muted">Aucun match pour l&apos;instant.</p>
         ) : (
           <ol className="divide-y divide-line" data-testid="matches">
             {e.matches.map((x) => (
               <li key={x.id} className="space-y-2 py-3">
-                <p className="text-sm text-ink-muted">Simple {x.number}</p>
+                <p className="text-sm text-ink-muted">
+                  {kindTitle(x.kind)} {x.number}
+                  {x.points > 1 && ` · ${pointsLabel(x.points)}`}
+                </p>
                 <MatchPicks
                   matchId={x.id}
                   home={{ name: x.home.name, rank: x.home.rank, oddsX100: x.oddsHomeX100, odds: x.oddsHome }}
@@ -116,25 +121,37 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
 
           {m.canEditComposition && (
             <>
-              {m.matches.map((x, i) => (
+              {m.matches.map((x) => (
                 <details key={x.id} className="border-t border-line pt-2">
                   <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">
-                    Modifier le simple {i + 1}
+                    Modifier le {kindWord(x.kind)} {x.number}
                   </summary>
                   <EditMatchForm match={x} homeRoster={m.homeRoster} awayRoster={m.awayRoster} published={published} />
                 </details>
               ))}
               {published ? (
-                <details className="border-t border-line pt-2" data-testid="add-match">
-                  <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Ajouter un match</summary>
-                  <AddMatchForm encounterId={e.id} homeRoster={m.homeRoster} awayRoster={m.awayRoster} published />
-                </details>
+                <>
+                  <details className="border-t border-line pt-2" data-testid="add-match">
+                    <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Ajouter un simple</summary>
+                    <AddMatchForm encounterId={e.id} homeRoster={m.homeRoster} awayRoster={m.awayRoster} published />
+                  </details>
+                  <details className="border-t border-line pt-2" data-testid="add-double">
+                    <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Ajouter un double</summary>
+                    <AddDoubleForm encounterId={e.id} homeRoster={m.homeRoster} awayRoster={m.awayRoster} published />
+                  </details>
+                </>
               ) : (
-                // Brouillon : composer est la tâche principale, le formulaire reste ouvert.
-                <div className="space-y-2 border-t border-line pt-3" data-testid="add-match">
-                  <h3 className="font-semibold text-primary">Ajouter un match</h3>
-                  <AddMatchForm encounterId={e.id} homeRoster={m.homeRoster} awayRoster={m.awayRoster} published={false} />
-                </div>
+                // Brouillon : composer est la tâche principale, les formulaires restent ouverts (le double dans un bloc repliable).
+                <>
+                  <div className="space-y-2 border-t border-line pt-3" data-testid="add-match">
+                    <h3 className="font-semibold text-primary">Ajouter un simple</h3>
+                    <AddMatchForm encounterId={e.id} homeRoster={m.homeRoster} awayRoster={m.awayRoster} published={false} />
+                  </div>
+                  <details className="border-t border-line pt-2" data-testid="add-double">
+                    <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Ajouter un double</summary>
+                    <AddDoubleForm encounterId={e.id} homeRoster={m.homeRoster} awayRoster={m.awayRoster} published={false} />
+                  </details>
+                </>
               )}
             </>
           )}
@@ -182,7 +199,9 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
   const a = score.actions;
   const forms = score.matches.map((x) => ({
     id: x.id,
+    kind: x.kind,
     number: x.number,
+    points: x.points,
     home: x.home,
     away: x.away,
     result: x.result ? { outcome: x.result.outcome, winnerSide: x.result.winnerSide, sets: x.result.sets } : null,
@@ -209,7 +228,8 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
           {score.matches.map((x) => (
             <li key={x.id} className="py-2">
               <p className="text-sm text-ink-muted">
-                Simple {x.number} : {x.home} contre {x.away}
+                {kindTitle(x.kind)} {x.number} : {x.home} contre {x.away}
+                {x.points > 1 && ` · ${pointsLabel(x.points)}`}
               </p>
               {x.result ? (
                 <p>

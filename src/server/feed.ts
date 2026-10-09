@@ -2,7 +2,7 @@ import type { Side } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { type EffectiveStatus, STATUS_LABELS, effectiveStatus } from "@/lib/encounters/state";
 import { fftLabel } from "@/lib/fft";
-import { publicPlayerName } from "@/lib/names";
+import { numberByKind, sideName } from "@/lib/matches";
 import { formatOdds } from "@/lib/odds/model";
 import { type MyPrediction, balanceIn, exclusionReason } from "./predictions";
 import { sideLabel } from "./encounters";
@@ -57,13 +57,16 @@ export async function getHomeFeed(userId: string, now = new Date()): Promise<Hom
         awayTeam: { select: teamSelect },
         matches: {
           where: { voidedAt: null },
-          orderBy: { order: "asc" },
+          orderBy: [{ kind: "asc" }, { order: "asc" }],
           select: {
             id: true,
+            kind: true,
             oddsHomeX100: true,
             oddsAwayX100: true,
             homePlayer: { select: playerSelect },
             awayPlayer: { select: playerSelect },
+            homePlayer2: { select: playerSelect },
+            awayPlayer2: { select: playerSelect },
             predictions: {
               where: { userId },
               select: { pickedSide: true, committedAces: true, oddsX100: true, status: true, payoutAces: true },
@@ -74,9 +77,10 @@ export async function getHomeFeed(userId: string, now = new Date()): Promise<Hom
     }),
   ]);
 
-  const pick = (p: { firstName: string; lastName: string; fftRank: Parameters<typeof fftLabel>[0] }, x100: number | null): PickView => ({
-    name: publicPlayerName(p.firstName, p.lastName),
-    rank: fftLabel(p.fftRank),
+  type P = { firstName: string; lastName: string; fftRank: Parameters<typeof fftLabel>[0] };
+  const pick = (players: P[], x100: number | null): PickView => ({
+    name: sideName(players),
+    rank: players.map((p) => fftLabel(p.fftRank)).join(" · "),
     oddsX100: x100,
     odds: x100 === null ? null : formatOdds(x100),
   });
@@ -94,13 +98,13 @@ export async function getHomeFeed(userId: string, now = new Date()): Promise<Hom
         home: sideLabel(e.homeTeam),
         away: sideLabel(e.awayTeam),
         blockedReason,
-        matches: e.matches.map((m, i) => {
+        matches: numberByKind(e.matches).map((m) => {
           const mine = m.predictions[0];
           return {
             id: m.id,
-            number: i + 1,
-            home: pick(m.homePlayer, m.oddsHomeX100),
-            away: pick(m.awayPlayer, m.oddsAwayX100),
+            number: m.number,
+            home: pick(m.homePlayer2 ? [m.homePlayer, m.homePlayer2] : [m.homePlayer], m.oddsHomeX100),
+            away: pick(m.awayPlayer2 ? [m.awayPlayer, m.awayPlayer2] : [m.awayPlayer], m.oddsAwayX100),
             mine: mine
               ? { side: mine.pickedSide as Side, committedAces: mine.committedAces, odds: formatOdds(mine.oddsX100), status: mine.status, payoutAces: mine.payoutAces }
               : null,

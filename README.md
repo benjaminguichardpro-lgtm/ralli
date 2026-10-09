@@ -80,7 +80,7 @@ Quand un compte Neon existera :
 ### Rencontres (décisions R1 à R8)
 - **Adversaires** : une rencontre oppose toujours une équipe du club à une **équipe adverse de la liste du club**, que l'adversaire utilise Ralli ou non. Les deux clubs ne sont jamais liés dans l'app. La liste est alimentée par les admins et les capitaines.
 - **Création** : par le capitaine de l'équipe (pour son équipe) ou un admin du club. Le créateur indique si son équipe reçoit ou se déplace, et saisit l'heure de début en heure de Paris.
-- **Composition** : le créateur compose les deux côtés, de 1 à 8 simples, avec des joueurs pris dans les effectifs. Un joueur ne dispute qu'un simple par rencontre (les doubles sont hors MVP).
+- **Composition** : le créateur compose les deux côtés avec des joueurs pris dans les effectifs, en **simples** (un joueur contre un joueur) et en **doubles** (deux joueurs de chaque équipe, voir « Doubles » ci-dessous). **Aucune limite du nombre de matchs** (il dépend du niveau de la rencontre). Un joueur dispute au plus un simple et un double par rencontre.
 - **Publication** (brouillon → ouverte) : au moins un match et une heure de début dans le futur. Les cotes de chaque match sont calculées et figées à ce moment-là.
 - **Après publication, avant le début** : on peut ajouter un match (cotes calculées aussitôt), modifier un match (l'ancien est retiré, ses pronostics remboursés, un match de remplacement reçoit de nouvelles cotes) ou en retirer un (pronostics remboursés ; au moins un match doit rester). Reporter déplace aussi la fermeture des pronostics ; ceux déjà faits sont conservés.
 - **Après le début** : la composition est figée. Un report reste possible, mais les pronostics **restent fermés** (`predictionsCloseAt` ne bouge plus).
@@ -172,6 +172,16 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
   - `Prediction.oddsX100` entre 100 et 1000 ;
   - `LedgerEntry.amount < 0` pour `PREDICTION_COMMIT`, `> 0` pour `SIGNUP_BONUS`, `WEEKLY_BONUS`, `PREDICTION_PAYOUT` et `PREDICTION_REFUND`.
 - **Calcul du gain** : uniquement via `computePayout` (`src/lib/predictions/payout.ts`), en arithmétique entière : `floor((committedAces × oddsX100 + 50) / 100)`.
+
+## Doubles (tranche 14, `src/server/encounters.ts`, cotes dans `src/lib/odds/model.ts`, libellés dans `src/lib/matches.ts`)
+
+- **Composition** : « Ajouter un double » (en plus de « Ajouter un simple ») : 2 joueurs de l'effectif de l'équipe du club contre 2 joueurs de l'effectif de l'équipe adverse, rien d'autre. Un joueur peut jouer **un simple et un double** dans la même rencontre, jamais deux doubles ni deux simples. Aucune limite du nombre de matchs.
+- **Points** : chaque match vaut **1 ou 2 points** au score final (choix du club à la composition, 1 par défaut ; l'écran ne le propose que pour les doubles, le serveur et la base l'acceptent pour tout match). Le « Score final » additionne les points des matchs gagnés ; un match sans vainqueur (non joué) ne rapporte rien.
+- **Cotes** : mêmes formule et bornes que le simple, appliquées à la **moyenne des niveaux FFT** de chaque paire. Ni forme ni confrontations directes. Les doubles ne nourrissent **pas** la forme ni les confrontations des simples (`loadHistory` ne lit que les simples).
+- **Anti-trucage** : les quatre joueurs d'un double et les comptes liés à leur fiche ne peuvent pronostiquer aucun match de la rencontre ; le lien fiche ↔ compte est gelé et la fiche non supprimable comme pour un simple.
+- **Affichage** : simples d'abord, puis doubles ; numérotation par type (Simple 1, Simple 2, Double 1…) ; paire affichée « Léa M. / Hugo D. », niveaux « 30 · 30/1 ». Score saisi comme un simple (issue, vainqueur = la paire, sets).
+- **Données** : `Match.kind` (SINGLES ou DOUBLES), `points`, `homePlayer2Id`, `awayPlayer2Id` (migration `20261009180000_doubles`) ; la base refuse un double sans ses quatre joueurs, un simple avec un joueur en plus, une paire de deux fois le même joueur et un nombre de points hors 1 ou 2.
+- Démo : un double d'1 point (terminée il y a 21 jours), un de 2 points (terminée il y a 8 jours) et un de 2 points sur la rencontre ouverte de Lyon.
 
 ## Archivage des rencontres (tranche 13, `archiveEncounter` / `unarchiveEncounter` dans `src/server/encounters.ts`)
 

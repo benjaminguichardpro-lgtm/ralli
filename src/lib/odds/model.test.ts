@@ -5,6 +5,7 @@ import { FFT_RANKS } from "@/lib/fft";
 import {
   type MatchResult,
   type OddsInput,
+  computeDoublesOdds,
   computeOdds,
   eloProbability,
   formAdjustment,
@@ -234,5 +235,40 @@ describe("garde-fous de configuration", () => {
 
   it("enregistre la version du modèle avec le résultat", () => {
     expect(computeOdds(base()).configVersion).toBe(ODDS_CONFIG.version);
+  });
+});
+
+describe("cotes d'un double (moyenne des ratings de chaque paire)", () => {
+  it("deux paires de même niveau moyen : cotes égales", () => {
+    const r = computeDoublesOdds({ ranksA: ["R30", "R30"], ranksB: ["R30", "R30"] });
+    expect([r.oddsX100A, r.oddsX100B]).toEqual([200, 200]);
+  });
+
+  it("la moyenne compte, pas le meilleur joueur : 15/5 + NC vaut 30/3 + 30/3", () => {
+    const mixed = computeDoublesOdds({ ranksA: ["R15_5", "NC"], ranksB: ["R30_3", "R30_3"] });
+    expect(mixed.breakdown.ratingA).toBe(ratingOf("R30_3"));
+    expect(mixed.breakdown.ratingA).toBe((ratingOf("R15_5") + ratingOf("NC")) / 2);
+    expect([mixed.oddsX100A, mixed.oddsX100B]).toEqual([200, 200]);
+  });
+
+  it("la paire la mieux classée a la cote la plus basse, avec un écart cohérent avec le simple", () => {
+    const double = computeDoublesOdds({ ranksA: ["R30", "R30"], ranksB: ["R30_1", "R30_1"] });
+    const single = computeOdds(base({ rankA: "R30", rankB: "R30_1" }));
+    expect([double.oddsX100A, double.oddsX100B]).toEqual([single.oddsX100A, single.oddsX100B]);
+    expect(double.oddsX100A).toBeLessThan(double.oddsX100B);
+  });
+
+  it("ni forme ni confrontations directes dans le détail du calcul", () => {
+    const r = computeDoublesOdds({ ranksA: ["R30", "R30_1"], ranksB: ["R30_2", "R30_3"] });
+    expect(r.breakdown).toMatchObject({ formAdjA: 0, formAdjB: 0, h2hAdj: 0 });
+  });
+
+  it("symétrique, borné à [0,12 ; 0,88] comme le simple", () => {
+    const r = computeDoublesOdds({ ranksA: ["PREMIERE_SERIE", "PREMIERE_SERIE"], ranksB: ["NC", "NC"] });
+    expect(r.probabilityA).toBeCloseTo(0.88, 10);
+    expect(r.probabilityA + r.probabilityB).toBeCloseTo(1, 12);
+    expect(r.oddsX100A).toBe(114);
+    const swapped = computeDoublesOdds({ ranksA: ["NC", "NC"], ranksB: ["PREMIERE_SERIE", "PREMIERE_SERIE"] });
+    expect([swapped.oddsX100A, swapped.oddsX100B]).toEqual([r.oddsX100B, r.oddsX100A]);
   });
 });

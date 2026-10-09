@@ -1,4 +1,4 @@
-import type { EncounterStatus, Prisma, TeamKind } from "@/generated/prisma/client";
+import type { EncounterStatus, MatchKind, Prisma, TeamKind } from "@/generated/prisma/client";
 import { ODDS_CONFIG } from "@/config/odds";
 import { db } from "@/lib/db";
 import {
@@ -13,16 +13,14 @@ import {
   predictionsCloseAfterReschedule,
 } from "@/lib/encounters/state";
 import { fftLabel } from "@/lib/fft";
-import { publicPlayerName } from "@/lib/names";
 import { type HistoricalMatch, headToHead, recentForm } from "@/lib/odds/history";
-import { computeOdds, formatOdds } from "@/lib/odds/model";
+import { computeDoublesOdds, computeOdds, formatOdds } from "@/lib/odds/model";
+import { MATCH_POINTS, kindWord, numberByKind, sideName } from "@/lib/matches";
 import { DomainError } from "./errors";
 import { getClubRole, isCaptainInClub, requireClubMember } from "./permissions";
 import { refundPendingPredictions } from "./refunds";
 
 type Tx = Prisma.TransactionClient;
-
-export const MAX_MATCHES = 8;
 
 /** Seules une rencontre terminée ou annulée se range dans les archives (une contrainte en base le garantit aussi). */
 export const ARCHIVABLE_STATUSES: EncounterStatus[] = ["CONFIRMED", "CANCELLED"];
@@ -127,6 +125,7 @@ async function loadHistory(tx: Tx, playerIds: string[], before: Date): Promise<H
     where: {
       voidedAt: null,
       outcome: { not: null },
+      kind: "SINGLES", // la forme et les confrontations ne viennent que des simples
       encounter: { status: "CONFIRMED", startsAt: { lt: before } },
       OR: [{ homePlayerId: { in: playerIds } }, { awayPlayerId: { in: playerIds } }],
     },
@@ -142,12 +141,40 @@ async function loadHistory(tx: Tx, playerIds: string[], before: Date): Promise<H
   }));
 }
 
-/** Calcule et fige les cotes d'un match (A = joueur domicile). */
+/** Calcule et fige les cotes d'un match (A = joueur ou paire domicile). Simple : niveau, forme, confrontations. Double : moyenne des niveaux. */
 async function freezeOdds(tx: Tx, matchId: string, now: Date): Promise<void> {
+  const playerSel = { select: { id: true, fftRank: true } } as const;
   const m = await tx.match.findUniqueOrThrow({
     where: { id: matchId },
-    select: { homePlayer: { select: { id: true, fftRank: true } }, awayPlayer: { select: { id: true, fftRank: true } } },
+    select: { kind: true, homePlayer: playerSel, awayPlayer: playerSel, homePlayer2: playerSel, awayPlayer2: playerSel },
   });
+
+  if (m.kind === "DOUBLES") {
+    const r = computeDoublesOdds({
+      ranksA: [m.homePlayer.fftRank, m.homePlayer2!.fftRank],
+      ranksB: [m.awayPlayer.fftRank, m.awayPlayer2!.fftRank],
+    });
+    await tx.match.update({
+      where: { id: matchId },
+      data: {
+        oddsHomeX100: r.oddsX100A,
+        oddsAwayX100: r.oddsX100B,
+        oddsComputedAt: now,
+        oddsInputs: {
+          configVersion: r.configVersion,
+          kind: "DOUBLES",
+          ranksHome: [m.homePlayer.fftRank, m.homePlayer2!.fftRank],
+          ranksAway: [m.awayPlayer.fftRank, m.awayPlayer2!.fftRank],
+          breakdown: r.breakdown,
+          rawProbabilityHome: r.rawProbabilityA,
+          probabilityHome: r.probabilityA,
+          probabilityAway: r.probabilityB,
+        },
+      },
+    });
+    return;
+  }
+
   const history = await loadHistory(tx, [m.homePlayer.id, m.awayPlayer.id], now);
   const formA = recentForm(m.homePlayer.id, history, ODDS_CONFIG.formWindow);
   const formB = recentForm(m.awayPlayer.id, history, ODDS_CONFIG.formWindow);
@@ -219,33 +246,86 @@ export async function createEncounter(actorId: string, input: CreateEncounterInp
 
 // ─────────────────────────────── Composition ───────────────────────────────
 
-async function validateMatchPlayers(
-  tx: Tx,
-  e: LoadedEncounter,
-  homePlayerId: string,
-  awayPlayerId: string,
-  ignoreMatchId?: string,
-) {
+/**
+ * Joueurs d'un match. Simple : un joueur par côté. Double : deux joueurs par côté (les deux champs « 2 » renseignés).
+ * `points` : 1 ou 2, ce que vaut le match au score final (1 par défaut).
+ */
+export type MatchSetup = {
+  homePlayerId: string;
+  awayPlayerId: string;
+  homePlayer2Id?: string | null;
+  awayPlayer2Id?: string | null;
+  points?: number;
+};
+
+type ParsedSetup = {
+  kind: MatchKind;
+  points: number;
+  homePlayerId: string;
+  awayPlayerId: string;
+  homePlayer2Id: string | null;
+  awayPlayer2Id: string | null;
+};
+
+function parseSetup(input: MatchSetup): ParsedSetup {
+  const homePlayer2Id = input.homePlayer2Id || null;
+  const awayPlayer2Id = input.awayPlayer2Id || null;
+  if ((homePlayer2Id === null) !== (awayPlayer2Id === null)) {
+    throw new DomainError("INVALID", "Un double compte deux joueurs de chaque côté");
+  }
+  const points = input.points ?? 1;
+  if (!(MATCH_POINTS as readonly number[]).includes(points)) throw new DomainError("INVALID", "Un match vaut 1 ou 2 points");
+  return {
+    kind: homePlayer2Id === null ? "SINGLES" : "DOUBLES",
+    points,
+    homePlayerId: input.homePlayerId,
+    awayPlayerId: input.awayPlayerId,
+    homePlayer2Id,
+    awayPlayer2Id,
+  };
+}
+
+async function validateMatchPlayers(tx: Tx, e: LoadedEncounter, setup: ParsedSetup, ignoreMatchId?: string) {
+  const homeIds = [setup.homePlayerId, ...(setup.homePlayer2Id ? [setup.homePlayer2Id] : [])];
+  const awayIds = [setup.awayPlayerId, ...(setup.awayPlayer2Id ? [setup.awayPlayer2Id] : [])];
+  if (new Set(homeIds).size !== homeIds.length || new Set(awayIds).size !== awayIds.length) {
+    throw new DomainError("INVALID", "Les deux joueurs d'une même paire doivent être différents");
+  }
+  // Uniquement des joueurs de l'équipe : chaque joueur vient de l'effectif de son côté.
   const [inHome, inAway] = await Promise.all([
-    tx.teamPlayer.findUnique({ where: { teamId_playerId: { teamId: e.homeTeam.id, playerId: homePlayerId } } }),
-    tx.teamPlayer.findUnique({ where: { teamId_playerId: { teamId: e.awayTeam.id, playerId: awayPlayerId } } }),
+    tx.teamPlayer.count({ where: { teamId: e.homeTeam.id, playerId: { in: homeIds } } }),
+    tx.teamPlayer.count({ where: { teamId: e.awayTeam.id, playerId: { in: awayIds } } }),
   ]);
-  if (!inHome) throw new DomainError("INVALID", `Le joueur domicile doit faire partie de l'effectif de ${e.homeTeam.name}`);
-  if (!inAway) throw new DomainError("INVALID", `Le joueur extérieur doit faire partie de l'effectif de ${e.awayTeam.name}`);
-  // Un seul simple par joueur et par rencontre (les doubles sont hors MVP).
+  const plural = setup.kind === "DOUBLES";
+  if (inHome !== homeIds.length) {
+    throw new DomainError("INVALID", `${plural ? "Les joueurs domicile doivent faire partie" : "Le joueur domicile doit faire partie"} de l'effectif de ${e.homeTeam.name}`);
+  }
+  if (inAway !== awayIds.length) {
+    throw new DomainError("INVALID", `${plural ? "Les joueurs extérieur doivent faire partie" : "Le joueur extérieur doit faire partie"} de l'effectif de ${e.awayTeam.name}`);
+  }
+  // Au plus un simple et un double par joueur et par rencontre.
+  const all = [...homeIds, ...awayIds];
   const busy = await tx.match.findFirst({
     where: {
       encounterId: e.id,
       voidedAt: null,
+      kind: setup.kind,
       id: ignoreMatchId ? { not: ignoreMatchId } : undefined,
       OR: [
-        { homePlayerId: { in: [homePlayerId, awayPlayerId] } },
-        { awayPlayerId: { in: [homePlayerId, awayPlayerId] } },
+        { homePlayerId: { in: all } },
+        { awayPlayerId: { in: all } },
+        { homePlayer2Id: { in: all } },
+        { awayPlayer2Id: { in: all } },
       ],
     },
     select: { id: true },
   });
-  if (busy) throw new DomainError("INVALID", "Ce joueur dispute déjà un simple dans cette rencontre");
+  if (busy) {
+    throw new DomainError(
+      "INVALID",
+      plural ? "Un de ces joueurs dispute déjà un double dans cette rencontre" : "Ce joueur dispute déjà un simple dans cette rencontre",
+    );
+  }
 }
 
 async function nextOrder(tx: Tx, encounterId: string): Promise<number> {
@@ -262,21 +342,16 @@ async function requireEditable(e: LoadedEncounter, now: Date): Promise<Effective
   return s;
 }
 
-export async function addMatch(
-  actorId: string,
-  encounterId: string,
-  players: { homePlayerId: string; awayPlayerId: string },
-  now = new Date(),
-): Promise<{ id: string }> {
+export async function addMatch(actorId: string, encounterId: string, input: MatchSetup, now = new Date()): Promise<{ id: string }> {
   return db.$transaction(async (tx) => {
     const e = await loadEncounter(tx, encounterId);
     await requireStaff(tx, actorId, e);
     const s = await requireEditable(e, now);
-    const active = await tx.match.count({ where: { encounterId, voidedAt: null } });
-    if (active >= MAX_MATCHES) throw new DomainError("INVALID", `${MAX_MATCHES} matchs au maximum par rencontre`);
-    await validateMatchPlayers(tx, e, players.homePlayerId, players.awayPlayerId);
+    // Pas de limite du nombre de matchs : il dépend du niveau de la rencontre.
+    const setup = parseSetup(input);
+    await validateMatchPlayers(tx, e, setup);
     const m = await tx.match.create({
-      data: { encounterId, order: await nextOrder(tx, encounterId), ...players },
+      data: { encounterId, order: await nextOrder(tx, encounterId), ...setup },
       select: { id: true },
     });
     // Rencontre déjà publiée : le nouveau match reçoit ses cotes tout de suite.
@@ -286,7 +361,7 @@ export async function addMatch(
 }
 
 async function loadMatchForEdit(tx: Tx, actorId: string, matchId: string, now: Date) {
-  const m = await tx.match.findUnique({ where: { id: matchId }, select: { id: true, encounterId: true, voidedAt: true } });
+  const m = await tx.match.findUnique({ where: { id: matchId }, select: { id: true, encounterId: true, voidedAt: true, kind: true } });
   if (!m || m.voidedAt) throw MATCH_NOT_FOUND;
   const e = await loadEncounter(tx, m.encounterId);
   await requireStaff(tx, actorId, e);
@@ -300,23 +375,27 @@ async function voidMatch(tx: Tx, matchId: string, now: Date): Promise<number> {
   return refundPendingPredictions(tx, { matchId }, now);
 }
 
-/** Modifie les joueurs d'un match. Publiée : l'ancien match est annulé (remboursements) et remplacé. */
+/** Modifie les joueurs (et les points) d'un match. Publiée : l'ancien match est annulé (remboursements) et remplacé. Un simple reste un simple, un double reste un double. */
 export async function replaceMatch(
   actorId: string,
   matchId: string,
-  players: { homePlayerId: string; awayPlayerId: string },
+  input: MatchSetup,
   now = new Date(),
 ): Promise<{ id: string; refunded: number }> {
   return db.$transaction(async (tx) => {
     const { m, e, s } = await loadMatchForEdit(tx, actorId, matchId, now);
-    await validateMatchPlayers(tx, e, players.homePlayerId, players.awayPlayerId, m.id);
+    const setup = parseSetup(input);
+    if (setup.kind !== m.kind) {
+      throw new DomainError("INVALID", `Un ${kindWord(m.kind)} ne devient pas un ${kindWord(setup.kind)} : retirez-le et ajoutez-en un nouveau`);
+    }
+    await validateMatchPlayers(tx, e, setup, m.id);
     if (s === "DRAFT") {
-      await tx.match.update({ where: { id: m.id }, data: players });
+      await tx.match.update({ where: { id: m.id }, data: setup });
       return { id: m.id, refunded: 0 };
     }
     const refunded = await voidMatch(tx, m.id, now);
     const fresh = await tx.match.create({
-      data: { encounterId: e.id, order: await nextOrder(tx, e.id), ...players },
+      data: { encounterId: e.id, order: await nextOrder(tx, e.id), ...setup },
       select: { id: true },
     });
     await freezeOdds(tx, fresh.id, now);
@@ -457,7 +536,11 @@ export type EncounterPageView = {
   clubTeamIsHome: boolean;
   matches: {
     id: string;
+    kind: MatchKind;
+    /** Numéro dans son type : Simple 1, Simple 2, Double 1… */
     number: number;
+    /** Points que vaut le match au score final. */
+    points: number;
     home: { name: string; rank: string };
     away: { name: string; rank: string };
     oddsHome: string | null;
@@ -474,7 +557,18 @@ export type EncounterPageView = {
     canDelete: boolean;
     homeRoster: { id: string; label: string }[];
     awayRoster: { id: string; label: string }[];
-    matches: { id: string; homePlayerId: string; awayPlayerId: string; homeFull: string; awayFull: string }[];
+    matches: {
+      id: string;
+      kind: MatchKind;
+      number: number;
+      points: number;
+      homePlayerId: string;
+      awayPlayerId: string;
+      homePlayer2Id: string | null;
+      awayPlayer2Id: string | null;
+      homeFull: string;
+      awayFull: string;
+    }[];
   };
 };
 
@@ -489,17 +583,24 @@ export async function getEncounterPage(viewerId: string | null, encounterId: str
   const s = effectiveStatus(e, now);
   if (s === "DRAFT" && !(await canSeeDraft(viewerId, e.organizerClubId))) throw ENCOUNTER_NOT_FOUND;
 
-  const matches = await db.match.findMany({
+  const playerSel = { select: { id: true, firstName: true, lastName: true, fftRank: true } } as const;
+  const rawMatches = await db.match.findMany({
     where: { encounterId, voidedAt: null },
-    orderBy: { order: "asc" },
+    orderBy: [{ kind: "asc" }, { order: "asc" }], // les simples d'abord, puis les doubles
     select: {
       id: true,
+      kind: true,
+      points: true,
       oddsHomeX100: true,
       oddsAwayX100: true,
-      homePlayer: { select: { id: true, firstName: true, lastName: true, fftRank: true } },
-      awayPlayer: { select: { id: true, firstName: true, lastName: true, fftRank: true } },
+      homePlayer: playerSel,
+      awayPlayer: playerSel,
+      homePlayer2: playerSel,
+      awayPlayer2: playerSel,
     },
   });
+  const matches = numberByKind(rawMatches);
+  const pair = (a: (typeof rawMatches)[number]["homePlayer"], b: (typeof rawMatches)[number]["homePlayer2"]) => (b ? [a, b] : [a]);
 
   const staff = viewerId ? await isStaff(viewerId, e) : false;
   let manage: EncounterPageView["manage"] = null;
@@ -531,10 +632,15 @@ export async function getEncounterPage(viewerId: string | null, encounterId: str
       awayRoster,
       matches: matches.map((m) => ({
         id: m.id,
+        kind: m.kind,
+        number: m.number,
+        points: m.points,
         homePlayerId: m.homePlayer.id,
         awayPlayerId: m.awayPlayer.id,
-        homeFull: `${m.homePlayer.firstName} ${m.homePlayer.lastName}`,
-        awayFull: `${m.awayPlayer.firstName} ${m.awayPlayer.lastName}`,
+        homePlayer2Id: m.homePlayer2?.id ?? null,
+        awayPlayer2Id: m.awayPlayer2?.id ?? null,
+        homeFull: pair(m.homePlayer, m.homePlayer2).map((p) => `${p.firstName} ${p.lastName}`).join(" / "),
+        awayFull: pair(m.awayPlayer, m.awayPlayer2).map((p) => `${p.firstName} ${p.lastName}`).join(" / "),
       })),
     };
   }
@@ -549,11 +655,13 @@ export async function getEncounterPage(viewerId: string | null, encounterId: str
     home: sideLabel(e.homeTeam),
     away: sideLabel(e.awayTeam),
     clubTeamIsHome: e.homeTeam.kind === "CLUB",
-    matches: matches.map((m, i) => ({
+    matches: matches.map((m) => ({
       id: m.id,
-      number: i + 1,
-      home: { name: publicPlayerName(m.homePlayer.firstName, m.homePlayer.lastName), rank: fftLabel(m.homePlayer.fftRank) },
-      away: { name: publicPlayerName(m.awayPlayer.firstName, m.awayPlayer.lastName), rank: fftLabel(m.awayPlayer.fftRank) },
+      kind: m.kind,
+      number: m.number,
+      points: m.points,
+      home: { name: sideName(pair(m.homePlayer, m.homePlayer2)), rank: pair(m.homePlayer, m.homePlayer2).map((p) => fftLabel(p.fftRank)).join(" · ") },
+      away: { name: sideName(pair(m.awayPlayer, m.awayPlayer2)), rank: pair(m.awayPlayer, m.awayPlayer2).map((p) => fftLabel(p.fftRank)).join(" · ") },
       oddsHome: m.oddsHomeX100 === null ? null : formatOdds(m.oddsHomeX100),
       oddsAway: m.oddsAwayX100 === null ? null : formatOdds(m.oddsAwayX100),
       oddsHomeX100: m.oddsHomeX100,

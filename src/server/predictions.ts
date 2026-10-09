@@ -1,7 +1,7 @@
 import type { Prisma, PredictionStatus, Side } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { effectiveStatus } from "@/lib/encounters/state";
-import { publicPlayerName } from "@/lib/names";
+import { sideName } from "@/lib/matches";
 import { formatOdds } from "@/lib/odds/model";
 import { MIN_COMMITTED_ACES } from "@/lib/predictions/payout";
 import { DomainError, isUniqueViolation } from "./errors";
@@ -47,7 +47,7 @@ export async function exclusionReason(tx: Tx, userId: string, e: EncounterForRul
     where: {
       encounterId: e.id,
       voidedAt: null,
-      OR: [{ homePlayer: { userId } }, { awayPlayer: { userId } }],
+      OR: [{ homePlayer: { userId } }, { awayPlayer: { userId } }, { homePlayer2: { userId } }, { awayPlayer2: { userId } }],
     },
     select: { id: true },
   });
@@ -225,6 +225,8 @@ export async function getWallet(userId: string): Promise<WalletView> {
             encounterId: true,
             homePlayer: { select: { firstName: true, lastName: true } },
             awayPlayer: { select: { firstName: true, lastName: true } },
+            homePlayer2: { select: { firstName: true, lastName: true } },
+            awayPlayer2: { select: { firstName: true, lastName: true } },
           },
         },
       },
@@ -245,12 +247,16 @@ export async function getWallet(userId: string): Promise<WalletView> {
             encounterId: true,
             homePlayer: { select: { firstName: true, lastName: true } },
             awayPlayer: { select: { firstName: true, lastName: true } },
+            homePlayer2: { select: { firstName: true, lastName: true } },
+            awayPlayer2: { select: { firstName: true, lastName: true } },
           },
         },
       },
     }),
   ]);
-  const initial = (p: { firstName: string; lastName: string }) => publicPlayerName(p.firstName, p.lastName);
+  type Person = { firstName: string; lastName: string };
+  const home = (m: { homePlayer: Person; homePlayer2: Person | null }) => sideName(m.homePlayer2 ? [m.homePlayer, m.homePlayer2] : [m.homePlayer]);
+  const away = (m: { awayPlayer: Person; awayPlayer2: Person | null }) => sideName(m.awayPlayer2 ? [m.awayPlayer, m.awayPlayer2] : [m.awayPlayer]);
   return {
     balance,
     pendingAces: pending.reduce((s, p) => s + p.committedAces, 0),
@@ -264,8 +270,8 @@ export async function getWallet(userId: string): Promise<WalletView> {
     settled: settled.map((p) => ({
       id: p.id,
       encounterId: p.match.encounterId,
-      matchLabel: `${initial(p.match.homePlayer)} contre ${initial(p.match.awayPlayer)}`,
-      pickedName: initial(p.pickedSide === "HOME" ? p.match.homePlayer : p.match.awayPlayer),
+      matchLabel: `${home(p.match)} contre ${away(p.match)}`,
+      pickedName: p.pickedSide === "HOME" ? home(p.match) : away(p.match),
       committedAces: p.committedAces,
       odds: formatOdds(p.oddsX100),
       status: p.status,
@@ -274,8 +280,8 @@ export async function getWallet(userId: string): Promise<WalletView> {
     pending: pending.map((p) => ({
       id: p.id,
       encounterId: p.match.encounterId,
-      matchLabel: `${initial(p.match.homePlayer)} contre ${initial(p.match.awayPlayer)}`,
-      pickedName: initial(p.pickedSide === "HOME" ? p.match.homePlayer : p.match.awayPlayer),
+      matchLabel: `${home(p.match)} contre ${away(p.match)}`,
+      pickedName: p.pickedSide === "HOME" ? home(p.match) : away(p.match),
       committedAces: p.committedAces,
       odds: formatOdds(p.oddsX100),
     })),

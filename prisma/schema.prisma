@@ -63,6 +63,11 @@ enum EncounterStatus {
   CANCELLED
 }
 
+enum MatchKind {
+  SINGLES
+  DOUBLES
+}
+
 enum Side {
   HOME
   AWAY
@@ -175,11 +180,13 @@ model Player {
   userId    String?  @unique // lien optionnel ; refusé tant que le joueur est dans une rencontre non réglée
   createdAt DateTime @default(now())
 
-  club        Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  teams       TeamPlayer[]
-  homeMatches Match[]      @relation("HomePlayer")
-  awayMatches Match[]      @relation("AwayPlayer")
+  club         Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  teams        TeamPlayer[]
+  homeMatches  Match[]      @relation("HomePlayer")
+  awayMatches  Match[]      @relation("AwayPlayer")
+  homeMatches2 Match[]      @relation("HomePlayer2")
+  awayMatches2 Match[]      @relation("AwayPlayer2")
 
   @@index([clubId])
 }
@@ -249,11 +256,17 @@ model EncounterEvent {
 }
 
 model Match {
-  id           String @id @default(cuid())
-  encounterId  String
-  order        Int // 1, 2, 3… ordre d'affichage
-  homePlayerId String
-  awayPlayerId String
+  id            String    @id @default(cuid())
+  encounterId   String
+  order         Int // 1, 2, 3… ordre de création (l'affichage met les simples avant les doubles)
+  kind          MatchKind @default(SINGLES)
+  // Points que vaut le match dans le score final de la rencontre : 1 ou 2 (au choix du club, surtout pour un double).
+  points        Int       @default(1)
+  // Simple : un joueur par côté. Double : homePlayerId + homePlayer2Id contre awayPlayerId + awayPlayer2Id.
+  homePlayerId  String
+  awayPlayerId  String
+  homePlayer2Id String?
+  awayPlayer2Id String?
 
   // Cotes figées au passage DRAFT → OPEN (copiées ensuite sur chaque pronostic).
   // Stockées en centièmes entiers (156 = 1,56) pour un calcul exact sans flottants.
@@ -274,11 +287,15 @@ model Match {
   encounter   Encounter    @relation(fields: [encounterId], references: [id], onDelete: Cascade)
   homePlayer  Player       @relation("HomePlayer", fields: [homePlayerId], references: [id], onDelete: Restrict)
   awayPlayer  Player       @relation("AwayPlayer", fields: [awayPlayerId], references: [id], onDelete: Restrict)
+  homePlayer2 Player?      @relation("HomePlayer2", fields: [homePlayer2Id], references: [id], onDelete: Restrict)
+  awayPlayer2 Player?      @relation("AwayPlayer2", fields: [awayPlayer2Id], references: [id], onDelete: Restrict)
   predictions Prediction[]
 
   @@unique([encounterId, order])
   @@index([homePlayerId])
   @@index([awayPlayerId])
+  @@index([homePlayer2Id])
+  @@index([awayPlayer2Id])
 }
 
 // ─────────────────────────────── Pronostics et portefeuille ───────────────────────────────

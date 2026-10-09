@@ -9,12 +9,16 @@ import {
   withdrawScoreAction,
 } from "@/app/actions/scores";
 import { initialFormState } from "@/app/actions/types";
+import type { MatchKind } from "@/generated/prisma/enums";
+import { kindTitle, kindWord, pointsLabel } from "@/lib/matches";
 import { OUTCOME_LABELS } from "@/lib/scores/result";
 import { Field, FormMessage, Select, SubmitButton, confirmOnSubmit } from "./ui";
 
 export type ScoreMatch = {
   id: string;
+  kind: MatchKind;
   number: number;
+  points: number;
   home: string;
   away: string;
   /** Valeurs de départ (résultat proposé, pour trancher un litige). */
@@ -29,17 +33,18 @@ function ScoreFields({ matches, values }: { matches: ScoreMatch[]; values?: Reco
       {matches.map((m) => (
         <fieldset key={m.id} className="space-y-3 border-t border-line pt-3">
           <legend className="font-semibold text-primary">
-            Simple {m.number} : {m.home} contre {m.away}
+            {kindTitle(m.kind)} {m.number} : {m.home} contre {m.away}
+            {m.points > 1 && <span className="font-normal text-ink-muted"> · {pointsLabel(m.points)}</span>}
           </legend>
           <input type="hidden" name="matchId" value={m.id} />
           <Select
-            label={`Issue du simple ${m.number}`}
+            label={`Issue du ${kindWord(m.kind)} ${m.number}`}
             name={`outcome_${m.id}`}
             defaultValue={values?.[`outcome_${m.id}`] ?? m.result?.outcome ?? "COMPLETED"}
             options={outcomeOptions}
           />
           <Select
-            label={`Vainqueur du simple ${m.number}`}
+            label={`Vainqueur du ${kindWord(m.kind)} ${m.number}`}
             name={`winner_${m.id}`}
             placeholder="Aucun (match non joué)"
             defaultValue={values?.[`winner_${m.id}`] ?? m.result?.winnerSide ?? ""}
@@ -49,7 +54,7 @@ function ScoreFields({ matches, values }: { matches: ScoreMatch[]; values?: Reco
             ]}
           />
           <Field
-            label={`Sets du simple ${m.number} (facultatif)`}
+            label={`Sets du ${kindWord(m.kind)} ${m.number} (facultatif)`}
             name={`sets_${m.id}`}
             defaultValue={values?.[`sets_${m.id}`] ?? m.result?.sets ?? ""}
             placeholder="6-4 3-6 10-8"

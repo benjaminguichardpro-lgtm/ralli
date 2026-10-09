@@ -22,6 +22,31 @@ const checks: Check[] = [
     sql: `UPDATE "Encounter" SET status = 'CONFIRMED', "archivedAt" = now() WHERE id = 'verif_e'`,
     expect: "ok",
   },
+  {
+    label: "Double sans ses deux joueurs supplémentaires (kind DOUBLES, joueurs 2 absents)",
+    sql: `INSERT INTO "Match"(id,"encounterId","order",kind,"homePlayerId","awayPlayerId") VALUES ('verif_d0','verif_e',2,'DOUBLES','verif_pl1','verif_pl2')`,
+    expect: "error",
+  },
+  {
+    label: "Simple avec un joueur supplémentaire (kind SINGLES + homePlayer2Id)",
+    sql: `INSERT INTO "Match"(id,"encounterId","order",kind,"homePlayerId","awayPlayerId","homePlayer2Id","awayPlayer2Id") VALUES ('verif_s2','verif_e',2,'SINGLES','verif_pl1','verif_pl2','verif_pl3','verif_pl4')`,
+    expect: "error",
+  },
+  {
+    label: "Double avec le même joueur deux fois dans la paire domicile",
+    sql: `INSERT INTO "Match"(id,"encounterId","order",kind,"homePlayerId","awayPlayerId","homePlayer2Id","awayPlayer2Id") VALUES ('verif_dd','verif_e',2,'DOUBLES','verif_pl1','verif_pl2','verif_pl1','verif_pl4')`,
+    expect: "error",
+  },
+  {
+    label: "Match valant 3 points",
+    sql: `INSERT INTO "Match"(id,"encounterId","order",points,"homePlayerId","awayPlayerId") VALUES ('verif_p3','verif_e',2,3,'verif_pl1','verif_pl2')`,
+    expect: "error",
+  },
+  {
+    label: "Double valide de 2 points (quatre joueurs)",
+    sql: `INSERT INTO "Match"(id,"encounterId","order",kind,points,"homePlayerId","awayPlayerId","homePlayer2Id","awayPlayer2Id") VALUES ('verif_dok','verif_e',2,'DOUBLES',2,'verif_pl1','verif_pl2','verif_pl3','verif_pl4')`,
+    expect: "ok",
+  },
   { label: "UPDATE sur LedgerEntry", sql: `UPDATE "LedgerEntry" SET amount = 999999 WHERE id = 'verif_le'`, expect: "error" },
   { label: "DELETE sur LedgerEntry", sql: `DELETE FROM "LedgerEntry" WHERE id = 'verif_le'`, expect: "error" },
   {
@@ -95,7 +120,8 @@ INSERT INTO "User"(id,email,"passwordHash","displayName","displayNameKey","ageCo
 INSERT INTO "Club"(id,name,"inviteCode","createdById") VALUES ('verif_c','Club vérif','VERIF1','verif_u');
 INSERT INTO "Team"(id,"clubId",name) VALUES ('verif_t1','verif_c','Équipe A'),('verif_t2','verif_c','Équipe B');
 INSERT INTO "Player"(id,"clubId","firstName","lastName","fftRank") VALUES
-  ('verif_pl1','verif_c','A','A','R30'),('verif_pl2','verif_c','B','B','R15');
+  ('verif_pl1','verif_c','A','A','R30'),('verif_pl2','verif_c','B','B','R15'),
+  ('verif_pl3','verif_c','C','C','R30'),('verif_pl4','verif_c','D','D','R15');
 INSERT INTO "Encounter"(id,"organizerClubId","homeTeamId","awayTeamId","startsAt","predictionsCloseAt","createdById","updatedAt")
   VALUES ('verif_e','verif_c','verif_t1','verif_t2',now(),now(),'verif_u',now());
 INSERT INTO "Match"(id,"encounterId","order","homePlayerId","awayPlayerId") VALUES ('verif_m','verif_e',1,'verif_pl1','verif_pl2');

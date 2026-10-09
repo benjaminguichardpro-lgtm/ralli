@@ -7,7 +7,8 @@ import { fieldErrors } from "@/lib/validation/account";
 import {
   cancelReasonSchema,
   createEncounterSchema,
-  matchPlayersSchema,
+  doublesSetupSchema,
+  singlesSetupSchema,
   parisDateTimeSchema,
 } from "@/lib/validation/encounter";
 import { idSchema } from "@/lib/validation/team";
@@ -60,24 +61,38 @@ export async function createEncounterAction(_: FormState, fd: FormData): Promise
   redirect(`/rencontres/${id}`);
 }
 
+/** Lit le formulaire d'un match : double si le champ « second joueur » est présent, simple sinon. */
+function readSetup(fd: FormData) {
+  const raw = {
+    homePlayerId: get(fd, "homePlayerId"),
+    awayPlayerId: get(fd, "awayPlayerId"),
+    homePlayer2Id: get(fd, "homePlayer2Id"),
+    awayPlayer2Id: get(fd, "awayPlayer2Id"),
+    points: get(fd, "points"),
+  };
+  const isDouble = fd.has("homePlayer2Id") || fd.has("awayPlayer2Id");
+  return isDouble ? doublesSetupSchema.safeParse(raw) : singlesSetupSchema.safeParse({ ...raw, homePlayer2Id: undefined, awayPlayer2Id: undefined });
+}
+
 export async function addMatchAction(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireUser();
   const encounterId = idSchema.safeParse(get(fd, "encounterId"));
-  const players = matchPlayersSchema.safeParse({ homePlayerId: get(fd, "homePlayerId"), awayPlayerId: get(fd, "awayPlayerId") });
+  const setup = readSetup(fd);
   if (!encounterId.success) return { message: "Requête invalide" };
-  if (!players.success) return { errors: fieldErrors(players.error) };
-  return run(() => addMatch(user.id, encounterId.data, players.data), "Match ajouté.");
+  if (!setup.success) return { errors: fieldErrors(setup.error) };
+  const isDouble = "homePlayer2Id" in setup.data;
+  return run(() => addMatch(user.id, encounterId.data, setup.data), isDouble ? "Double ajouté." : "Match ajouté.");
 }
 
 export async function replaceMatchAction(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireUser();
   const matchId = idSchema.safeParse(get(fd, "matchId"));
-  const players = matchPlayersSchema.safeParse({ homePlayerId: get(fd, "homePlayerId"), awayPlayerId: get(fd, "awayPlayerId") });
+  const setup = readSetup(fd);
   if (!matchId.success) return { message: "Requête invalide" };
-  if (!players.success) return { errors: fieldErrors(players.error) };
+  if (!setup.success) return { errors: fieldErrors(setup.error) };
   let refunded = 0;
   const r = await run(async () => {
-    ({ refunded } = await replaceMatch(user.id, matchId.data, players.data));
+    ({ refunded } = await replaceMatch(user.id, matchId.data, setup.data));
   });
   return r.message ? r : { message: `Match modifié.${refundNote(refunded)}` };
 }

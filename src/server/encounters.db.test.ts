@@ -119,18 +119,16 @@ describe("composition (R4)", () => {
     await expect(addMatch(admin, id, { homePlayerId: p1, awayPlayerId: x1 }, T0)).resolves.toHaveProperty("id");
   });
 
-  it("8 matchs au maximum", async () => {
+  it("pas de limite du nombre de matchs (il dépend du niveau de la rencontre)", async () => {
     const { id } = await create();
     const homes = await Promise.all(
-      Array.from({ length: 9 }, (_, i) => addNewPlayerToTeam(admin, m1, { firstName: "H", lastName: `N${i}`, fftRank: "R30" })),
+      Array.from({ length: 12 }, (_, i) => addNewPlayerToTeam(admin, m1, { firstName: "H", lastName: `N${i}`, fftRank: "R30" })),
     );
     const aways = await Promise.all(
-      Array.from({ length: 9 }, (_, i) => addNewPlayerToTeam(admin, ext, { firstName: "A", lastName: `N${i}`, fftRank: "R30" })),
+      Array.from({ length: 12 }, (_, i) => addNewPlayerToTeam(admin, ext, { firstName: "A", lastName: `N${i}`, fftRank: "R30" })),
     );
-    for (let i = 0; i < 8; i++) await addMatch(capA, id, { homePlayerId: homes[i]!.id, awayPlayerId: aways[i]!.id }, T0);
-    await expect(addMatch(capA, id, { homePlayerId: homes[8]!.id, awayPlayerId: aways[8]!.id }, T0)).rejects.toMatchObject({
-      code: "INVALID",
-    });
+    for (let i = 0; i < 12; i++) await addMatch(capA, id, { homePlayerId: homes[i]!.id, awayPlayerId: aways[i]!.id }, T0);
+    expect(await db.match.count({ where: { encounterId: id, voidedAt: null } })).toBe(12);
   });
 
   it("brouillon : modifier change le match sur place, retirer le supprime", async () => {

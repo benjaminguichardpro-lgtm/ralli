@@ -94,13 +94,57 @@ export function AddMatchForm({
   );
 }
 
+const POINTS_OPTIONS = [
+  { value: "1", label: "1 point" },
+  { value: "2", label: "2 points" },
+];
+
+/** Double : deux joueurs de l'équipe du club contre deux joueurs de l'équipe adverse, valant 1 ou 2 points. */
+export function AddDoubleForm({
+  encounterId,
+  homeRoster,
+  awayRoster,
+  published,
+}: {
+  encounterId: string;
+  homeRoster: PlayerOption[];
+  awayRoster: PlayerOption[];
+  published: boolean;
+}) {
+  const [state, action] = useActionState(addMatchAction, initialFormState);
+  const e = state.errors ?? {};
+  return (
+    <form key={state.message} action={action} className="space-y-3" noValidate>
+      <input type="hidden" name="encounterId" value={encounterId} />
+      <Select label="Joueur domicile 1" name="homePlayerId" placeholder="Choisir" options={toOptions(homeRoster)} error={e.homePlayerId} />
+      <Select label="Joueur domicile 2" name="homePlayer2Id" placeholder="Choisir" options={toOptions(homeRoster)} error={e.homePlayer2Id} />
+      <Select label="Joueur extérieur 1" name="awayPlayerId" placeholder="Choisir" options={toOptions(awayRoster)} error={e.awayPlayerId} />
+      <Select label="Joueur extérieur 2" name="awayPlayer2Id" placeholder="Choisir" options={toOptions(awayRoster)} error={e.awayPlayer2Id} />
+      <Select label="Valeur du double" name="points" defaultValue="1" options={POINTS_OPTIONS} error={e.points} />
+      {published && <p className="text-sm text-ink-muted">Rencontre publiée : les cotes de ce double seront calculées tout de suite.</p>}
+      <SubmitButton pendingLabel="Ajout…">Ajouter le double</SubmitButton>
+      <FormMessage>{state.message}</FormMessage>
+    </form>
+  );
+}
+
 export function EditMatchForm({
   match,
   homeRoster,
   awayRoster,
   published,
 }: {
-  match: { id: string; homePlayerId: string; awayPlayerId: string; homeFull: string; awayFull: string };
+  match: {
+    id: string;
+    kind: "SINGLES" | "DOUBLES";
+    points: number;
+    homePlayerId: string;
+    awayPlayerId: string;
+    homePlayer2Id: string | null;
+    awayPlayer2Id: string | null;
+    homeFull: string;
+    awayFull: string;
+  };
   homeRoster: PlayerOption[];
   awayRoster: PlayerOption[];
   published: boolean;
@@ -113,8 +157,20 @@ export function EditMatchForm({
     <div className="space-y-3 pt-2">
       <form action={editAction} onSubmit={published ? confirmOnSubmit(`Modifier le match ${label} ?${refundWarning}`) : undefined} className="space-y-3">
         <input type="hidden" name="matchId" value={match.id} />
-        <Select label="Joueur domicile" name="homePlayerId" defaultValue={match.homePlayerId} options={toOptions(homeRoster)} />
-        <Select label="Joueur extérieur" name="awayPlayerId" defaultValue={match.awayPlayerId} options={toOptions(awayRoster)} />
+        {match.kind === "DOUBLES" ? (
+          <>
+            <Select label="Joueur domicile 1" name="homePlayerId" defaultValue={match.homePlayerId} options={toOptions(homeRoster)} />
+            <Select label="Joueur domicile 2" name="homePlayer2Id" defaultValue={match.homePlayer2Id ?? ""} options={toOptions(homeRoster)} />
+            <Select label="Joueur extérieur 1" name="awayPlayerId" defaultValue={match.awayPlayerId} options={toOptions(awayRoster)} />
+            <Select label="Joueur extérieur 2" name="awayPlayer2Id" defaultValue={match.awayPlayer2Id ?? ""} options={toOptions(awayRoster)} />
+            <Select label="Valeur du double" name="points" defaultValue={String(match.points)} options={POINTS_OPTIONS} />
+          </>
+        ) : (
+          <>
+            <Select label="Joueur domicile" name="homePlayerId" defaultValue={match.homePlayerId} options={toOptions(homeRoster)} />
+            <Select label="Joueur extérieur" name="awayPlayerId" defaultValue={match.awayPlayerId} options={toOptions(awayRoster)} />
+          </>
+        )}
         <SubmitButton variant="ghost">Enregistrer le match</SubmitButton>
         <FormMessage>{editState.message}</FormMessage>
       </form>

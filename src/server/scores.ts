@@ -1,7 +1,7 @@
-import { Prisma, type Side } from "@/generated/prisma/client";
+import { Prisma, type MatchKind, type Side } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { STATUS_LABELS, effectiveStatus, nextStatus } from "@/lib/encounters/state";
-import { publicPlayerName } from "@/lib/names";
+import { numberByKind, sideName, tallyPoints } from "@/lib/matches";
 import { type MatchResult, OUTCOME_LABELS, type SetScore, formatSets, validateResult } from "@/lib/scores/result";
 import { DomainError } from "./errors";
 import {
@@ -158,7 +158,10 @@ export async function resolveDispute(actorId: string, encounterId: string, resul
 
 export type ScoreMatchView = {
   id: string;
+  kind: MatchKind;
+  /** Numéro dans son type : Simple 1, Double 1… */
   number: number;
+  points: number;
   home: string;
   away: string;
   result: null | { outcome: MatchResult["outcome"]; outcomeLabel: string; winnerSide: Side | null; winnerName: string | null; sets: string };
@@ -166,7 +169,7 @@ export type ScoreMatchView = {
 
 export type ScoreView = {
   matches: ScoreMatchView[];
-  /** Victoires de chaque camp, seulement quand le score est définitif. */
+  /** Points de chaque camp (un match gagné rapporte ses points : 1 ou 2), seulement quand le score est définitif. */
   tally: null | { home: number; away: number };
   /** Résultats saisis visibles : tout le monde une fois confirmés, sinon admins et capitaines du club (S11). */
   resultsVisible: boolean;
@@ -190,25 +193,34 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
   const final = status === "CONFIRMED";
   const resultsVisible = final || (reviewer && (status === "SCORE_PROPOSED" || status === "DISPUTED"));
 
-  const rows = await db.match.findMany({
-    where: { encounterId, voidedAt: null },
-    orderBy: { order: "asc" },
-    select: {
-      id: true,
-      outcome: true,
-      winnerSide: true,
-      sets: true,
-      homePlayer: { select: { firstName: true, lastName: true } },
-      awayPlayer: { select: { firstName: true, lastName: true } },
-    },
-  });
-  const matches: ScoreMatchView[] = rows.map((m, i) => {
-    const home = publicPlayerName(m.homePlayer.firstName, m.homePlayer.lastName);
-    const away = publicPlayerName(m.awayPlayer.firstName, m.awayPlayer.lastName);
+  const names = { select: { firstName: true, lastName: true } } as const;
+  const rows = numberByKind(
+    await db.match.findMany({
+      where: { encounterId, voidedAt: null },
+      orderBy: [{ kind: "asc" }, { order: "asc" }], // les simples d'abord, puis les doubles
+      select: {
+        id: true,
+        kind: true,
+        points: true,
+        outcome: true,
+        winnerSide: true,
+        sets: true,
+        homePlayer: names,
+        awayPlayer: names,
+        homePlayer2: names,
+        awayPlayer2: names,
+      },
+    }),
+  );
+  const matches: ScoreMatchView[] = rows.map((m) => {
+    const home = sideName(m.homePlayer2 ? [m.homePlayer, m.homePlayer2] : [m.homePlayer]);
+    const away = sideName(m.awayPlayer2 ? [m.awayPlayer, m.awayPlayer2] : [m.awayPlayer]);
     const showResult = resultsVisible && m.outcome !== null;
     return {
       id: m.id,
-      number: i + 1,
+      kind: m.kind,
+      number: m.number,
+      points: m.points,
       home,
       away,
       result: showResult
@@ -223,9 +235,7 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
     };
   });
 
-  const tally = final
-    ? { home: rows.filter((m) => m.winnerSide === "HOME").length, away: rows.filter((m) => m.winnerSide === "AWAY").length }
-    : null;
+  const tally = final ? tallyPoints(rows) : null;
 
   const staffHere = viewerId ? await isStaff(viewerId, e) : false;
   const mine = e.scoreProposedById === viewerId;

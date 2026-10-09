@@ -229,6 +229,8 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
     clubPlayers: string[];
     oppPlayers: string[];
     matches: number;
+    /** Doubles ajoutés après les simples : indices des joueurs de l'équipe du club et de l'adversaire. */
+    doubles?: { club: [number, number]; opp: [number, number]; points?: 1 | 2 }[];
     bettors: string[];
   };
 
@@ -246,6 +248,21 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
       const [home, away] = s.home ? [s.clubPlayers[i]!, s.oppPlayers[i]!] : [s.oppPlayers[i]!, s.clubPlayers[i]!];
       matchIds.push((await addMatch(users[s.organizer]!, id, { homePlayerId: home, awayPlayerId: away }, created)).id);
     }
+    for (const d of s.doubles ?? []) {
+      const club = [s.clubPlayers[d.club[0]]!, s.clubPlayers[d.club[1]]!] as const;
+      const opp = [s.oppPlayers[d.opp[0]]!, s.oppPlayers[d.opp[1]]!] as const;
+      const [home, away] = s.home ? [club, opp] : [opp, club];
+      matchIds.push(
+        (
+          await addMatch(
+            users[s.organizer]!,
+            id,
+            { homePlayerId: home[0], homePlayer2Id: home[1], awayPlayerId: away[0], awayPlayer2Id: away[1], points: d.points },
+            created,
+          )
+        ).id,
+      );
+    }
     return { id, matchIds, startsAt, betAt, openAt: s.startsInMs > 0 ? now : openAt, created, spec: s };
   }
   type Built = Awaited<ReturnType<typeof build>>;
@@ -260,7 +277,7 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
       for (const [mi, matchId] of b.matchIds.entries()) {
         if ((pi + mi) % 5 === 4) continue; // chacun saute quelques matchs
         const side: Side = rand() < 0.5 ? "HOME" : "AWAY";
-        const aces = (1 + Math.floor(rand() * 5)) * 10; // 10 à 50 : le solde de 1000 Aces suffit pour toute la démo
+        const aces = (1 + Math.floor(rand() * 3)) * 10; // 10 à 30 : le solde de 1000 Aces suffit pour toute la démo
         await placePrediction(users[p]!, { matchId, side, committedAces: aces }, b.betAt);
       }
     }
@@ -283,20 +300,20 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
   };
 
   // 1. Terminées (du plus ancien au plus récent, pour que forme et face-à-face s'accumulent dans l'ordre).
-  const h1 = await build({ ...lyonBase, ...M, opponent: opp.villeurbanne, oppPlayers: oppPlayers.villeurbanne, home: true, startsInMs: -21 * DAY, matches: 4 });
+  const h1 = await build({ ...lyonBase, ...M, opponent: opp.villeurbanne, oppPlayers: oppPlayers.villeurbanne, home: true, startsInMs: -21 * DAY, matches: 4, doubles: [{ club: [0, 1], opp: [0, 1] }] });
   await publish(h1);
   await bet(h1);
-  await playedAndConfirmed(h1, sides("HOME", "HOME!", "AWAY", "HOME"), new Date(h1.startsAt.getTime() + 4 * HOUR), new Date(h1.startsAt.getTime() + 5 * HOUR));
+  await playedAndConfirmed(h1, sides("HOME", "HOME!", "AWAY", "HOME", "HOME"), new Date(h1.startsAt.getTime() + 4 * HOUR), new Date(h1.startsAt.getTime() + 5 * HOUR));
 
   const h2 = await build({ ...lyonBase, ...D, opponent: opp.caluire, oppPlayers: oppPlayers.caluire, home: false, startsInMs: -14 * DAY, matches: 4 });
   await publish(h2);
   await bet(h2);
   await playedAndConfirmed(h2, sides("HOME", "AWAY", "AWAY!", "HOME"), new Date(h2.startsAt.getTime() + 4 * HOUR), new Date(h2.startsAt.getTime() + 5 * HOUR));
 
-  const h3 = await build({ ...lyonBase, ...M, opponent: opp.meyzieu, oppPlayers: oppPlayers.meyzieu, home: false, startsInMs: -8 * DAY, matches: 4 });
+  const h3 = await build({ ...lyonBase, ...M, opponent: opp.meyzieu, oppPlayers: oppPlayers.meyzieu, home: false, startsInMs: -8 * DAY, matches: 4, doubles: [{ club: [1, 2], opp: [1, 2], points: 2 }] });
   await publish(h3);
   await bet(h3);
-  await playedAndConfirmed(h3, sides("AWAY", "HOME", "HOME", "AWAY!"), new Date(h3.startsAt.getTime() + 4 * HOUR), new Date(h3.startsAt.getTime() + 5 * HOUR));
+  await playedAndConfirmed(h3, sides("AWAY", "HOME", "HOME", "AWAY!", "AWAY"), new Date(h3.startsAt.getTime() + 4 * HOUR), new Date(h3.startsAt.getTime() + 5 * HOUR));
 
   const n1 = await build({
     club: nantes.id,
@@ -356,7 +373,7 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
   await cancelEncounter(users.capitaine_dames_lyon!, cancelled.id, "Terrain impraticable (pluie), rencontre annulée", now);
 
   // 6. À venir, pronostics ouverts (Lyon et Nantes).
-  const open = await build({ ...lyonBase, ...M, opponent: opp.meyzieu, oppPlayers: oppPlayers.meyzieu, home: true, startsInMs: 3 * DAY, matches: 4 });
+  const open = await build({ ...lyonBase, ...M, opponent: opp.meyzieu, oppPlayers: oppPlayers.meyzieu, home: true, startsInMs: 3 * DAY, matches: 4, doubles: [{ club: [2, 3], opp: [2, 3], points: 2 }] });
   await publish(open);
   await bet(open);
 

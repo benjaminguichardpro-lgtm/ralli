@@ -71,10 +71,28 @@ export function oddsX100FromProbability(p: number): number {
   return Math.round(100 / p);
 }
 
-export function computeOdds(input: OddsInput, cfg: OddsConfig = ODDS_CONFIG): OddsResult {
+type Breakdown = OddsResult["breakdown"];
+
+/** Bornage, cotes et détail à partir de l'écart de rating (commun aux simples et aux doubles). */
+function resultFromDiff(diff: number, breakdown: Breakdown, cfg: OddsConfig): OddsResult {
   if (Math.abs(cfg.probabilityMin + cfg.probabilityMax - 1) > 1e-9) {
     throw new Error("Bornes de probabilité non symétriques : P(B) = 1 − P(A) ne tiendrait plus");
   }
+  const rawProbabilityA = eloProbability(diff, cfg);
+  const probabilityA = Math.min(cfg.probabilityMax, Math.max(cfg.probabilityMin, rawProbabilityA));
+  const probabilityB = 1 - probabilityA;
+  return {
+    rawProbabilityA,
+    probabilityA,
+    probabilityB,
+    oddsX100A: oddsX100FromProbability(probabilityA),
+    oddsX100B: oddsX100FromProbability(probabilityB),
+    breakdown,
+    configVersion: cfg.version,
+  };
+}
+
+export function computeOdds(input: OddsInput, cfg: OddsConfig = ODDS_CONFIG): OddsResult {
   const ratingA = ratingOf(input.rankA, cfg);
   const ratingB = ratingOf(input.rankB, cfg);
   const formAdjA = formAdjustment(input.formA, cfg);
@@ -83,19 +101,25 @@ export function computeOdds(input: OddsInput, cfg: OddsConfig = ODDS_CONFIG): Od
 
   // Un seul écart pour les deux joueurs (décision 18) : la symétrie est garantie par construction.
   const diff = ratingA + formAdjA - (ratingB + formAdjB) + h2hAdj;
-  const rawProbabilityA = eloProbability(diff, cfg);
-  const probabilityA = Math.min(cfg.probabilityMax, Math.max(cfg.probabilityMin, rawProbabilityA));
-  const probabilityB = 1 - probabilityA;
+  return resultFromDiff(diff, { ratingA, ratingB, formAdjA, formAdjB, h2hAdj, diff }, cfg);
+}
 
-  return {
-    rawProbabilityA,
-    probabilityA,
-    probabilityB,
-    oddsX100A: oddsX100FromProbability(probabilityA),
-    oddsX100B: oddsX100FromProbability(probabilityB),
-    breakdown: { ratingA, ratingB, formAdjA, formAdjB, h2hAdj, diff },
-    configVersion: cfg.version,
-  };
+export type DoublesOddsInput = {
+  ranksA: readonly [FftRank, FftRank];
+  ranksB: readonly [FftRank, FftRank];
+};
+
+/**
+ * Cotes d'un double : même formule et mêmes bornes que le simple, appliquées à la MOYENNE des ratings de chaque paire.
+ * Ni forme ni confrontations directes (elles n'ont pas de sens clair à quatre joueurs) : la forme et les
+ * confrontations des simples ne sont pas non plus alimentées par les doubles.
+ */
+export function computeDoublesOdds(input: DoublesOddsInput, cfg: OddsConfig = ODDS_CONFIG): OddsResult {
+  const average = (ranks: readonly [FftRank, FftRank]) => (ratingOf(ranks[0], cfg) + ratingOf(ranks[1], cfg)) / 2;
+  const ratingA = average(input.ranksA);
+  const ratingB = average(input.ranksB);
+  const diff = ratingA - ratingB;
+  return resultFromDiff(diff, { ratingA, ratingB, formAdjA: 0, formAdjB: 0, h2hAdj: 0, diff }, cfg);
 }
 
 /** Affichage français d'une cote : 156 → « 1,56 ». */

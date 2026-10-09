@@ -169,10 +169,18 @@ export async function updatePlayer(actorId: string, playerId: string, input: Pla
   await db.player.update({ where: { id: playerId }, data: input });
 }
 
+/** Le joueur est l'un des (deux ou quatre) joueurs du match : simple ou double. */
+const playerInMatch = (playerId: string) => [
+  { homePlayerId: playerId },
+  { awayPlayerId: playerId },
+  { homePlayer2Id: playerId },
+  { awayPlayer2Id: playerId },
+];
+
 /** Suppression d'une fiche : seulement si elle n'a jamais été alignée dans un match (historique des cotes). */
 export async function deletePlayer(actorId: string, playerId: string): Promise<void> {
   await requireManagePlayer(actorId, playerId);
-  const matches = await db.match.count({ where: { OR: [{ homePlayerId: playerId }, { awayPlayerId: playerId }] } });
+  const matches = await db.match.count({ where: { OR: playerInMatch(playerId) } });
   if (matches > 0) {
     throw new DomainError("PLAYER_HAS_MATCHES", "Ce joueur a déjà été aligné dans un match : sa fiche est conservée");
   }
@@ -183,7 +191,7 @@ export async function deletePlayer(actorId: string, playerId: string): Promise<v
 async function isInLiveEncounter(playerId: string): Promise<boolean> {
   const n = await db.match.count({
     where: {
-      OR: [{ homePlayerId: playerId }, { awayPlayerId: playerId }],
+      OR: playerInMatch(playerId),
       encounter: { status: { in: LINK_FROZEN_STATUSES }, settledAt: null },
     },
   });
