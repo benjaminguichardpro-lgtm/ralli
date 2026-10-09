@@ -33,7 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </header>
         <main className="mx-auto w-full max-w-xl flex-1 px-4 py-6">{children}</main>
         <footer className="px-4 pb-24 pt-6 text-center text-sm text-ink-muted">
-          Jeu gratuit, sans argent réel, réservé aux 18 ans et plus.
+          Jeu gratuit, sans argent réel.
         </footer>
         <Suspense fallback={null}>
           <AppNav />

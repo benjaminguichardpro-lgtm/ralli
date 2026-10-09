@@ -12,7 +12,7 @@ export async function checkPage(page: Page, shot?: string) {
   await page.waitForLoadState("networkidle");
   const text = await page.locator("body").innerText();
   expect(findForbiddenWords(text), `mots interdits sur ${page.url()}`).toEqual([]);
-  await expect(page.getByText("Jeu gratuit, sans argent réel, réservé aux 18 ans et plus.")).toBeVisible();
+  await expect(page.getByText("Jeu gratuit, sans argent réel.", { exact: true })).toBeVisible();
   const heights = await page
     // Cases à cocher et boutons radio : la zone tactile est leur <label>, mesuré à la place.
     .locator(
