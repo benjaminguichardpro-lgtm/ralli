@@ -1,6 +1,6 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
 import sharp from "sharp";
-import { checkPage, signOut, signUp } from "./helpers";
+import { checkPage, signOut, signUp, revealInviteCode } from "./helpers";
 
 // Ines (admin), Jules et Kim (membres), Lea (aucun club en commun), un visiteur sans compte.
 
@@ -28,7 +28,7 @@ test("mise en place : club d'Ines, Jules et Kim membres, Lea sans club", async (
   await ines.goto("/clubs/nouveau");
   await ines.getByLabel("Nom du club").fill("TC Avatars");
   await ines.getByRole("button", { name: "Créer le club" }).click();
-  const code = (await ines.getByTestId("invite-code").innerText()).trim();
+  const code = await revealInviteCode(ines);
   clubUrl = ines.url();
   for (const [page, name] of [[jules, "Jules"], [kim, "Kim"]] as const) {
     await register(page, name);
@@ -81,8 +81,13 @@ test("Jules choisit « Le smash » : bannière et profil suivent, y compris apr�
 
 test("Jules importe une photo : recadrée en carré, affichée partout, plus aucun avatar prédéfini marqué", async () => {
   const form = jules.getByTestId("photo-upload");
-  await form.getByLabel(/Photo \(JPG/).setInputFiles({ name: "moi.jpg", mimeType: "image/jpeg", buffer: await photo(900, 400) });
-  await form.getByRole("button", { name: "Importer cette photo" }).click();
+  // Le bouton « Importer une photo » est juste sous l'avatar, et ouvre le choix de fichier.
+  const avatarBox = (await jules.getByTestId("profile-name").locator("xpath=..").getByTestId("avatar").boundingBox())!;
+  const buttonBox = (await form.getByRole("button", { name: "Importer une photo" }).boundingBox())!;
+  expect(buttonBox.y).toBeGreaterThan(avatarBox.y + avatarBox.height);
+  const chooser = jules.waitForEvent("filechooser");
+  await form.getByRole("button", { name: "Importer une photo" }).click();
+  await (await chooser).setFiles({ name: "moi.jpg", mimeType: "image/jpeg", buffer: await photo(900, 400) });
   await expect(form.getByText("Photo enregistrée.")).toBeVisible();
   await expect(headerAvatar(jules)).toHaveAttribute("src", /^\/api\/avatar\/[\w-]+\?v=\d+$/);
   julesPhotoUrl = (await headerAvatar(jules).getAttribute("src"))!;
@@ -95,12 +100,10 @@ test("Jules importe une photo : recadrée en carré, affichée partout, plus auc
 
 test("fichiers refusés : trop lourd, pas une image", async () => {
   const form = jules.getByTestId("photo-upload");
-  const input = form.getByLabel(/Photo \(JPG/);
+  const input = form.getByTestId("photo-input");
   await input.setInputFiles({ name: "lourde.jpg", mimeType: "image/jpeg", buffer: Buffer.alloc(5.5 * 1024 * 1024) });
-  await form.getByRole("button", { name: "Importer cette photo" }).click();
   await expect(form.getByText("Photo trop lourde (5 Mo au maximum).")).toBeVisible();
   await input.setInputFiles({ name: "faux.png", mimeType: "image/png", buffer: Buffer.from("ceci n'est pas une image") });
-  await form.getByRole("button", { name: "Importer cette photo" }).click();
   await expect(form.getByText(/illisible|Format non pris en charge/)).toBeVisible();
   // La photo précédente est intacte.
   await expect(headerAvatar(jules)).toHaveAttribute("src", julesPhotoUrl);

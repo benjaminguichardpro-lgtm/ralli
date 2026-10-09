@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { resetMemberAvatarAction, setAvatarPresetAction, uploadAvatarAction } from "@/app/actions/profile";
 import { initialFormState } from "@/app/actions/types";
 import { AVATARS, PHOTO_MAX_BYTES } from "@/lib/avatars";
@@ -43,25 +43,37 @@ export function AvatarPicker({ current }: { current: string | null }) {
   );
 }
 
-export function PhotoUploadForm() {
-  const [state, action] = useActionState(uploadAvatarAction, initialFormState);
+/**
+ * Bouton « Importer une photo » : il ouvre le choix de fichier, et la photo part dès qu'elle est choisie (pas de second clic).
+ * Le champ fichier reste dans le DOM, masqué : les lecteurs d'écran et les tests passent par le bouton.
+ */
+export function PhotoUploadButton() {
+  const [state, action, pending] = useActionState(uploadAvatarAction, initialFormState);
+  const form = useRef<HTMLFormElement>(null);
+  const input = useRef<HTMLInputElement>(null);
   return (
-    <form action={action} className="space-y-3" data-testid="photo-upload">
-      <label className="block space-y-1">
-        <span className="font-medium">Photo (JPG, PNG ou WebP, {PHOTO_MAX_BYTES / 1024 / 1024} Mo au maximum)</span>
-        <input
-          type="file"
-          name="photo"
-          accept="image/jpeg,image/png,image/webp"
-          required
-          className="block min-h-11 w-full rounded-lg border border-line bg-surface p-2"
-        />
-      </label>
-      <p className="text-sm text-ink-muted">La photo est recadrée au centre, en carré.</p>
+    <form ref={form} action={action} className="flex w-full flex-col items-center gap-2" data-testid="photo-upload">
+      <input
+        ref={input}
+        type="file"
+        name="photo"
+        accept="image/jpeg,image/png,image/webp"
+        tabIndex={-1}
+        aria-hidden="true"
+        className="hidden"
+        data-testid="photo-input"
+        onChange={(e) => e.currentTarget.files?.length && form.current?.requestSubmit()}
+      />
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => input.current?.click()}
+        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-primary bg-surface px-5 font-semibold text-primary transition-opacity disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        {pending ? "Envoi…" : "Importer une photo"}
+      </button>
+      <p className="text-center text-sm text-ink-muted">JPG, PNG ou WebP, {PHOTO_MAX_BYTES / 1024 / 1024} Mo au maximum. Recadrée au centre, en carré.</p>
       <FormMessage>{state.message}</FormMessage>
-      <SubmitButton className="w-full" variant="ghost" pendingLabel="Envoi…">
-        Importer cette photo
-      </SubmitButton>
     </form>
   );
 }

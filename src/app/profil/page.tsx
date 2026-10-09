@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { signOutAction } from "@/app/actions/auth";
 import { Avatar } from "@/components/avatar";
-import { AvatarPicker, PhotoUploadForm } from "@/components/profile-forms";
+import { AvatarPicker, PhotoUploadButton } from "@/components/profile-forms";
 import { requireUser } from "@/lib/auth/current-user";
 
 export const metadata: Metadata = { title: "Mon profil · Ralli" };
@@ -23,21 +23,17 @@ async function Content() {
   const user = await requireUser();
   return (
     <>
-      <div className="flex items-center gap-4 rounded-2xl bg-surface p-4 shadow-sm">
-        <Avatar user={user} size={80} />
+      <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface p-5 shadow-sm">
+        <Avatar user={user} size={112} />
         <p className="font-serif text-2xl text-primary" data-testid="profile-name">
           {user.displayName}
         </p>
+        <PhotoUploadButton />
       </div>
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <h2 className="font-serif text-xl text-primary">Choisir un avatar</h2>
+        <h2 className="font-serif text-xl text-primary">Ou choisir un avatar</h2>
         <AvatarPicker current={user.avatarPhotoAt ? null : user.avatarKey} />
-      </div>
-
-      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <h2 className="font-serif text-xl text-primary">Ou importer une photo</h2>
-        <PhotoUploadForm />
       </div>
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
