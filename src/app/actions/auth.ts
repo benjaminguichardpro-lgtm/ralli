@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { signIn, signOut } from "@/auth";
 import { requireUser } from "@/lib/auth/current-user";
+import { afterAuthPath } from "@/lib/clubs/invite-link";
 import { changePasswordSchema, fieldErrors, signInSchema, signUpSchema } from "@/lib/validation/account";
 import { changePassword, registerUser } from "@/server/accounts";
 import { DomainError } from "@/server/errors";
@@ -36,7 +37,7 @@ export async function signUpAction(_: FormState, fd: FormData): Promise<FormStat
     throw e;
   }
   // Connexion immédiate après inscription ; signIn redirige (exception de contrôle à laisser passer).
-  await signIn("credentials", { identifier: parsed.data.email, password: parsed.data.password, redirectTo: "/" });
+  await signIn("credentials", { identifier: parsed.data.email, password: parsed.data.password, redirectTo: afterAuthPath(str(fd, "invitation")) });
   return {};
 }
 
@@ -46,7 +47,7 @@ export async function signInAction(_: FormState, fd: FormData): Promise<FormStat
   const parsed = signInSchema.safeParse(raw);
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values };
   try {
-    await signIn("credentials", { ...parsed.data, redirectTo: "/" });
+    await signIn("credentials", { ...parsed.data, redirectTo: afterAuthPath(str(fd, "invitation")) });
   } catch (e) {
     if (e instanceof AuthError) return { message: "Email, pseudo ou mot de passe incorrect", values };
     throw e;

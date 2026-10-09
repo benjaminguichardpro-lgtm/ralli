@@ -8,7 +8,9 @@ import {
   setMemberRoleAction,
 } from "@/app/actions/clubs";
 import { initialFormState } from "@/app/actions/types";
-import { Field, FormMessage, SubmitButton } from "./ui";
+import { invitePath } from "@/lib/clubs/invite-link";
+import { WhatsAppShare } from "./share-link";
+import { Field, FieldError, FormMessage, SubmitButton } from "./ui";
 
 export function CreateClubForm() {
   const [state, action] = useActionState(createClubAction, initialFormState);
@@ -45,8 +47,22 @@ export function JoinClubForm({ defaultCode }: { defaultCode?: string }) {
   );
 }
 
+/** Page du lien d'invitation : une confirmation, pour ne pas entrer dans un club en touchant un lien par erreur. */
+export function JoinInviteForm({ code, clubName }: { code: string; clubName: string }) {
+  const [state, action] = useActionState(joinClubAction, initialFormState);
+  return (
+    <form action={action} className="space-y-3">
+      <input type="hidden" name="code" value={code} />
+      {state.errors?.code && <FieldError>{state.errors.code}</FieldError>}
+      <SubmitButton className="w-full" pendingLabel="Un instant…">
+        Rejoindre {clubName}
+      </SubmitButton>
+    </form>
+  );
+}
+
 /** Le code reste caché tant qu'on n'a pas appuyé sur le bouton (écran partagé, capture d'écran). */
-export function InviteCodeReveal({ code, clubId }: { code: string; clubId: string }) {
+export function InviteCodeReveal({ code, clubId, clubName }: { code: string; clubId: string; clubName: string }) {
   const [shown, setShown] = useState(false);
   return (
     <div className="space-y-3">
@@ -55,6 +71,11 @@ export function InviteCodeReveal({ code, clubId }: { code: string; clubId: strin
           <p data-testid="invite-code" className="font-mono text-3xl font-bold tracking-widest text-ink">
             {code}
           </p>
+          <WhatsAppShare
+            label="Inviter par WhatsApp"
+            text={`Rejoins ${clubName} sur Ralli pour pronostiquer nos interclubs de tennis (jeu gratuit, sans argent réel) :`}
+            path={invitePath(code)}
+          />
           {/* Régénérer le code n'est proposé qu'une fois le code révélé. */}
           <RegenerateCodeForm clubId={clubId} />
         </>

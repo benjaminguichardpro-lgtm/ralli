@@ -33,6 +33,12 @@ export async function createClub(actorId: string, name: string): Promise<{ id: s
   );
 }
 
+/** Club derrière un code d'invitation (page du lien d'invitation) ; null si le code est faux. Ne donne que le nom. */
+export async function findClubByInviteCode(rawCode: string): Promise<{ id: string; name: string } | null> {
+  if (!isWellFormedInviteCode(rawCode)) return null;
+  return db.club.findUnique({ where: { inviteCode: rawCode }, select: { id: true, name: true } });
+}
+
 export async function joinClubByCode(actorId: string, rawCode: string): Promise<{ clubId: string }> {
   const invalid = new DomainError("INVALID_INVITE_CODE", "Code d'invitation invalide");
   if (!isWellFormedInviteCode(rawCode)) throw invalid;

@@ -30,7 +30,8 @@ export type FeedEncounter = {
   matches: FeedMatch[];
 };
 
-export type HomeFeed = { balance: number; encounters: FeedEncounter[]; hasClub: boolean };
+/** `stewardClubs` : clubs où l'utilisateur peut créer une rencontre (admin du club ou capitaine d'une de ses équipes). */
+export type HomeFeed = { balance: number; encounters: FeedEncounter[]; hasClub: boolean; stewardClubs: { id: string; name: string }[] };
 
 const teamSelect = { name: true, kind: true, externalClubName: true, captainId: true, club: { select: { name: true } } } as const;
 const playerSelect = { firstName: true, lastName: true, fftRank: true } as const;
@@ -40,9 +41,19 @@ const playerSelect = { firstName: true, lastName: true, fftRank: true } as const
  * avec leurs simples, leurs cotes et le pronostic éventuel de l'utilisateur.
  */
 export async function getHomeFeed(userId: string, now = new Date()): Promise<HomeFeed> {
-  const [balance, memberships, rows] = await Promise.all([
+  const [balance, memberships, stewardClubs, rows] = await Promise.all([
     balanceIn(db, userId),
     db.clubMembership.count({ where: { userId } }),
+    db.club.findMany({
+      where: {
+        OR: [
+          { memberships: { some: { userId, role: "ADMIN" } } },
+          { memberships: { some: { userId } }, teams: { some: { kind: "CLUB", captainId: userId } } },
+        ],
+      },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
     db.encounter.findMany({
       where: { organizerClub: { memberships: { some: { userId } } }, status: { in: ["OPEN", "SCORE_PROPOSED", "DISPUTED"] } },
       orderBy: { startsAt: "asc" },
@@ -114,5 +125,5 @@ export async function getHomeFeed(userId: string, now = new Date()): Promise<Hom
     }),
   );
 
-  return { balance, encounters, hasClub: memberships > 0 };
+  return { balance, encounters, hasClub: memberships > 0, stewardClubs };
 }

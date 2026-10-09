@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { StatusBadge } from "@/components/encounter-list";
+import { WhatsAppShare } from "@/components/share-link";
 import { ButtonLink } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { formatParisDay, formatParisTime, relativeDayLabel } from "@/lib/time";
@@ -23,6 +24,7 @@ async function HomeContent() {
   const feed = await getHomeFeed(user.id, now);
   const next = feed.encounters.find((e) => e.status === "OPEN");
   const others = feed.encounters.filter((e) => e !== next);
+  const only = feed.stewardClubs[0];
 
   return (
     <section className="space-y-5">
@@ -44,10 +46,30 @@ async function HomeContent() {
       ) : feed.encounters.length === 0 ? (
         <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
           <h2 className="font-serif text-xl text-primary">Pas de rencontre pour l&apos;instant</h2>
-          <p className="text-ink-muted">Dès qu&apos;un capitaine ou un admin publie une rencontre de votre club, elle apparaît ici avec ses cotes.</p>
-          <ButtonLink href="/clubs" variant="ghost">
-            Mes clubs
-          </ButtonLink>
+          {feed.stewardClubs.length > 0 ? (
+            <>
+              <p className="text-ink-muted">Publie la prochaine rencontre de ton club : elle apparaît ici avec ses cotes, et tes coéquipiers peuvent pronostiquer.</p>
+              <ButtonLink href={feed.stewardClubs.length === 1 && only ? `/clubs/${only.id}/rencontres/nouvelle` : "/clubs"}>
+                Créer une rencontre
+              </ButtonLink>
+            </>
+          ) : (
+            <>
+              <p className="text-ink-muted" data-testid="empty-member">
+                Ton capitaine publiera bientôt la prochaine rencontre. Elle apparaîtra ici avec ses cotes.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <WhatsAppShare
+                  label="Inviter des coéquipiers"
+                  text="Rejoins-moi sur Ralli pour pronostiquer les interclubs de tennis (jeu gratuit, sans argent réel) :"
+                  path="/inscription"
+                />
+                <ButtonLink href="/clubs" variant="ghost">
+                  Mes clubs
+                </ButtonLink>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-4" data-testid="feed">

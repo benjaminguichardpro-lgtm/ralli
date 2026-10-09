@@ -7,11 +7,12 @@ import { initialFormState } from "@/app/actions/types";
 import { PASSWORD_MIN } from "@/lib/validation/account";
 import { Field, FieldError, FormMessage, SubmitButton } from "./ui";
 
-export function SignUpForm() {
+export function SignUpForm({ invitation }: { invitation?: string }) {
   const [state, action] = useActionState(signUpAction, initialFormState);
   const e = state.errors ?? {};
   return (
     <form action={action} className="space-y-4" noValidate>
+      {invitation && <input type="hidden" name="invitation" value={invitation} />}
       <FormMessage>{e._}</FormMessage>
       <Field label="Email" name="email" type="email" autoComplete="email" required defaultValue={state.values?.email} error={e.email} />
       <Field
@@ -50,7 +51,7 @@ export function SignUpForm() {
       </SubmitButton>
       <p className="text-center text-ink-muted">
         Déjà inscrit ?{" "}
-        <Link href="/connexion" className="font-semibold text-primary underline">
+        <Link href={invitation ? `/connexion?invitation=${invitation}` : "/connexion"} className="font-semibold text-primary underline">
           Se connecter
         </Link>
       </p>
@@ -58,11 +59,12 @@ export function SignUpForm() {
   );
 }
 
-export function SignInForm() {
+export function SignInForm({ invitation }: { invitation?: string }) {
   const [state, action] = useActionState(signInAction, initialFormState);
   const e = state.errors ?? {};
   return (
     <form action={action} className="space-y-4" noValidate>
+      {invitation && <input type="hidden" name="invitation" value={invitation} />}
       <FormMessage>{state.message}</FormMessage>
       <Field
         label="Email ou pseudo"
@@ -83,7 +85,7 @@ export function SignInForm() {
       </p>
       <p className="text-center text-ink-muted">
         Pas encore de compte ?{" "}
-        <Link href="/inscription" className="font-semibold text-primary underline">
+        <Link href={invitation ? `/inscription?invitation=${invitation}` : "/inscription"} className="font-semibold text-primary underline">
           S&apos;inscrire
         </Link>
       </p>

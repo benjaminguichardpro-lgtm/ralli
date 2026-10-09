@@ -71,8 +71,8 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
       {isAdmin && club.inviteCode && (
         <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
           <h2 className="font-serif text-xl text-primary">Code d&apos;invitation</h2>
-          <InviteCodeReveal code={club.inviteCode} clubId={club.id} />
-          <p className="text-sm text-ink-muted">À communiquer aux membres, joueurs et proches. Ils le saisissent dans « Rejoindre un club ».</p>
+          <InviteCodeReveal code={club.inviteCode} clubId={club.id} clubName={club.name} />
+          <p className="text-sm text-ink-muted">À communiquer aux membres, joueurs et proches : par le lien WhatsApp, ou en leur donnant le code à saisir dans « Rejoindre un club ». Le lien contient le code : envoie-le seulement aux personnes que tu invites.</p>
         </div>
       )}
 
@@ -81,7 +81,13 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
         {encounters.length > 0 && <EncounterFilters clubId={club.id} current={filter} counts={countFilters(encounters)} />}
         <EncounterList
           items={applyFilter(encounters, filter)}
-          empty={filter === "toutes" ? "Aucune rencontre pour l'instant." : "Aucune rencontre dans cette catégorie."}
+          empty={
+            filter !== "toutes"
+              ? "Aucune rencontre dans cette catégorie."
+              : isAdmin || isCaptain
+                ? "Aucune rencontre pour l'instant."
+                : "Ton capitaine publiera bientôt la prochaine rencontre."
+          }
         />
         {(isAdmin || isCaptain) && (
           <ButtonLink href={`/clubs/${club.id}/rencontres/nouvelle`}>Nouvelle rencontre</ButtonLink>

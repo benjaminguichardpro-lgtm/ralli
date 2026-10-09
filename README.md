@@ -179,6 +179,15 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 - **Filtres** (page du club, un seul à la fois, dans l'adresse : `?statut=victoires`, un paramètre inconnu vaut « Toutes ») : Toutes, À venir (brouillons pour le staff, pronostics ouverts), En cours (pronostics fermés, score proposé, score contesté), Terminées, Victoires, Défaites, Nuls, Annulées. Chaque puce affiche son nombre. Les archives restent à part, sans filtre. Aucun changement de base : tout est calculé à partir des points.
 - Démo de Lyon : 2 victoires, 1 défaite, 1 nul, 1 annulée, 3 en cours, 2 à venir.
 
+## Lien d'invitation et écrans vides (tranche 16, `src/lib/clubs/invite-link.ts`, page `src/app/rejoindre/[code]/page.tsx`)
+
+- **Lien** : `/rejoindre/CODE`. Sans compte, la page nomme le club et propose « Créer un compte » ou « J'ai déjà un compte » (`?invitation=CODE`) ; après l'inscription ou la connexion, retour sur le lien avec une **confirmation** (« Rejoindre X ? »), jamais d'adhésion automatique. Déjà membre : lien vers le club. Code faux ou périmé (régénéré) : message neutre, sans nom de club. Page `noindex`.
+- **Garde-fou** : l'adresse de retour après connexion est toujours reconstruite à partir d'un code bien formé (`afterAuthPath`) : jamais d'adresse fournie par l'URL.
+- **Bouton « Inviter par WhatsApp »** : chez l'admin, seulement une fois le code révélé ; le lien contient le code (à n'envoyer qu'aux personnes invitées). Un membre simple ne voit jamais le code ; il peut partager l'adresse d'inscription générale (sans code).
+- **Écrans vides** : accueil et page du club. Admin ou capitaine : « Créer une rencontre » ; membre : « Ton capitaine publiera bientôt la prochaine rencontre » + « Inviter des coéquipiers ».
+- **Pas encore fait** (en attente de la migration `onboardingSeenAt` / `resultsSeenAt` sur `User`, à valider) : guide du premier lancement en 3 écrans, puis tranche 17 (partage WhatsApp d'une rencontre, récapitulatif des pronostics réglés).
+- Tests : `src/lib/clubs/invite-link.test.ts`, E2E `slice16-invitations.spec.ts`.
+
 ## Doubles (tranche 14, `src/server/encounters.ts`, cotes dans `src/lib/odds/model.ts`, libellés dans `src/lib/matches.ts`)
 
 - **Composition** : « Ajouter un double » (en plus de « Ajouter un simple ») : 2 joueurs de l'effectif de l'équipe du club contre 2 joueurs de l'effectif de l'équipe adverse, rien d'autre. Un joueur peut jouer **un simple et un double** dans la même rencontre, jamais deux doubles ni deux simples. Aucune limite du nombre de matchs.
@@ -210,7 +219,7 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 
 `npm run seed:demo` remplit la base de dev avec des données de démonstration, en passant par les **vraies fonctions** du produit (soldes, ledger, cotes et classements sont donc cohérents). Les dates sont relatives à l'instant du lancement : relancer le matin d'une démo remet tout à neuf.
 
-- **Garde-fous** : refuse toute base qui n'est pas locale (`localhost`) ; refuse si la démo est déjà chargée ; `-- --reset` vide **toute** la base (le ledger est append-only, on ne peut pas supprimer que les lignes de démo) et exige `-- --reset --tout-effacer` si des comptes non démo existent.
+- **Garde-fous** : refuse toute base qui n'est pas locale (`localhost`), sauf autorisation explicite qui recopie le nom exact du serveur visé (`-- --base-distante=<serveur>`, utilisée pour charger la démo sur Neon ; jamais avec `--reset`) ; refuse si la démo est déjà chargée ; `-- --reset` vide **toute** la base (le ledger est append-only, on ne peut pas supprimer que les lignes de démo) et exige `-- --reset --tout-effacer` si des comptes non démo existent.
 - **Comptes** (mot de passe commun `demo-ralli-2026`, connexion par pseudo ou `pseudo@demo.ralli.test`) : `admin_lyon`, `capitaine_lyon`, `capitaine_dames_lyon`, `joueur_lyon` (fiche liée, aligné en Messieurs 1), `admin_nantes`, `capitaine_nantes`, `joueur_nantes`, `admin_bordeaux` (club vide), `parieur1` à `parieur6`. Les comptes sont créés « il y a 30 jours » : la popup de connexion quotidienne apparaît à la première ouverture.
 - **TC Démo-Lyon** (Messieurs 1, Dames 1, 5 équipes adverses) : 4 rencontres terminées (dont une réglée il y a quelques heures, pour le classement « semaine »), 1 score contesté, 1 score proposé, 1 verrouillée, 1 annulée avec remboursements, 1 ouverte à venir, 1 brouillon. **TC Démo-Nantes** : 1 terminée, 1 ouverte. Les codes d'invitation sont affichés à la fin de la commande.
 - Tests : `src/server/demo-seed.db.test.ts` (états, soldes jamais négatifs, classements, anti-trucage, relance après vidage) ; E2E `slice11-demo.spec.ts` (charge la vraie commande dans la base de test, parcourt les écrans en format téléphone) et `slice11-parcours-complet.spec.ts` (club → équipe → rencontre → pronostics → score → règlement → classement, 4 rôles + visiteur).
