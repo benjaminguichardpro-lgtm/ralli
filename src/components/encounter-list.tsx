@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { type EncounterResult, resultBadgeText } from "@/lib/encounters/filters";
 import type { EncounterListItem } from "@/server/encounters";
 import { formatParis } from "@/lib/time";
 import { ArchiveEncounterButton, UnarchiveEncounterButton } from "./archive-forms";
@@ -16,6 +17,17 @@ export function StatusBadge({ status, label, onDark = false }: { status: Encount
 }
 
 /** `archives` : la liste montre des rencontres archivées (bouton « Désarchiver » au lieu de la croix rouge). */
+/** Badge de résultat d'une rencontre terminée : victoire (vert), défaite (rouge), nul (neutre). Le texte porte aussi le sens, pas seulement la couleur. */
+export function ResultBadge({ result }: { result: EncounterResult }) {
+  const style =
+    result.kind === "WIN" ? "bg-success text-on-success" : result.kind === "LOSS" ? "bg-danger text-on-danger" : "bg-pale text-ink";
+  return (
+    <span data-testid="result-badge" className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${style}`}>
+      {resultBadgeText(result)}
+    </span>
+  );
+}
+
 export function EncounterList({ items, empty, archives = false }: { items: EncounterListItem[]; empty: string; archives?: boolean }) {
   if (items.length === 0) return <p className="text-ink-muted">{empty}</p>;
   return (
@@ -27,7 +39,7 @@ export function EncounterList({ items, empty, archives = false }: { items: Encou
             {e.home} – {e.away}
           </Link>
           <div className={`flex items-center justify-between gap-2 ${e.canArchive ? "min-h-11" : ""}`}>
-            <StatusBadge status={e.status} label={e.statusLabel} />
+            {e.result ? <ResultBadge result={e.result} /> : <StatusBadge status={e.status} label={e.statusLabel} />}
             {e.canArchive && (
               <span className="relative z-10">
                 {archives ? (

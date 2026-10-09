@@ -48,9 +48,10 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 11. Seed de démo et tests E2E | ✅ | voir `git log` |
 | 12. Profil et avatars (bannière aérée) | ✅ | e8b2d75, 1eed44b |
 | 13. Archivage des rencontres (croix rouge) | ✅ | 6b9a106 |
-| 14. Doubles (2 contre 2), points par match | ✅ (en attente de validation Benjamin) | voir `git log` |
+| 14. Doubles (2 contre 2), points par match | ✅ | 4ca7bc8 |
+| 15. Filtre des rencontres, victoire / défaite / nul | ✅ (en attente de validation Benjamin) | voir `git log` |
 
-État des tests (fin de tranche 14) : 480 tests Vitest, 105 scénarios Playwright, tous verts.
+État des tests (fin de tranche 15) : 496 tests Vitest, 109 scénarios Playwright, tous verts.
 
 ## Décisions prises (en plus du brief)
 
@@ -75,7 +76,9 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 - **Tranche 12 faite** : avatars (12 personnages SVG dans `public/avatar/`, photo importée dans le dossier `avatar/`), page `/profil`, bannière aérée, avatars dans classement et liste des membres ; détail dans le README, section « Profil et avatars ». Décisions de Benjamin : avatars de tennis stylisés (pas de portraits réels), dossier `avatar/` pour les photos, recadrage automatique au centre, « Mon profil » = l'avatar tout à droite de la bannière. **Limite connue** : le dossier `avatar/` ne marche pas sur Vercel, il faudra un stockage de fichiers avant la mise en ligne (un seul fichier à changer : `src/server/avatar-storage.ts`). Les photos peuvent être signalées/retirées par les admins du club.
 - **Tranche 13 faite** : archivage des rencontres terminées ou annulées (croix rouge, section « Archives », réversible, pour tout le club ; admins et capitaines de l'équipe), détail dans le README. Hors tranche, demandé par Benjamin : code d'invitation masqué jusqu'à « Révéler le code d'invitation », bouton « Importer une photo » sous l'avatar. Benjamin veut être **tutoyé**.
 - **Tranche 14 faite** : doubles, détail dans le README, section « Doubles ». Décisions de Benjamin : uniquement des joueurs de l'équipe ; un joueur peut jouer un simple et un double ; **aucune limite du nombre de matchs** (dépend du niveau) ; chaque match vaut **1 ou 2 points** au choix du club (l'écran ne le propose que pour les doubles, un simple vaut 1 : à étendre si besoin) ; cotes du double = moyenne des niveaux, sans forme ni confrontations ; affichage et saisie du score comme un simple.
-- **Après la tranche 14** : pilote avec 2 ou 3 clubs réels ; Neon (staging, prod) et tests de concurrence sur vrai Postgres restent à faire.
+- **Tranche 15 faite** : filtre des rencontres par statut sur la page du club et badges Victoire / Défaite / Nul ; détail dans le README. Décisions de Benjamin : résultat vu du club (pas du lecteur), au total des points, statut Nul en cas d'égalité, un filtre « En cours » unique, archives sans filtre, brouillons seulement pour le staff.
+- **Piège local** (tsc) : iCloud crée aussi des copies « fichier 2 » dans `.next` ; `tsconfig.json` les exclut maintenant, et `find .next -name "* [0-9]*"` permet de les supprimer.
+- **Après la tranche 15** : pilote avec 2 ou 3 clubs réels ; Neon (staging, prod) et tests de concurrence sur vrai Postgres restent à faire.
 - **Bonus de connexion** (hors tranches, demandé par Benjamin) : +10 Aces par jour à la première ouverture (jour de Paris), +50 de plus tous les 7 jours d'affilée, rien le jour de l'inscription ; popup « Connexion quotidienne X/7 » (`src/components/daily-bonus-popup.tsx`) ; migrations `20261008150000_login_bonus_types` et `20261008150100_login_bonus_sign_check` (deux fichiers : Postgres interdit d'utiliser une valeur d'enum ajoutée dans la même transaction). Le bonus du lundi est conservé. Pour tester la popup d'un compte, il faut antidater `createdAt` (voir `backdateAccount` et `seedLoginStreak` dans `tests/e2e/helpers.ts`).
 - **Piège local** : `prisma dev` se mélange quand plusieurs requêtes arrivent en même temps (« bind message supplies N parameters »). `DATABASE_POOL_MAX="1"` dans `.env` et `.env.test` impose une connexion unique ; à laisser vide avec Neon. `getCurrentUser` est mis en cache par requête (React `cache`).
 - **Tests E2E** : un fichier par thème (`tests/e2e/slice2` à `slice11`), chacun avec ses propres pseudos (la base de test est partagée : deux fichiers ne doivent pas réutiliser le même pseudo). `forceStarted(url)` fait commencer une rencontre (aucun écran ne permet une date passée).

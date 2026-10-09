@@ -46,7 +46,7 @@ test("l'admin voit une croix rouge sur chaque rencontre terminée ou annulée, e
   await expect(crosses(admin)).toHaveCount(5); // 4 terminées + 1 annulée
   for (const row of await mainList(admin).locator("li").all()) {
     const text = await row.innerText();
-    const archivable = /Terminée|Annulée/.test(text);
+    const archivable = /Victoire|Défaite|Nul|Annulée/.test(text); // terminée (badge de résultat) ou annulée
     await expect(row.getByTestId("archive-encounter"), text).toHaveCount(archivable ? 1 : 0);
   }
   await expect(admin.getByTestId("archives")).toHaveCount(0);
@@ -102,7 +102,7 @@ test("archiver une rencontre terminée ne change pas le classement ; sa page res
   expect(before.length).toBeGreaterThanOrEqual(5);
 
   await admin.goto(clubUrl);
-  const done = mainList(admin).locator("li").filter({ hasText: "Terminée" }).first();
+  const done = mainList(admin).locator("li").filter({ has: admin.getByTestId("result-badge") }).first(); // une rencontre terminée
   const href = (await done.getByRole("link").first().getAttribute("href"))!;
   admin.once("dialog", (d) => void d.accept());
   await done.getByTestId("archive-encounter").click();

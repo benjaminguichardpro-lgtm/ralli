@@ -308,12 +308,12 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
   const h2 = await build({ ...lyonBase, ...D, opponent: opp.caluire, oppPlayers: oppPlayers.caluire, home: false, startsInMs: -14 * DAY, matches: 4 });
   await publish(h2);
   await bet(h2);
-  await playedAndConfirmed(h2, sides("HOME", "AWAY", "AWAY!", "HOME"), new Date(h2.startsAt.getTime() + 4 * HOUR), new Date(h2.startsAt.getTime() + 5 * HOUR));
+  await playedAndConfirmed(h2, sides("HOME", "HOME", "AWAY", "HOME"), new Date(h2.startsAt.getTime() + 4 * HOUR), new Date(h2.startsAt.getTime() + 5 * HOUR));
 
   const h3 = await build({ ...lyonBase, ...M, opponent: opp.meyzieu, oppPlayers: oppPlayers.meyzieu, home: false, startsInMs: -8 * DAY, matches: 4, doubles: [{ club: [1, 2], opp: [1, 2], points: 2 }] });
   await publish(h3);
   await bet(h3);
-  await playedAndConfirmed(h3, sides("AWAY", "HOME", "HOME", "AWAY!", "AWAY"), new Date(h3.startsAt.getTime() + 4 * HOUR), new Date(h3.startsAt.getTime() + 5 * HOUR));
+  await playedAndConfirmed(h3, sides("AWAY", "HOME", "HOME", "HOME", "AWAY"), new Date(h3.startsAt.getTime() + 4 * HOUR), new Date(h3.startsAt.getTime() + 5 * HOUR));
 
   const n1 = await build({
     club: nantes.id,

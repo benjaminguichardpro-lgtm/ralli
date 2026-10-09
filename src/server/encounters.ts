@@ -1,4 +1,4 @@
-import type { EncounterStatus, MatchKind, Prisma, TeamKind } from "@/generated/prisma/client";
+import type { EncounterStatus, MatchKind, Prisma, Side, TeamKind } from "@/generated/prisma/client";
 import { ODDS_CONFIG } from "@/config/odds";
 import { db } from "@/lib/db";
 import {
@@ -15,7 +15,8 @@ import {
 import { fftLabel } from "@/lib/fft";
 import { type HistoricalMatch, headToHead, recentForm } from "@/lib/odds/history";
 import { computeDoublesOdds, computeOdds, formatOdds } from "@/lib/odds/model";
-import { MATCH_POINTS, kindWord, numberByKind, sideName } from "@/lib/matches";
+import { type EncounterResult, clubResult } from "@/lib/encounters/filters";
+import { MATCH_POINTS, kindWord, numberByKind, sideName, tallyPoints } from "@/lib/matches";
 import { DomainError } from "./errors";
 import { getClubRole, isCaptainInClub, requireClubMember } from "./permissions";
 import { refundPendingPredictions } from "./refunds";
@@ -681,6 +682,8 @@ export type EncounterListItem = {
   matchCount: number;
   /** Le lecteur peut archiver (ou désarchiver) cette rencontre : elle est terminée ou annulée, et il est admin ou capitaine de l'équipe du club. */
   canArchive: boolean;
+  /** Victoire, défaite ou nul pour le club, pour une rencontre terminée (null sinon). */
+  result: EncounterResult | null;
 };
 
 type ListRow = {
@@ -707,7 +710,25 @@ function toListItems(rows: ListRow[], now: Date, viewer?: { userId: string; isAd
       away: sideLabel(r.awayTeam),
       matchCount: r._count.matches,
       canArchive,
+      result: null,
     };
+  });
+}
+
+/** Ajoute le résultat (victoire, défaite, nul) aux rencontres terminées, au total des points du score final. */
+async function attachResults(rows: ListRow[], items: EncounterListItem[]): Promise<EncounterListItem[]> {
+  const confirmed = rows.filter((r) => r.status === "CONFIRMED").map((r) => r.id);
+  if (confirmed.length === 0) return items;
+  const matches = await db.match.findMany({
+    where: { encounterId: { in: confirmed }, voidedAt: null },
+    select: { encounterId: true, winnerSide: true, points: true },
+  });
+  const byEncounter = new Map<string, { winnerSide: Side | null; points: number }[]>();
+  for (const m of matches) byEncounter.set(m.encounterId, [...(byEncounter.get(m.encounterId) ?? []), m]);
+  return items.map((it, i) => {
+    const row = rows[i]!;
+    if (row.status !== "CONFIRMED") return it;
+    return { ...it, result: clubResult(tallyPoints(byEncounter.get(it.id) ?? []), row.homeTeam.kind === "CLUB") };
   });
 }
 
@@ -728,10 +749,10 @@ export async function listClubEncounters(actorId: string, clubId: string, now = 
   const rows = await db.encounter.findMany({
     where: { organizerClubId: clubId, archivedAt: null, ...(withDrafts ? {} : { status: { not: "DRAFT" } }) },
     orderBy: { startsAt: "desc" },
-    take: 50,
+    take: 200,
     select: listSelect,
   });
-  return toListItems(rows, now, { userId: actorId, isAdmin: role === "ADMIN" });
+  return attachResults(rows, toListItems(rows, now, { userId: actorId, isAdmin: role === "ADMIN" }));
 }
 
 /** Archives du club : visibles des admins et des capitaines seulement (liste vide pour un simple membre). */
@@ -744,7 +765,7 @@ export async function listArchivedEncounters(actorId: string, clubId: string, no
     take: 100,
     select: listSelect,
   });
-  return toListItems(rows, now, { userId: actorId, isAdmin: role === "ADMIN" });
+  return attachResults(rows, toListItems(rows, now, { userId: actorId, isAdmin: role === "ADMIN" }));
 }
 
 /** Accueil : rencontres publiées et non terminées des clubs de l'utilisateur, les plus proches d'abord. */

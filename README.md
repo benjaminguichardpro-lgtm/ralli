@@ -173,6 +173,12 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
   - `LedgerEntry.amount < 0` pour `PREDICTION_COMMIT`, `> 0` pour `SIGNUP_BONUS`, `WEEKLY_BONUS`, `PREDICTION_PAYOUT` et `PREDICTION_REFUND`.
 - **Calcul du gain** : uniquement via `computePayout` (`src/lib/predictions/payout.ts`), en arithmétique entière : `floor((committedAces × oddsX100 + 50) / 100)`.
 
+## Filtre des rencontres et résultat (tranche 15, `src/lib/encounters/filters.ts`, `src/components/encounter-filters.tsx`)
+
+- **Résultat du club** : pour une rencontre **terminée**, victoire, défaite ou **nul**, vu de l'**équipe du club** (jamais du lecteur), au **total des points** du score final (un match vaut 1 ou 2 points). Le badge de la liste remplace « Terminée » : « Victoire 3 – 2 » (vert), « Défaite 2 – 3 » (rouge), « Nul 2 – 2 », le club toujours en premier. La page de la rencontre garde son affichage.
+- **Filtres** (page du club, un seul à la fois, dans l'adresse : `?statut=victoires`, un paramètre inconnu vaut « Toutes ») : Toutes, À venir (brouillons pour le staff, pronostics ouverts), En cours (pronostics fermés, score proposé, score contesté), Terminées, Victoires, Défaites, Nuls, Annulées. Chaque puce affiche son nombre. Les archives restent à part, sans filtre. Aucun changement de base : tout est calculé à partir des points.
+- Démo de Lyon : 2 victoires, 1 défaite, 1 nul, 1 annulée, 3 en cours, 2 à venir.
+
 ## Doubles (tranche 14, `src/server/encounters.ts`, cotes dans `src/lib/odds/model.ts`, libellés dans `src/lib/matches.ts`)
 
 - **Composition** : « Ajouter un double » (en plus de « Ajouter un simple ») : 2 joueurs de l'effectif de l'équipe du club contre 2 joueurs de l'effectif de l'équipe adverse, rien d'autre. Un joueur peut jouer **un simple et un double** dans la même rencontre, jamais deux doubles ni deux simples. Aucune limite du nombre de matchs.

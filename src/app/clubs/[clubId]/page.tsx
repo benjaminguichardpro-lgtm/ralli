@@ -6,10 +6,12 @@ import { Avatar } from "@/components/avatar";
 import { InviteCodeReveal, MemberRoleForm } from "@/components/club-forms";
 import { ResetAvatarForm } from "@/components/profile-forms";
 import { LeaderboardTable } from "@/components/leaderboard";
+import { EncounterFilters } from "@/components/encounter-filters";
 import { EncounterList } from "@/components/encounter-list";
 import { CreateExternalTeamForm, CreateTeamForm } from "@/components/team-forms";
 import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
+import { applyFilter, countFilters, parseFilter } from "@/lib/encounters/filters";
 import { type ClubView, getClubView } from "@/server/clubs";
 import { listArchivedEncounters, listClubEncounters } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
@@ -19,17 +21,24 @@ import { listClubTeams } from "@/server/teams";
 
 export const metadata: Metadata = { title: "Club · Ralli" };
 
-export default function ClubPage({ params }: { params: Promise<{ clubId: string }> }) {
+export default function ClubPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ clubId: string }>;
+  searchParams: Promise<{ statut?: string | string[] }>;
+}) {
   return (
     <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
-      <Club params={params} />
+      <Club params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function Club({ params }: { params: Promise<{ clubId: string }> }) {
+async function Club({ params, searchParams }: { params: Promise<{ clubId: string }>; searchParams: Promise<{ statut?: string | string[] }> }) {
   const user = await requireUser();
   const { clubId } = await params;
+  const filter = parseFilter((await searchParams).statut);
   let club: ClubView;
   try {
     club = await getClubView(user.id, clubId);
@@ -69,7 +78,11 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Rencontres</h2>
-        <EncounterList items={encounters} empty="Aucune rencontre pour l'instant." />
+        {encounters.length > 0 && <EncounterFilters clubId={club.id} current={filter} counts={countFilters(encounters)} />}
+        <EncounterList
+          items={applyFilter(encounters, filter)}
+          empty={filter === "toutes" ? "Aucune rencontre pour l'instant." : "Aucune rencontre dans cette catégorie."}
+        />
         {(isAdmin || isCaptain) && (
           <ButtonLink href={`/clubs/${club.id}/rencontres/nouvelle`}>Nouvelle rencontre</ButtonLink>
         )}
