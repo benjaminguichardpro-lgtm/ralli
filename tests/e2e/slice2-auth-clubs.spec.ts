@@ -115,9 +115,15 @@ test("Alice nomme Bob admin : Bob voit alors le code", async () => {
 
 test("régénérer le code invalide l'ancien", async () => {
   await alice.goto(clubUrl);
+  // « Générer un nouveau code » n'existe qu'une fois le code révélé.
+  await expect(alice.getByRole("button", { name: "Générer un nouveau code" })).toHaveCount(0);
+  await alice.getByRole("button", { name: "Révéler le code d'invitation" }).click();
   await alice.getByRole("button", { name: "Générer un nouveau code" }).click();
   await expect(alice.getByText("Nouveau code généré. L'ancien ne fonctionne plus.")).toBeVisible();
-  const fresh = await revealInviteCode(alice);
+  await expect(alice.getByTestId("invite-code")).not.toHaveText(inviteCode);
+  const fresh = (await alice.getByTestId("invite-code").innerText()).trim();
+  await alice.getByRole("button", { name: "Masquer le code d'invitation" }).click();
+  await expect(alice.getByRole("button", { name: "Générer un nouveau code" })).toHaveCount(0);
   expect(fresh).not.toBe(inviteCode);
 
   await carole.goto("/clubs/rejoindre");

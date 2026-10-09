@@ -24,6 +24,9 @@ type Tx = Prisma.TransactionClient;
 
 export const MAX_MATCHES = 8;
 
+/** Seules une rencontre terminée ou annulée se range dans les archives (une contrainte en base le garantit aussi). */
+export const ARCHIVABLE_STATUSES: EncounterStatus[] = ["CONFIRMED", "CANCELLED"];
+
 export const ENCOUNTER_NOT_FOUND = new DomainError("NOT_FOUND", "Rencontre introuvable");
 const MATCH_NOT_FOUND = new DomainError("NOT_FOUND", "Match introuvable");
 const STAFF_ONLY = new DomainError(
@@ -395,6 +398,37 @@ export async function cancelEncounter(
     .catch(asDomain);
 }
 
+/** Range une rencontre terminée ou annulée dans les archives du club : elle sort des listes, rien n'est supprimé ni recalculé. */
+export async function archiveEncounter(actorId: string, encounterId: string): Promise<void> {
+  await db.$transaction(async (tx) => {
+    const e = await loadEncounter(tx, encounterId);
+    await requireStaff(tx, actorId, e);
+    if (!ARCHIVABLE_STATUSES.includes(e.status)) {
+      throw new DomainError("INVALID_TRANSITION", "Seule une rencontre terminée ou annulée peut être archivée");
+    }
+    const r = await tx.encounter.updateMany({
+      where: { id: e.id, status: e.status, archivedAt: null },
+      data: { archivedAt: new Date(), archivedById: actorId },
+    });
+    if (r.count === 0) throw new DomainError("CONFLICT", "Cette rencontre est déjà archivée");
+    await logEvent(tx, e, e.status, actorId, "Archivée");
+  });
+}
+
+/** Sort une rencontre des archives : elle réapparaît dans la liste du club. */
+export async function unarchiveEncounter(actorId: string, encounterId: string): Promise<void> {
+  await db.$transaction(async (tx) => {
+    const e = await loadEncounter(tx, encounterId);
+    await requireStaff(tx, actorId, e);
+    const r = await tx.encounter.updateMany({
+      where: { id: e.id, archivedAt: { not: null } },
+      data: { archivedAt: null, archivedById: null },
+    });
+    if (r.count === 0) throw new DomainError("CONFLICT", "Cette rencontre n'est pas archivée");
+    await logEvent(tx, e, e.status, actorId, "Sortie des archives");
+  });
+}
+
 export async function deleteDraft(actorId: string, encounterId: string, now = new Date()): Promise<{ clubId: string }> {
   return db.$transaction(async (tx) => {
     const e = await loadEncounter(tx, encounterId);
@@ -537,15 +571,35 @@ export type EncounterListItem = {
   home: string;
   away: string;
   matchCount: number;
+  /** Le lecteur peut archiver (ou désarchiver) cette rencontre : elle est terminée ou annulée, et il est admin ou capitaine de l'équipe du club. */
+  canArchive: boolean;
 };
 
-function toListItems(
-  rows: { id: string; status: EncounterStatus; startsAt: Date; predictionsCloseAt: Date; homeTeam: Parameters<typeof sideLabel>[0]; awayTeam: Parameters<typeof sideLabel>[0]; _count: { matches: number } }[],
-  now: Date,
-): EncounterListItem[] {
+type ListRow = {
+  id: string;
+  status: EncounterStatus;
+  startsAt: Date;
+  predictionsCloseAt: Date;
+  homeTeam: Parameters<typeof sideLabel>[0] & { kind: TeamKind; captainId: string | null };
+  awayTeam: Parameters<typeof sideLabel>[0] & { kind: TeamKind; captainId: string | null };
+  _count: { matches: number };
+};
+
+function toListItems(rows: ListRow[], now: Date, viewer?: { userId: string; isAdmin: boolean }): EncounterListItem[] {
   return rows.map((r) => {
     const s = effectiveStatus(r, now);
-    return { id: r.id, status: s, statusLabel: STATUS_LABELS[s], startsAt: r.startsAt, home: sideLabel(r.homeTeam), away: sideLabel(r.awayTeam), matchCount: r._count.matches };
+    const clubTeam = r.homeTeam.kind === "CLUB" ? r.homeTeam : r.awayTeam;
+    const canArchive = !!viewer && ARCHIVABLE_STATUSES.includes(r.status) && (viewer.isAdmin || clubTeam.captainId === viewer.userId);
+    return {
+      id: r.id,
+      status: s,
+      statusLabel: STATUS_LABELS[s],
+      startsAt: r.startsAt,
+      home: sideLabel(r.homeTeam),
+      away: sideLabel(r.awayTeam),
+      matchCount: r._count.matches,
+      canArchive,
+    };
   });
 }
 
@@ -554,22 +608,35 @@ const listSelect = {
   status: true,
   startsAt: true,
   predictionsCloseAt: true,
-  homeTeam: { select: { name: true, kind: true, externalClubName: true, club: { select: { name: true } } } },
-  awayTeam: { select: { name: true, kind: true, externalClubName: true, club: { select: { name: true } } } },
+  homeTeam: { select: { name: true, kind: true, captainId: true, externalClubName: true, club: { select: { name: true } } } },
+  awayTeam: { select: { name: true, kind: true, captainId: true, externalClubName: true, club: { select: { name: true } } } },
   _count: { select: { matches: { where: { voidedAt: null } } } },
 } as const;
 
-/** Rencontres d'un club (membres). Les brouillons ne sont listés que pour les admins et capitaines. */
+/** Rencontres d'un club (membres), hors archives. Les brouillons ne sont listés que pour les admins et capitaines. */
 export async function listClubEncounters(actorId: string, clubId: string, now = new Date()): Promise<EncounterListItem[]> {
-  await requireClubMember(actorId, clubId);
+  const role = await requireClubMember(actorId, clubId);
   const withDrafts = await canSeeDraft(actorId, clubId);
   const rows = await db.encounter.findMany({
-    where: { organizerClubId: clubId, ...(withDrafts ? {} : { status: { not: "DRAFT" } }) },
+    where: { organizerClubId: clubId, archivedAt: null, ...(withDrafts ? {} : { status: { not: "DRAFT" } }) },
     orderBy: { startsAt: "desc" },
     take: 50,
     select: listSelect,
   });
-  return toListItems(rows, now);
+  return toListItems(rows, now, { userId: actorId, isAdmin: role === "ADMIN" });
+}
+
+/** Archives du club : visibles des admins et des capitaines seulement (liste vide pour un simple membre). */
+export async function listArchivedEncounters(actorId: string, clubId: string, now = new Date()): Promise<EncounterListItem[]> {
+  const role = await requireClubMember(actorId, clubId);
+  if (!(await canSeeDraft(actorId, clubId))) return [];
+  const rows = await db.encounter.findMany({
+    where: { organizerClubId: clubId, archivedAt: { not: null } },
+    orderBy: { startsAt: "desc" },
+    take: 100,
+    select: listSelect,
+  });
+  return toListItems(rows, now, { userId: actorId, isAdmin: role === "ADMIN" });
 }
 
 /** Accueil : rencontres publiées et non terminées des clubs de l'utilisateur, les plus proches d'abord. */

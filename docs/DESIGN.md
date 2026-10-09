@@ -31,6 +31,7 @@
 - **Or sur fond vert** `#e6c872` — token `gold` : cote sélectionnée, bouton « Valider mon ralli », gain, touches trophée. Jamais sur fond clair (ratio 1,6).
 - **Or sur fond clair** `#9a6f12` — token `accent` : heures des rencontres, CTA secondaires, bordures d'alerte. Texte seulement sur carte blanche (ratio 4,5).
 - **Terre battue de Roland-Garros** `#b4502b` — token `clay` (texte `on-clay` blanc, ratio 5,1) : remplissage de la case du joueur touché, avant l'ouverture du panneau de pronostic.
+- **Rouge « danger »** `#b3261e` — tokens `danger` et `on-danger` (ratio 6,5 sur carte blanche) : croix d'archivage des rencontres, messages d'erreur de ces boutons.
 - **Vert « gagné »** `#2b7a4b` — tokens `success` et `success-ink`.
 - **Vert pâle** `#e2efe5` — token `pale` : fonds d'encadrés et d'étiquettes.
 - **Fond de page** `#f3f7f3` (`canvas`), cartes `#ffffff` (`surface`), bordures `#b9cbbd` (`line`).

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
-import { InviteCodeReveal, MemberRoleForm, RegenerateCodeForm } from "@/components/club-forms";
+import { InviteCodeReveal, MemberRoleForm } from "@/components/club-forms";
 import { ResetAvatarForm } from "@/components/profile-forms";
 import { LeaderboardTable } from "@/components/leaderboard";
 import { EncounterList } from "@/components/encounter-list";
@@ -11,7 +11,7 @@ import { CreateExternalTeamForm, CreateTeamForm } from "@/components/team-forms"
 import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
 import { type ClubView, getClubView } from "@/server/clubs";
-import { listClubEncounters } from "@/server/encounters";
+import { listArchivedEncounters, listClubEncounters } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
 import { getLeaderboard } from "@/server/leaderboard";
 import { isCaptainInClub } from "@/server/permissions";
@@ -39,10 +39,11 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
     throw e;
   }
   const isAdmin = club.myRole === "ADMIN";
-  const [teams, isCaptain, encounters, board] = await Promise.all([
+  const [teams, isCaptain, encounters, archived, board] = await Promise.all([
     listClubTeams(user.id, club.id),
     isCaptainInClub(user.id, club.id),
     listClubEncounters(user.id, club.id),
+    listArchivedEncounters(user.id, club.id),
     getLeaderboard(user.id, club.id, "season", { limit: 3 }),
   ]);
   const clubTeams = teams.filter((t) => t.kind === "CLUB");
@@ -61,9 +62,8 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
       {isAdmin && club.inviteCode && (
         <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
           <h2 className="font-serif text-xl text-primary">Code d&apos;invitation</h2>
-          <InviteCodeReveal code={club.inviteCode} />
+          <InviteCodeReveal code={club.inviteCode} clubId={club.id} />
           <p className="text-sm text-ink-muted">À communiquer aux membres, joueurs et proches. Ils le saisissent dans « Rejoindre un club ».</p>
-          <RegenerateCodeForm clubId={club.id} />
         </div>
       )}
 
@@ -72,6 +72,12 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
         <EncounterList items={encounters} empty="Aucune rencontre pour l'instant." />
         {(isAdmin || isCaptain) && (
           <ButtonLink href={`/clubs/${club.id}/rencontres/nouvelle`}>Nouvelle rencontre</ButtonLink>
+        )}
+        {(isAdmin || isCaptain) && archived.length > 0 && (
+          <details className="border-t border-line pt-2" data-testid="archives">
+            <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Archives ({archived.length})</summary>
+            <EncounterList items={archived} empty="Aucune rencontre archivée." archives />
+          </details>
         )}
       </div>
 

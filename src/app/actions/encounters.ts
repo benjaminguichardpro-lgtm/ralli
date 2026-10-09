@@ -13,6 +13,7 @@ import {
 import { idSchema } from "@/lib/validation/team";
 import {
   addMatch,
+  archiveEncounter,
   cancelEncounter,
   createEncounter,
   deleteDraft,
@@ -20,6 +21,7 @@ import {
   removeMatch,
   replaceMatch,
   rescheduleEncounter,
+  unarchiveEncounter,
 } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
 import type { FormState } from "./types";
@@ -132,4 +134,18 @@ export async function deleteDraftAction(_: FormState, fd: FormData): Promise<For
     throw e;
   }
   redirect(`/clubs/${clubId}`);
+}
+
+export async function archiveEncounterAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const id = idSchema.safeParse(get(fd, "encounterId"));
+  if (!id.success) return { message: "Requête invalide" };
+  return run(() => archiveEncounter(user.id, id.data));
+}
+
+export async function unarchiveEncounterAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const id = idSchema.safeParse(get(fd, "encounterId"));
+  if (!id.success) return { message: "Requête invalide" };
+  return run(() => unarchiveEncounter(user.id, id.data));
 }

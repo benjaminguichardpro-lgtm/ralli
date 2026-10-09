@@ -95,25 +95,26 @@ enum LedgerType {
 // ─────────────────────────────── Comptes et clubs ───────────────────────────────
 
 model User {
-  id                 String   @id @default(cuid())
-  email              String   @unique // stocké en minuscules
+  id                 String    @id @default(cuid())
+  email              String    @unique // stocké en minuscules
   passwordHash       String
   displayName        String // pseudo public, affiché dans les classements
-  displayNameKey     String   @unique // pseudo en minuscules, pour l'unicité insensible à la casse
+  displayNameKey     String    @unique // pseudo en minuscules, pour l'unicité insensible à la casse
   ageConfirmedAt     DateTime // date de la case « J'ai 18 ans ou plus »
-  mustChangePassword Boolean  @default(false) // posé par `npm run reset-password`
-  avatarKey          String   @default("service") // avatar prédéfini (src/lib/avatars.ts)
+  mustChangePassword Boolean   @default(false) // posé par `npm run reset-password`
+  avatarKey          String    @default("service") // avatar prédéfini (src/lib/avatars.ts)
   avatarPhotoAt      DateTime? // date de la photo importée (fichier dans le dossier avatar/) ; null = pas de photo
-  createdAt          DateTime @default(now())
+  createdAt          DateTime  @default(now())
 
-  memberships       ClubMembership[]
-  clubsCreated      Club[]           @relation("ClubCreatedBy")
-  captainOf         Team[]           @relation("TeamCaptain")
-  player            Player?
-  predictions       Prediction[]
-  ledgerEntries     LedgerEntry[]
-  encountersCreated Encounter[]      @relation("EncounterCreatedBy")
-  encounterEvents   EncounterEvent[]
+  memberships        ClubMembership[]
+  clubsCreated       Club[]           @relation("ClubCreatedBy")
+  captainOf          Team[]           @relation("TeamCaptain")
+  player             Player?
+  predictions        Prediction[]
+  ledgerEntries      LedgerEntry[]
+  encountersCreated  Encounter[]      @relation("EncounterCreatedBy")
+  encountersArchived Encounter[]      @relation("EncounterArchivedBy")
+  encounterEvents    EncounterEvent[]
 }
 
 model Club {
@@ -210,6 +211,8 @@ model Encounter {
   createdById        String
   scoreProposedById  String? // pour la règle des deux personnes distinctes
   settledAt          DateTime? // posé une seule fois, dans la transaction de règlement (idempotence)
+  archivedAt         DateTime? // rencontre rangée dans les archives du club (null = visible) ; réversible, rien n'est supprimé
+  archivedById       String?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
@@ -217,6 +220,7 @@ model Encounter {
   homeTeam      Team             @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
   awayTeam      Team             @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
   createdBy     User             @relation("EncounterCreatedBy", fields: [createdById], references: [id])
+  archivedBy    User?            @relation("EncounterArchivedBy", fields: [archivedById], references: [id], onDelete: SetNull)
   matches       Match[]
   events        EncounterEvent[]
 

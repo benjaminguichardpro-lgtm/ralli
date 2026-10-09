@@ -173,6 +173,14 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
   - `LedgerEntry.amount < 0` pour `PREDICTION_COMMIT`, `> 0` pour `SIGNUP_BONUS`, `WEEKLY_BONUS`, `PREDICTION_PAYOUT` et `PREDICTION_REFUND`.
 - **Calcul du gain** : uniquement via `computePayout` (`src/lib/predictions/payout.ts`), en arithmétique entière : `floor((committedAces × oddsX100 + 50) / 100)`.
 
+## Archivage des rencontres (tranche 13, `archiveEncounter` / `unarchiveEncounter` dans `src/server/encounters.ts`)
+
+- **Quoi** : une rencontre **terminée** (score confirmé, y compris après un litige tranché) ou **annulée** se range dans les archives du club. Les autres statuts (brouillon, ouverte, verrouillée, score proposé, contestée) ne sont pas archivables, ni par l'app ni par la base (CHECK `Encounter_archived_status_check`).
+- **Qui** : les admins du club et le capitaine de l'équipe du club dans la rencontre (comme l'annulation). Archivage **pour tout le club** : la rencontre sort de la liste de tous.
+- **Interface** : petite croix rouge (ronde, 44 px) à droite de chaque rencontre archivable de la page du club, avec confirmation. Section repliée « Archives (n) » sous la liste, visible des admins et capitaines, avec « Désarchiver » (réservé à qui peut gérer la rencontre).
+- **Rien n'est supprimé ni recalculé** : classements, soldes et historique des Aces inchangés, cotes (historique des matchs) inchangées ; la page de la rencontre reste accessible par son lien (partage WhatsApp) ; l'archivage et la sortie des archives sont notés au journal (« Archivée », « Sortie des archives »).
+- **Données** : `Encounter.archivedAt` et `archivedById` (migration `20261009140000_encounter_archive`). Couleur rouge `danger` ajoutée au thème (contraste vérifié par `npm run contrast`).
+
 ## Profil et avatars (tranche 12, `src/lib/avatars.ts`, `src/server/avatars.ts`, page `/profil`)
 
 - **Bannière** : logo, solde sur une ligne, avatar rond tout à droite (il mène à « Mon profil »). Le pseudo n'est plus affiché (il reste pour les lecteurs d'écran) ; « Déconnexion » est sur la page du profil.

@@ -46,14 +46,18 @@ export function JoinClubForm({ defaultCode }: { defaultCode?: string }) {
 }
 
 /** Le code reste caché tant qu'on n'a pas appuyé sur le bouton (écran partagé, capture d'écran). */
-export function InviteCodeReveal({ code }: { code: string }) {
+export function InviteCodeReveal({ code, clubId }: { code: string; clubId: string }) {
   const [shown, setShown] = useState(false);
   return (
     <div className="space-y-3">
       {shown && (
-        <p data-testid="invite-code" className="font-mono text-3xl font-bold tracking-widest text-ink">
-          {code}
-        </p>
+        <>
+          <p data-testid="invite-code" className="font-mono text-3xl font-bold tracking-widest text-ink">
+            {code}
+          </p>
+          {/* Régénérer le code n'est proposé qu'une fois le code révélé. */}
+          <RegenerateCodeForm clubId={clubId} />
+        </>
       )}
       <button
         type="button"

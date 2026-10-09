@@ -12,6 +12,16 @@ const checks: Check[] = [
     sql: `INSERT INTO "LedgerEntry"(id,"userId",type,amount,"idempotencyKey") VALUES ('verif_le2','verif_u','SIGNUP_BONUS',1000,'verif:signup2')`,
     expect: "ok",
   },
+  {
+    label: "Archiver une rencontre encore en brouillon (archivedAt sur une rencontre DRAFT)",
+    sql: `UPDATE "Encounter" SET "archivedAt" = now() WHERE id = 'verif_e'`,
+    expect: "error",
+  },
+  {
+    label: "Archiver une rencontre terminée (CONFIRMED + archivedAt)",
+    sql: `UPDATE "Encounter" SET status = 'CONFIRMED', "archivedAt" = now() WHERE id = 'verif_e'`,
+    expect: "ok",
+  },
   { label: "UPDATE sur LedgerEntry", sql: `UPDATE "LedgerEntry" SET amount = 999999 WHERE id = 'verif_le'`, expect: "error" },
   { label: "DELETE sur LedgerEntry", sql: `DELETE FROM "LedgerEntry" WHERE id = 'verif_le'`, expect: "error" },
   {
