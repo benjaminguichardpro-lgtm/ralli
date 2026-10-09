@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, resetPassword, signIn, signUp, signOut } from "./helpers";
+import { checkPage, resetPassword, signIn, signUp, signOut, revealInviteCode } from "./helpers";
 
 // Scénario multi-rôles : Alice (admin), Bob (membre), Carole (extérieure).
 // Chaque personne a son propre contexte navigateur (cookies séparés).
@@ -56,7 +56,13 @@ test("Alice crée un club et voit le code d'invitation", async () => {
   await alice.getByRole("button", { name: "Créer le club" }).click();
   await expect(alice.getByRole("heading", { name: "TC Ralli" })).toBeVisible();
   await expect(alice.getByText("Votre rôle : admin")).toBeVisible();
-  inviteCode = (await alice.getByTestId("invite-code").innerText()).trim();
+  // Le code reste caché tant qu'on n'a pas appuyé sur le bouton, et se recache à la demande.
+  await expect(alice.getByTestId("invite-code")).toHaveCount(0);
+  await expect(alice.getByRole("button", { name: "Révéler le code d'invitation" })).toBeVisible();
+  inviteCode = await revealInviteCode(alice);
+  expect(inviteCode).toMatch(/^[A-HJ-NP-Z2-9]{6}$/);
+  await alice.getByRole("button", { name: "Masquer le code d'invitation" }).click();
+  await expect(alice.getByTestId("invite-code")).toHaveCount(0);
   expect(inviteCode).toMatch(/^[2-9A-HJ-NP-Z]{6}$/);
   clubUrl = alice.url();
   await checkPage(alice, "04-club-admin");
@@ -104,14 +110,14 @@ test("Alice nomme Bob admin : Bob voit alors le code", async () => {
   await expect(alice.getByRole("button", { name: "Retirer le rôle admin de Bob" })).toBeVisible();
   await bob.goto(clubUrl);
   await expect(bob.getByText("Votre rôle : admin")).toBeVisible();
-  await expect(bob.getByTestId("invite-code")).toHaveText(inviteCode);
+  expect(await revealInviteCode(bob)).toBe(inviteCode);
 });
 
 test("régénérer le code invalide l'ancien", async () => {
   await alice.goto(clubUrl);
   await alice.getByRole("button", { name: "Générer un nouveau code" }).click();
   await expect(alice.getByText("Nouveau code généré. L'ancien ne fonctionne plus.")).toBeVisible();
-  const fresh = (await alice.getByTestId("invite-code").innerText()).trim();
+  const fresh = await revealInviteCode(alice);
   expect(fresh).not.toBe(inviteCode);
 
   await carole.goto("/clubs/rejoindre");

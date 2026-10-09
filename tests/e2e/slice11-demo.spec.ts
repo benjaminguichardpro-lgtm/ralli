@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, queryTestDb, seedDemoOnTestDb, signIn, wipeTestDb } from "./helpers";
+import { checkPage, queryTestDb, revealInviteCode, seedDemoOnTestDb, signIn, wipeTestDb } from "./helpers";
 
 // Charge la vraie démo (`npm run seed:demo`) dans la base de test et parcourt ses écrans au format téléphone.
 
@@ -136,7 +136,9 @@ test("staff : confirmer/contester, arbitrer le litige, brouillon, code d'invitat
   await checkPage(admin, "85-demo-staff-litige");
 
   await admin.goto(`/clubs/${clubId}`);
-  await expect(admin.getByTestId("invite-code")).toBeVisible();
+  await expect(admin.getByTestId("invite-code")).toHaveCount(0); // caché tant qu'on n'a pas appuyé
+  await expect(admin.getByRole("button", { name: "Révéler le code d'invitation" })).toBeVisible();
+  expect(await revealInviteCode(admin)).toMatch(/^[A-Z0-9]{6}$/);
   await checkPage(admin, "86-demo-club-admin");
 
   // L'auteur de la proposition peut la retirer mais pas la confirmer ; le capitaine voit son brouillon.

@@ -139,3 +139,9 @@ export async function signOut(page: Page) {
   await page.getByRole("link", { name: "Mon profil" }).click();
   await page.getByRole("button", { name: "Déconnexion" }).click();
 }
+
+/** Admin : appuie sur « Révéler le code d'invitation » et renvoie le code affiché. */
+export async function revealInviteCode(page: Page): Promise<string> {
+  await page.getByRole("button", { name: "Révéler le code d'invitation" }).click();
+  return (await page.getByTestId("invite-code").innerText()).trim();
+}

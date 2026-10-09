@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   createClubAction,
   joinClubAction,
@@ -42,6 +42,28 @@ export function JoinClubForm({ defaultCode }: { defaultCode?: string }) {
         Rejoindre
       </SubmitButton>
     </form>
+  );
+}
+
+/** Le code reste caché tant qu'on n'a pas appuyé sur le bouton (écran partagé, capture d'écran). */
+export function InviteCodeReveal({ code }: { code: string }) {
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="space-y-3">
+      {shown && (
+        <p data-testid="invite-code" className="font-mono text-3xl font-bold tracking-widest text-ink">
+          {code}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={() => setShown((v) => !v)}
+        aria-expanded={shown}
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 font-semibold text-on-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        {shown ? "Masquer le code d'invitation" : "Révéler le code d'invitation"}
+      </button>
+    </div>
   );
 }
 

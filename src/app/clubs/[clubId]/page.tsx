@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
-import { MemberRoleForm, RegenerateCodeForm } from "@/components/club-forms";
+import { InviteCodeReveal, MemberRoleForm, RegenerateCodeForm } from "@/components/club-forms";
 import { ResetAvatarForm } from "@/components/profile-forms";
 import { LeaderboardTable } from "@/components/leaderboard";
 import { EncounterList } from "@/components/encounter-list";
@@ -61,9 +61,7 @@ async function Club({ params }: { params: Promise<{ clubId: string }> }) {
       {isAdmin && club.inviteCode && (
         <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
           <h2 className="font-serif text-xl text-primary">Code d&apos;invitation</h2>
-          <p data-testid="invite-code" className="font-mono text-3xl font-bold tracking-widest text-ink">
-            {club.inviteCode}
-          </p>
+          <InviteCodeReveal code={club.inviteCode} />
           <p className="text-sm text-ink-muted">À communiquer aux membres, joueurs et proches. Ils le saisissent dans « Rejoindre un club ».</p>
           <RegenerateCodeForm clubId={club.id} />
         </div>

@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, forceStarted, placeBet, signUp } from "./helpers";
+import { checkPage, forceStarted, placeBet, signUp, revealInviteCode } from "./helpers";
 
 // Sacha (admin), Tess (capitaine Messieurs 1), Ugo (capitaine Messieurs 2), Vera (membre), un visiteur sans compte.
 
@@ -61,7 +61,7 @@ test("mise en place : club, deux équipes, deux rencontres publiées", async () 
   await sacha.goto("/clubs/nouveau");
   await sacha.getByLabel("Nom du club").fill("TC Scores");
   await sacha.getByRole("button", { name: "Créer le club" }).click();
-  const code = (await sacha.getByTestId("invite-code").innerText()).trim();
+  const code = await revealInviteCode(sacha);
   clubUrl = sacha.url();
   for (const [page, name] of [[tess, "Tess"], [ugo, "Ugo"], [vera, "Vera"]] as const) {
     await register(page, name);

@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, signUp } from "./helpers";
+import { checkPage, signUp, revealInviteCode } from "./helpers";
 
 // Scénario multi-rôles : Dora (admin), Éric (capitaine M1), Fanny (capitaine M2),
 // Gaston (simple membre), Hélène (hors club).
@@ -45,7 +45,7 @@ test("mise en place : Dora crée le club, les autres le rejoignent", async () =>
   await dora.goto("/clubs/nouveau");
   await dora.getByLabel("Nom du club").fill("TC Équipes");
   await dora.getByRole("button", { name: "Créer le club" }).click();
-  const code = (await dora.getByTestId("invite-code").innerText()).trim();
+  const code = await revealInviteCode(dora);
   clubUrl = dora.url();
   for (const [page, name] of [[eric, "Eric"], [fanny, "Fanny"], [gaston, "Gaston"]] as const) {
     await register(page, name);
