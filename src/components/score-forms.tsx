@@ -78,7 +78,7 @@ export function ProposeScoreForm({ encounterId, matches }: { encounterId: string
     >
       <input type="hidden" name="encounterId" value={encounterId} />
       <ScoreFields matches={matches} values={state.values} />
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
       <SubmitButton className="w-full" pendingLabel="Envoi…">
         Proposer le score
       </SubmitButton>
@@ -101,7 +101,7 @@ export function ResolveDisputeForm({ encounterId, matches }: { encounterId: stri
         Chaque triche sera suivie d&apos;un bannissement à vie de Ralli.
       </p>
       <ScoreFields matches={matches} values={state.values} />
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
       <SubmitButton className="w-full" pendingLabel="Validation…">
         Trancher le litige
       </SubmitButton>
@@ -117,7 +117,7 @@ export function ConfirmScoreForm({ encounterId }: { encounterId: string }) {
       <SubmitButton className="w-full" pendingLabel="Confirmation…">
         Confirmer le score
       </SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -129,7 +129,7 @@ export function DisputeScoreForm({ encounterId }: { encounterId: string }) {
       <input type="hidden" name="encounterId" value={encounterId} />
       <Field label="Motif de la contestation" name="reason" maxLength={300} defaultValue={state.values?.reason ?? ""} error={state.errors?.reason} />
       <SubmitButton variant="ghost">Contester le score</SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -140,7 +140,7 @@ export function WithdrawScoreForm({ encounterId }: { encounterId: string }) {
     <form action={action} onSubmit={confirmOnSubmit("Retirer votre proposition ? Les résultats saisis seront effacés.")} className="space-y-2">
       <input type="hidden" name="encounterId" value={encounterId} />
       <SubmitButton variant="ghost">Retirer ma proposition</SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }

@@ -38,7 +38,7 @@ export function AvatarPicker({ current }: { current: string | null }) {
           );
         })}
       </ul>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -73,7 +73,7 @@ export function PhotoUploadButton() {
         {pending ? "Envoi…" : "Importer une photo"}
       </button>
       <p className="text-center text-sm text-ink-muted">JPG, PNG ou WebP, {PHOTO_MAX_BYTES / 1024 / 1024} Mo au maximum. Recadrée au centre, en carré.</p>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -92,7 +92,7 @@ export function ResetAvatarForm({ clubId, userId, displayName }: { clubId: strin
       <SubmitButton variant="ghost" className="text-sm" pendingLabel="…">
         Retirer la photo
       </SubmitButton>
-      {state.message && !state.ok && <FormMessage>{state.message}</FormMessage>}
+      {state.message && !state.ok && <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>}
     </form>
   );
 }

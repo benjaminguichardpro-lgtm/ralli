@@ -26,7 +26,7 @@ async function run(fn: () => Promise<unknown>, okMessage: string, fd?: FormData)
     throw e;
   }
   refresh();
-  return { message: okMessage };
+  return { message: okMessage, ok: true };
 }
 
 const OUTCOMES = ["COMPLETED", "RETIRED", "WALKOVER", "NOT_PLAYED"] as const;

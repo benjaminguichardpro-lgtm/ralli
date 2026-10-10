@@ -24,7 +24,7 @@ export function CreateEncounterForm({ clubTeams, opponents }: { clubTeams: Optio
   const v = state.values ?? {};
   return (
     <form action={action} className="space-y-4" noValidate>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
       <Select
         label="Votre équipe"
         name="clubTeamId"
@@ -89,7 +89,7 @@ export function AddMatchForm({
       <Select label="Joueur extérieur" name="awayPlayerId" placeholder="Choisir" options={toOptions(awayRoster)} error={e.awayPlayerId} />
       {published && <p className="text-sm text-ink-muted">Rencontre publiée : les cotes de ce match seront calculées tout de suite.</p>}
       <SubmitButton pendingLabel="Ajout…">Ajouter le match</SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -123,7 +123,7 @@ export function AddDoubleForm({
       <Select label="Valeur du double" name="points" defaultValue="1" options={POINTS_OPTIONS} error={e.points} />
       {published && <p className="text-sm text-ink-muted">Rencontre publiée : les cotes de ce double seront calculées tout de suite.</p>}
       <SubmitButton pendingLabel="Ajout…">Ajouter le double</SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -172,14 +172,14 @@ export function EditMatchForm({
           </>
         )}
         <SubmitButton variant="ghost">Enregistrer le match</SubmitButton>
-        <FormMessage>{editState.message}</FormMessage>
+        <FormMessage signal={editState} ok={editState.ok}>{editState.message}</FormMessage>
       </form>
       <form action={removeAction} onSubmit={confirmOnSubmit(`Retirer le match ${label} ?${refundWarning}`)}>
         <input type="hidden" name="matchId" value={match.id} />
         <SubmitButton variant="ghost" aria-label={`Retirer le match ${label}`}>
           Retirer ce match
         </SubmitButton>
-        <FormMessage>{removeState.message}</FormMessage>
+        <FormMessage signal={removeState} ok={removeState.ok}>{removeState.message}</FormMessage>
       </form>
     </div>
   );
@@ -197,7 +197,7 @@ export function PublishForm({ encounterId }: { encounterId: string }) {
       <SubmitButton className="w-full" pendingLabel="Publication…">
         Publier la rencontre
       </SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -220,7 +220,7 @@ export function RescheduleForm({ encounterId, currentLocal, locked }: { encounte
         }
       />
       <SubmitButton variant="ghost">Reporter</SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -237,7 +237,7 @@ export function CancelForm({ encounterId }: { encounterId: string }) {
       <input type="hidden" name="encounterId" value={encounterId} />
       <Field label="Motif (facultatif)" name="reason" placeholder="Pluie, forfait…" error={state.errors?.reason} />
       <SubmitButton variant="secondary">Annuler la rencontre</SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -248,7 +248,7 @@ export function DeleteDraftForm({ encounterId }: { encounterId: string }) {
     <form action={action} onSubmit={confirmOnSubmit("Supprimer définitivement ce brouillon ?")} className="space-y-2">
       <input type="hidden" name="encounterId" value={encounterId} />
       <SubmitButton variant="ghost">Supprimer le brouillon</SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }

@@ -52,7 +52,7 @@ export async function regenerateInviteCodeAction(_: FormState, fd: FormData): Pr
     throw e;
   }
   refresh();
-  return { message: "Nouveau code généré. L'ancien ne fonctionne plus." };
+  return { message: "Nouveau code généré. L'ancien ne fonctionne plus.", ok: true };
 }
 
 export async function setMemberRoleAction(_: FormState, fd: FormData): Promise<FormState> {

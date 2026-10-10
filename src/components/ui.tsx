@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type ComponentProps, type ReactNode, useId, useState } from "react";
+import { type ComponentProps, type ReactNode, useEffect, useId, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 // Composants d'interface partagés. Couleurs : uniquement via les tokens du thème (globals.css).
@@ -142,11 +142,56 @@ export function FieldError({ id, children }: { id?: string; children: ReactNode 
   );
 }
 
-export function FormMessage({ children }: { children?: ReactNode }) {
+/** Une confirmation disparaît d'elle-même après ce délai (une erreur reste jusqu'à ce qu'on la corrige). */
+const CONFIRMATION_VISIBLE_MS = 4000;
+
+// Chaque réponse du serveur (objet d'état de useActionState) reçoit un numéro : un même texte reçu deux fois de suite
+// (deux photos enregistrées l'une après l'autre) rejoue l'animation et repart pour 4 secondes.
+let nextSignalId = 0;
+const signalIds = new WeakMap<object, number>();
+function signalId(signal: object): number {
+  let id = signalIds.get(signal);
+  if (id === undefined) {
+    id = ++nextSignalId;
+    signalIds.set(signal, id);
+  }
+  return id;
+}
+
+/**
+ * Message d'un formulaire. Réussite (`ok`) : pastille verte, coche qui se dessine, texte ; disparaît au bout de 4 s.
+ * Erreur : pastille rouge avec point d'exclamation, reste affichée. `signal` = l'état renvoyé par le formulaire.
+ * Les animations sont coupées avec « réduire les animations » (voir globals.css).
+ */
+export function FormMessage({ children, ok = false, signal }: { children?: ReactNode; ok?: boolean; signal?: object }) {
   if (!children) return null;
   return (
-    <div role="alert" className="rounded-lg border-l-4 border-accent bg-surface p-3 font-medium">
+    <MessageBox key={signal ? signalId(signal) : undefined} ok={ok}>
       {children}
+    </MessageBox>
+  );
+}
+
+function MessageBox({ children, ok }: { children: ReactNode; ok: boolean }) {
+  const [gone, setGone] = useState(false);
+  useEffect(() => {
+    if (!ok) return;
+    const timer = setTimeout(() => setGone(true), CONFIRMATION_VISIBLE_MS);
+    return () => clearTimeout(timer);
+  }, [ok]);
+  if (gone) return null;
+  return (
+    <div
+      role={ok ? "status" : "alert"}
+      data-tone={ok ? "ok" : "error"}
+      className="form-message flex items-center gap-3 rounded-lg bg-surface p-3 font-medium shadow-sm"
+    >
+      <span aria-hidden="true" className={`form-message-badge grid size-8 flex-none place-items-center rounded-full ${ok ? "bg-success text-on-success" : "bg-danger text-on-danger"}`}>
+        <svg viewBox="0 0 24 24" className="size-5 fill-none stroke-current" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <path className="form-message-draw" d={ok ? "M5 12.5l4.5 4.5L19 7.5" : "M12 6v7M12 18v.5"} />
+        </svg>
+      </span>
+      <span className="form-message-text">{children}</span>
     </div>
   );
 }

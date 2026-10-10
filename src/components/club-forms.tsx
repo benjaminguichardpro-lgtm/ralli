@@ -136,7 +136,7 @@ export function MemberRoleForm({
       <SubmitButton variant="ghost" className="text-sm" aria-label={`${next === "ADMIN" ? "Nommer admin" : "Retirer le rôle admin de"} ${displayName}`}>
         {next === "ADMIN" ? "Nommer admin" : "Retirer admin"}
       </SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }

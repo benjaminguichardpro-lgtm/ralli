@@ -14,7 +14,7 @@ export function SignUpForm({ invitation }: { invitation?: string }) {
   return (
     <form action={action} className="space-y-4" noValidate>
       {invitation && <input type="hidden" name="invitation" value={invitation} />}
-      <FormMessage>{e._}</FormMessage>
+      <FormMessage signal={state}>{e._}</FormMessage>
       <Field label="Email" name="email" type="email" autoComplete="email" required defaultValue={state.values?.email} error={e.email} />
       <Field
         label="Pseudo"
@@ -55,7 +55,7 @@ export function SignInForm({ invitation }: { invitation?: string }) {
   return (
     <form action={action} className="space-y-4" noValidate>
       {invitation && <input type="hidden" name="invitation" value={invitation} />}
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
       <Field
         label="Email ou pseudo"
         name="identifier"

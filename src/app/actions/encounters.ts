@@ -40,7 +40,7 @@ async function run(fn: () => Promise<unknown>, okMessage?: string): Promise<Form
     throw e;
   }
   refresh();
-  return okMessage ? { message: okMessage } : {};
+  return okMessage ? { message: okMessage, ok: true } : {};
 }
 
 const refundNote = (n: number) => (n > 0 ? ` ${n} pronostic${n > 1 ? "s" : ""} remboursé${n > 1 ? "s" : ""}.` : "");
@@ -94,7 +94,7 @@ export async function replaceMatchAction(_: FormState, fd: FormData): Promise<Fo
   const r = await run(async () => {
     ({ refunded } = await replaceMatch(user.id, matchId.data, setup.data));
   });
-  return r.message ? r : { message: `Match modifié.${refundNote(refunded)}` };
+  return r.message ? r : { message: `Match modifié.${refundNote(refunded)}`, ok: true };
 }
 
 export async function removeMatchAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -105,7 +105,7 @@ export async function removeMatchAction(_: FormState, fd: FormData): Promise<For
   const r = await run(async () => {
     ({ refunded } = await removeMatch(user.id, matchId.data));
   });
-  return r.message ? r : { message: `Match retiré.${refundNote(refunded)}` };
+  return r.message ? r : { message: `Match retiré.${refundNote(refunded)}`, ok: true };
 }
 
 export async function publishAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -134,7 +134,7 @@ export async function cancelAction(_: FormState, fd: FormData): Promise<FormStat
   const r = await run(async () => {
     ({ refunded } = await cancelEncounter(user.id, id.data, reason.data));
   });
-  return r.message ? r : { message: `Rencontre annulée.${refundNote(refunded)}` };
+  return r.message ? r : { message: `Rencontre annulée.${refundNote(refunded)}`, ok: true };
 }
 
 export async function deleteDraftAction(_: FormState, fd: FormData): Promise<FormState> {

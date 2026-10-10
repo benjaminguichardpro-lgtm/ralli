@@ -33,7 +33,7 @@ async function run(fn: () => Promise<unknown>, okMessage?: string, errorField?: 
     throw e;
   }
   refresh();
-  return okMessage ? { message: okMessage } : {};
+  return okMessage ? { message: okMessage, ok: true } : {};
 }
 
 export async function createTeamAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -78,7 +78,7 @@ export async function addNewPlayerAction(_: FormState, fd: FormData): Promise<Fo
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values: values(raw) };
   const r = await run(() => addNewPlayerToTeam(user.id, teamId.data, parsed.data));
   // Formulaire vidé après succès pour enchaîner les saisies.
-  return r.message ? { ...r, values: values(raw) } : { message: `${parsed.data.firstName} ${parsed.data.lastName} ajouté(e) à l'équipe.` };
+  return r.message ? { ...r, values: values(raw) } : { message: `${parsed.data.firstName} ${parsed.data.lastName} ajouté(e) à l'équipe.`, ok: true };
 }
 
 export async function addExistingPlayerAction(_: FormState, fd: FormData): Promise<FormState> {

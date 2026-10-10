@@ -78,7 +78,7 @@ export function CaptainForm({ teamId, captainUserId, members }: { teamId: string
         options={members.map((m) => ({ value: m.userId, label: m.displayName }))}
       />
       <SubmitButton variant="ghost">Changer de capitaine</SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -101,7 +101,7 @@ export function AddPlayerForm({ teamId }: { teamId: string }) {
         error={e.fftRank}
       />
       <SubmitButton pendingLabel="Ajout…">Ajouter le joueur</SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -124,7 +124,7 @@ export function AddExistingPlayerForm({
         options={players.map((p) => ({ value: p.id, label: `${p.firstName} ${p.lastName} (${p.rankLabel})` }))}
       />
       <SubmitButton variant="ghost">Ajouter à l&apos;équipe</SubmitButton>
-      <FormMessage>{state.message}</FormMessage>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
   );
 }
@@ -164,7 +164,7 @@ export function ManagePlayer({
         <Field label="Nom" name="lastName" defaultValue={editState.values?.lastName ?? player.lastName} error={e.lastName} />
         <Select label="Niveau FFT" name="fftRank" defaultValue={editState.values?.fftRank ?? player.fftRank} options={rankOptions} />
         <SubmitButton variant="ghost">Enregistrer la fiche</SubmitButton>
-        <FormMessage>{editState.message}</FormMessage>
+        <FormMessage signal={editState} ok={editState.ok}>{editState.message}</FormMessage>
       </form>
 
       {canLinkAccount && (
@@ -178,7 +178,7 @@ export function ManagePlayer({
             options={members.map((m) => ({ value: m.userId, label: m.displayName }))}
           />
           <SubmitButton variant="ghost">Enregistrer le lien</SubmitButton>
-          <FormMessage>{linkState.message}</FormMessage>
+          <FormMessage signal={linkState} ok={linkState.ok}>{linkState.message}</FormMessage>
         </form>
       )}
 
@@ -202,7 +202,9 @@ export function ManagePlayer({
           </form>
         )}
       </div>
-      <FormMessage>{removeState.message ?? deleteState.message}</FormMessage>
+      <FormMessage signal={removeState.message ? removeState : deleteState} ok={(removeState.message ? removeState : deleteState).ok}>
+        {removeState.message ?? deleteState.message}
+      </FormMessage>
     </div>
   );
 }
