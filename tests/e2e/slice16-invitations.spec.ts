@@ -46,7 +46,6 @@ test("sans compte : le lien mène à l'inscription, puis à la confirmation, pui
   await page.getByLabel("Email").fill("nouveau16@club.test");
   await page.getByLabel("Pseudo").fill("Nouveau16");
   await page.getByLabel("Mot de passe").fill("motdepasse");
-  await page.getByLabel("J'ai 18 ans ou plus").check();
   await page.getByRole("button", { name: "Créer mon compte" }).click();
   // Confirmation demandée : on n'entre pas dans un club en touchant un lien.
   await expect(visibleClub(page)).toHaveText(`Rejoindre ${CLUB} ?`);

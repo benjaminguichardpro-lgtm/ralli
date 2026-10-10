@@ -33,7 +33,7 @@ describe("findForbiddenWords", () => {
     "TC Paris 15",
     "Aces engagés : 100, Aces gagnés : 156, cote 1,56",
     "Pronostic validé",
-    "Jeu gratuit, sans argent réel, réservé aux 18 ans et plus.",
+    "Jeu gratuit, sans argent réel.",
   ])("ne signale pas de faux positif : %s", (text) => {
     expect(words(text)).toEqual([]);
   });

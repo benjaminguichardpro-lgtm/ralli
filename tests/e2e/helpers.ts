@@ -28,12 +28,11 @@ export async function checkPage(page: Page, shot?: string) {
   if (shot) await page.screenshot({ path: `${SHOTS}/${shot}.png`, fullPage: true });
 }
 
-export async function signUp(page: Page, name: string, opts: { checkAge?: boolean; email?: string } = {}) {
+export async function signUp(page: Page, name: string, opts: { email?: string } = {}) {
   await page.goto("/inscription");
   await page.getByLabel("Email").fill(opts.email ?? `${name.toLowerCase()}@club.test`);
   await page.getByLabel("Pseudo").fill(name);
   await page.getByLabel("Mot de passe").fill("motdepasse");
-  if (opts.checkAge !== false) await page.getByLabel("J'ai 18 ans ou plus").check();
   await page.getByRole("button", { name: "Créer mon compte" }).click();
 }
 

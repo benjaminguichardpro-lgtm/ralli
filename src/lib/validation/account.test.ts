@@ -7,7 +7,7 @@ import {
   signUpSchema,
 } from "./account";
 
-const valid = { email: "  Alice@Club.FR ", displayName: " Alice  B ", password: "motdepasse", ageConfirmed: "on" };
+const valid = { email: "  Alice@Club.FR ", displayName: " Alice  B ", password: "motdepasse" };
 
 describe("signUpSchema", () => {
   it("normalise l'email et le pseudo", () => {
@@ -16,14 +16,8 @@ describe("signUpSchema", () => {
     expect(r.displayName).toBe("Alice B");
   });
 
-  it("refuse l'inscription sans la case 18+", () => {
-    const r = signUpSchema.safeParse({ ...valid, ageConfirmed: undefined });
-    expect(r.success).toBe(false);
-    expect(r.error?.issues[0]?.path).toEqual(["ageConfirmed"]);
-  });
-
-  it("refuse une valeur de case falsifiée", () => {
-    expect(signUpSchema.safeParse({ ...valid, ageConfirmed: "false" }).success).toBe(false);
+  it("n'exige aucune déclaration d'âge", () => {
+    expect(signUpSchema.safeParse(valid).success).toBe(true);
   });
 
   it.each([

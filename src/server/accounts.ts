@@ -31,6 +31,7 @@ export async function registerUser(input: SignUpInput): Promise<{ id: string }> 
           displayNameKey: key,
           passwordHash,
           avatarKey: pickAvatarKey(),
+          // Héritage : la case « 18 ans ou plus » n'existe plus ; la colonne reçoit la date d'inscription.
           ageConfirmedAt: new Date(),
         },
         select: { id: true },

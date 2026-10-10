@@ -7,7 +7,7 @@ Ces fonctionnalités sont volontairement absentes. Aucune n'est cachée : si ell
 - **Doubles** : seuls les simples sont gérés.
 - **Tournois** : uniquement des rencontres d'interclubs.
 - **Intégration FFT / Ten'Up** : les niveaux FFT sont déclarés à la main.
-- **Juniors et mineurs** : inscription réservée aux 18 ans et plus (déclaration sur l'honneur, pas de contrôle d'identité).
+- **Juniors et mineurs** : aucune déclaration ni contrôle d'âge à l'inscription (la case « 18 ans ou plus » a été retirée à la demande de Benjamin le 2026-10-09).
 - **Multi-saisons** : une seule saison, dont les dates sont fixées dans la config.
 - **i18n** : français uniquement.
 - **App native** : web app mobile-first uniquement.

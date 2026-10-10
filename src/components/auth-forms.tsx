@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { changePasswordAction, signInAction, signUpAction } from "@/app/actions/auth";
 import { initialFormState } from "@/app/actions/types";
 import { PASSWORD_MIN } from "@/lib/validation/account";
-import { Field, FieldError, FormMessage, SubmitButton } from "./ui";
+import { Field, FormMessage, SubmitButton } from "./ui";
 
 export function SignUpForm({ invitation }: { invitation?: string }) {
   const [state, action] = useActionState(signUpAction, initialFormState);
@@ -33,19 +33,6 @@ export function SignUpForm({ invitation }: { invitation?: string }) {
         error={e.password}
         hint={`Au moins ${PASSWORD_MIN} caractères.`}
       />
-      <div className="space-y-1">
-        <label className="flex min-h-11 items-center gap-3">
-          <input
-            type="checkbox"
-            name="ageConfirmed"
-            required
-            aria-invalid={e.ageConfirmed ? true : undefined}
-            className="size-6 accent-primary"
-          />
-          <span className="font-medium">J&apos;ai 18 ans ou plus</span>
-        </label>
-        {e.ageConfirmed && <FieldError>{e.ageConfirmed}</FieldError>}
-      </div>
       <SubmitButton className="w-full" pendingLabel="Création…">
         Créer mon compte
       </SubmitButton>

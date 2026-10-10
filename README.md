@@ -1,7 +1,7 @@
 # Ralli
 
 Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces (monnaie fictive, sans valeur, non achetable, non convertible).
-Jeu gratuit, sans argent réel, réservé aux 18 ans et plus.
+Jeu gratuit, sans argent réel.
 
 Stack : Next.js 16 (App Router) · TypeScript strict · Tailwind v4 · Prisma 7 · Postgres · Auth.js · zod · Vitest · Playwright.
 

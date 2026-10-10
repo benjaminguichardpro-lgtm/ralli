@@ -5,13 +5,12 @@ import { authenticate, changePassword, registerUser, resetPasswordByEmail } from
 import { getBalance } from "./ledger";
 
 const input = (patch: Record<string, string> = {}) =>
-  signUpSchema.parse({ email: "alice@club.fr", displayName: "Alice", password: "motdepasse", ageConfirmed: "on", ...patch });
+  signUpSchema.parse({ email: "alice@club.fr", displayName: "Alice", password: "motdepasse", ...patch });
 
 describe("registerUser", () => {
-  it("crée le compte, horodate la case 18+ et crédite 1000 Aces via le ledger", async () => {
+  it("crée le compte et crédite 1000 Aces via le ledger", async () => {
     const { id } = await registerUser(input());
     const user = await db.user.findUniqueOrThrow({ where: { id } });
-    expect(user.ageConfirmedAt).toBeInstanceOf(Date);
     expect(user.passwordHash).not.toContain("motdepasse");
     expect(await getBalance(id)).toBe(1000);
     const entries = await db.ledgerEntry.findMany({ where: { userId: id } });

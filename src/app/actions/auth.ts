@@ -21,7 +21,6 @@ export async function signUpAction(_: FormState, fd: FormData): Promise<FormStat
     email: str(fd, "email"),
     displayName: str(fd, "displayName"),
     password: str(fd, "password"),
-    ageConfirmed: str(fd, "ageConfirmed"),
   };
   const values = { email: raw.email ?? "", displayName: raw.displayName ?? "" };
   const parsed = signUpSchema.safeParse(raw);

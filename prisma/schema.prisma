@@ -105,7 +105,7 @@ model User {
   passwordHash       String
   displayName        String // pseudo public, affiché dans les classements
   displayNameKey     String    @unique // pseudo en minuscules, pour l'unicité insensible à la casse
-  ageConfirmedAt     DateTime // date de la case « J'ai 18 ans ou plus »
+  ageConfirmedAt     DateTime // héritage : date de la case « 18 ans ou plus », supprimée ; reçoit la date d'inscription (à retirer par une migration)
   mustChangePassword Boolean   @default(false) // posé par `npm run reset-password`
   avatarKey          String    @default("service") // avatar prédéfini (src/lib/avatars.ts)
   avatarPhotoAt      DateTime? // date de la photo importée (fichier dans le dossier avatar/) ; null = pas de photo

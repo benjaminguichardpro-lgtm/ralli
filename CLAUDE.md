@@ -17,7 +17,7 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 
 - Aucun argent réel : Aces non achetables, non convertibles, aucun lot, aucune pub.
 - Vocabulaire interdit dans l'UI : « pari », « mise », « gain en euros », « bookmaker ». Utiliser « pronostic », « Aces engagés », « Aces gagnés », « cote ». Contrôlé par `findForbiddenWords` sur le texte affiché (tests E2E), pas sur le code source.
-- 18+ : case obligatoire à l'inscription. La mention « réservé aux 18 ans et plus » n'est plus dans le pied de page (retirée à la demande de Benjamin le 2026-10-09) ; le pied de page dit « Jeu gratuit, sans argent réel. ».
+- Plus de limite d'âge (décision de Benjamin, 2026-10-09) : ni case « 18 ans ou plus » à l'inscription, ni mention en pied de page (« Jeu gratuit, sans argent réel. »). La colonne `User.ageConfirmedAt` reste en base (héritage, reçoit la date d'inscription) : à retirer par une prochaine migration.
 - Anti-trucage côté serveur : ne peuvent pas pronostiquer une rencontre les capitaines des deux équipes, les joueurs alignés dans un de ses matchs et les comptes liés à ces joueurs, ainsi que les admins du club concerné.
 - Design : voir `docs/DESIGN.md` ; couleurs uniquement via les tokens de `src/app/globals.css` (aucune couleur en dur), boutons ≥ 44 px, contraste AA (`npm run contrast`).
 

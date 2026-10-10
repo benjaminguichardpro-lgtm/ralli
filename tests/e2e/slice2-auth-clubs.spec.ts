@@ -28,11 +28,12 @@ test("accueil déconnecté", async () => {
   await checkPage(alice, "01-accueil-deconnecte");
 });
 
-test("inscription refusée sans la case 18+ (contrôle serveur)", async () => {
-  await signUp(alice, "Alice", { checkAge: false });
-  await expect(alice.getByText("Vous devez avoir 18 ans ou plus pour vous inscrire")).toBeVisible();
-  await expect(alice).toHaveURL(/\/inscription$/);
-  await checkPage(alice, "02-inscription-refus-18");
+test("le formulaire d'inscription ne demande aucune déclaration d'âge", async () => {
+  await alice.goto("/inscription");
+  await expect(alice.getByRole("button", { name: "Créer mon compte" })).toBeVisible();
+  await expect(alice.getByRole("checkbox")).toHaveCount(0);
+  await expect(alice.getByText(/18 ans/)).toHaveCount(0);
+  await checkPage(alice, "02-inscription");
 });
 
 test("inscription d'Alice : connectée, 1000 Aces", async () => {

@@ -39,8 +39,6 @@ export const signUpSchema = z.object({
   email: emailSchema,
   displayName: displayNameSchema,
   password: passwordSchema,
-  // Case à cocher HTML : "on" si cochée, absente sinon.
-  ageConfirmed: z.literal("on", { error: "Vous devez avoir 18 ans ou plus pour vous inscrire" }),
 });
 export type SignUpInput = z.infer<typeof signUpSchema>;
 

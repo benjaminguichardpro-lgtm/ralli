@@ -146,7 +146,7 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
   const accounts: DemoSummary["accounts"] = [];
   async function user(pseudo: string, role: string) {
     const { id } = await registerUser(
-      signUpSchema.parse({ email: `${pseudo}${DEMO_EMAIL_DOMAIN}`, displayName: pseudo, password: DEMO_PASSWORD, ageConfirmed: "on" }),
+      signUpSchema.parse({ email: `${pseudo}${DEMO_EMAIL_DOMAIN}`, displayName: pseudo, password: DEMO_PASSWORD }),
     );
     users[pseudo] = id;
     accounts.push({ pseudo, role });
