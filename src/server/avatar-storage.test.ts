@@ -42,6 +42,25 @@ describe("sans jeton Vercel Blob : dossier local", () => {
   });
 });
 
+describe("logos de clubs (store « club-logo »)", () => {
+  it("rangés dans un sous-dossier, sans toucher aux photos de profil du même identifiant", async () => {
+    await savePhoto("abc123", photo);
+    await savePhoto("abc123", Buffer.from("logo-bytes"), "club-logo");
+    expect((await readPhoto("abc123"))?.equals(photo)).toBe(true);
+    expect((await readPhoto("abc123", "club-logo"))?.toString()).toBe("logo-bytes");
+    expect((await readFile(path.join(dir, "club-logo", "abc123.webp"))).toString()).toBe("logo-bytes");
+    await deletePhoto("abc123", "club-logo");
+    expect(await readPhoto("abc123", "club-logo")).toBeNull();
+    expect((await readPhoto("abc123"))?.equals(photo)).toBe(true);
+  });
+
+  it("utilise le préfixe club-logo/ sur Vercel Blob", async () => {
+    process.env.BLOB_STORE_ID = "store_abc123";
+    await savePhoto("abc123", photo, "club-logo");
+    expect(blob.put).toHaveBeenCalledWith("club-logo/abc123.webp", photo, expect.objectContaining({ access: "private" }));
+  });
+});
+
 describe("stockage relié par Vercel (BLOB_STORE_ID, identification automatique) : sans jeton", () => {
   it("utilise Vercel Blob en accès privé, sans toucher au disque, même sur Vercel", async () => {
     process.env.BLOB_STORE_ID = "store_abc123";

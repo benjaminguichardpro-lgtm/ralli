@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { ClubLogo } from "@/components/club-logo";
 import { StatusBadge } from "@/components/encounter-list";
 import { WhatsAppShare } from "@/components/share-link";
 import { ButtonLink } from "@/components/ui";
@@ -73,12 +74,12 @@ async function HomeContent() {
         </div>
       ) : (
         <div className="space-y-4" data-testid="feed">
-          {next && <NextEncounter e={next} now={now} />}
+          {next && <NextEncounter e={next} now={now} showLogo={feed.multiClub} />}
           {others.length > 0 && (
             <ul className="space-y-4">
               {others.map((e) => (
                 <li key={e.id}>
-                  <EncounterCard e={e} now={now} />
+                  <EncounterCard e={e} now={now} showLogo={feed.multiClub} />
                 </li>
               ))}
             </ul>
@@ -89,7 +90,7 @@ async function HomeContent() {
   );
 }
 
-function NextEncounter({ e, now }: { e: FeedEncounter; now: Date }) {
+function NextEncounter({ e, now, showLogo }: { e: FeedEncounter; now: Date; showLogo: boolean }) {
   const rel = relativeDayLabel(e.startsAt, now);
   return (
     <Link
@@ -107,8 +108,11 @@ function NextEncounter({ e, now }: { e: FeedEncounter; now: Date }) {
           {rel && <span className="font-normal text-on-primary-soft"> · {rel}</span>}
         </span>
       </p>
-      <p className="pt-1 text-on-primary-soft">
-        <strong className="font-semibold text-on-primary">{e.home}</strong> contre {e.away}
+      <p className="flex items-center gap-2 pt-1 text-on-primary-soft">
+        {showLogo && <ClubLogo club={e.club} size={32} />}
+        <span>
+          <strong className="font-semibold text-on-primary">{e.home}</strong> contre {e.away}
+        </span>
       </p>
       <p className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-2">
         <span className="inline-block rounded-full bg-gold px-3 py-1 text-[0.8125rem] font-bold text-on-gold">
@@ -123,7 +127,7 @@ function NextEncounter({ e, now }: { e: FeedEncounter; now: Date }) {
 }
 
 /** Rencontre suivante : une carte à toucher. Les cotes et le pronostic sont sur la page de la rencontre. */
-function EncounterCard({ e, now }: { e: FeedEncounter; now: Date }) {
+function EncounterCard({ e, now, showLogo }: { e: FeedEncounter; now: Date; showLogo: boolean }) {
   const rel = relativeDayLabel(e.startsAt, now);
   return (
     <Link
@@ -131,8 +135,11 @@ function EncounterCard({ e, now }: { e: FeedEncounter; now: Date }) {
       className="block space-y-1 rounded-2xl bg-surface p-4 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
       <span className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <span className="font-semibold">
-          {e.home} – {e.away}
+        <span className="flex items-center gap-2 font-semibold">
+          {showLogo && <ClubLogo club={e.club} size={28} />}
+          <span>
+            {e.home} – {e.away}
+          </span>
         </span>
         <span className="font-data font-bold text-accent">
           {formatParisTime(e.startsAt)}

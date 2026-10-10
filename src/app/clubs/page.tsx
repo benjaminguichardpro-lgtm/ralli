@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ClubLogo } from "@/components/club-logo";
 import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
 import { listMyClubs } from "@/server/clubs";
@@ -28,8 +29,11 @@ async function Clubs() {
           <ul className="divide-y divide-line" data-testid="my-clubs">
             {clubs.map((c) => (
               <li key={c.id}>
-                <Link href={`/clubs/${c.id}`} className="flex min-h-11 items-center justify-between py-2 font-medium text-primary">
-                  <span>{c.name}</span>
+                <Link href={`/clubs/${c.id}`} className="flex min-h-11 items-center justify-between gap-3 py-2 font-medium text-primary">
+                  <span className="flex items-center gap-3">
+                    <ClubLogo club={c} size={40} />
+                    {c.name}
+                  </span>
                   <span className="text-sm text-ink-muted">{c.role === "ADMIN" ? "admin" : "membre"}</span>
                 </Link>
               </li>

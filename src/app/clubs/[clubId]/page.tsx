@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
+import { ClubLogo } from "@/components/club-logo";
 import { InviteCodeReveal, MemberRoleForm } from "@/components/club-forms";
 import { ResetAvatarForm } from "@/components/profile-forms";
 import { LeaderboardTable } from "@/components/leaderboard";
@@ -11,6 +12,7 @@ import { EncounterList } from "@/components/encounter-list";
 import { CreateExternalTeamForm, CreateTeamForm } from "@/components/team-forms";
 import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
+import { formatCount, isProfileEmpty, websiteLabel } from "@/lib/clubs/profile";
 import { applyFilter, countFilters, parseFilter } from "@/lib/encounters/filters";
 import { type ClubView, getClubView } from "@/server/clubs";
 import { listArchivedEncounters, listClubEncounters } from "@/server/encounters";
@@ -60,12 +62,35 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
 
   return (
     <section className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl text-primary">{club.name}</h1>
-        <p className="text-ink-muted">
-          Votre rôle : {isAdmin ? "admin" : "membre"}
-          {isCaptain ? " · capitaine" : ""}
-        </p>
+      <div className="space-y-3" data-testid="club-header">
+        <div className="flex items-center gap-4">
+          <ClubLogo club={{ id: club.id, name: club.name, logoUpdatedAt: club.profile.logoUpdatedAt }} size={72} />
+          <div className="min-w-0">
+            <h1 className="font-serif text-3xl text-primary">{club.name}</h1>
+            <p className="text-ink-muted">
+              Votre rôle : {isAdmin ? "admin" : "membre"}
+              {isCaptain ? " · capitaine" : ""}
+            </p>
+          </div>
+        </div>
+        {!isProfileEmpty(club.profile) && (
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted" data-testid="club-summary">
+            {club.profile.city && <li>{club.profile.city}</li>}
+            {club.profile.licenseeCount !== null && <li>{formatCount(club.profile.licenseeCount)} licencié{club.profile.licenseeCount > 1 ? "s" : ""}</li>}
+            {club.profile.websiteUrl && (
+              <li>
+                <a href={club.profile.websiteUrl} target="_blank" rel="noopener noreferrer" className="break-all text-primary underline">
+                  {websiteLabel(club.profile.websiteUrl)}
+                </a>
+              </li>
+            )}
+          </ul>
+        )}
+        {(isAdmin || !isProfileEmpty(club.profile)) && (
+          <ButtonLink href={`/clubs/${club.id}/fiche`} variant="ghost">
+            {isAdmin && isProfileEmpty(club.profile) ? "Compléter la fiche du club" : "Voir la fiche du club"}
+          </ButtonLink>
+        )}
       </div>
 
       {isAdmin && club.inviteCode && (

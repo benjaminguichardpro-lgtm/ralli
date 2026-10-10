@@ -25,13 +25,15 @@ export type FeedEncounter = {
   predictionsCloseAt: Date;
   home: string;
   away: string;
+  /** Club organisateur : son logo s'affiche sur la carte quand l'utilisateur a plusieurs clubs. */
+  club: { id: string; name: string; logoUpdatedAt: Date | null };
   /** Motif d'anti-trucage pour ce lecteur, null s'il peut pronostiquer. */
   blockedReason: string | null;
   matches: FeedMatch[];
 };
 
 /** `stewardClubs` : clubs où l'utilisateur peut créer une rencontre (admin du club ou capitaine d'une de ses équipes). */
-export type HomeFeed = { balance: number; encounters: FeedEncounter[]; hasClub: boolean; stewardClubs: { id: string; name: string }[] };
+export type HomeFeed = { balance: number; encounters: FeedEncounter[]; hasClub: boolean; multiClub: boolean; stewardClubs: { id: string; name: string }[] };
 
 const teamSelect = { name: true, kind: true, externalClubName: true, captainId: true, club: { select: { name: true } } } as const;
 const playerSelect = { firstName: true, lastName: true, fftRank: true } as const;
@@ -64,6 +66,7 @@ export async function getHomeFeed(userId: string, now = new Date()): Promise<Hom
         startsAt: true,
         predictionsCloseAt: true,
         organizerClubId: true,
+        organizerClub: { select: { id: true, name: true, logoUpdatedAt: true } },
         homeTeam: { select: teamSelect },
         awayTeam: { select: teamSelect },
         matches: {
@@ -108,6 +111,7 @@ export async function getHomeFeed(userId: string, now = new Date()): Promise<Hom
         predictionsCloseAt: e.predictionsCloseAt,
         home: sideLabel(e.homeTeam),
         away: sideLabel(e.awayTeam),
+        club: e.organizerClub,
         blockedReason,
         matches: numberByKind(e.matches).map((m) => {
           const mine = m.predictions[0];
@@ -125,5 +129,5 @@ export async function getHomeFeed(userId: string, now = new Date()): Promise<Hom
     }),
   );
 
-  return { balance, encounters, hasClub: memberships > 0, stewardClubs };
+  return { balance, encounters, hasClub: memberships > 0, multiClub: memberships > 1, stewardClubs };
 }

@@ -32,8 +32,8 @@ beforeEach(async () => {
 
 describe("création et adhésion", () => {
   it("le créateur est ADMIN, celui qui rejoint par code est MEMBER", async () => {
-    expect(await listMyClubs(admin)).toEqual([{ id: club.id, name: "TC Ralli", role: "ADMIN" }]);
-    expect(await listMyClubs(member)).toEqual([{ id: club.id, name: "TC Ralli", role: "MEMBER" }]);
+    expect(await listMyClubs(admin)).toEqual([{ id: club.id, name: "TC Ralli", role: "ADMIN", logoUpdatedAt: null }]);
+    expect(await listMyClubs(member)).toEqual([{ id: club.id, name: "TC Ralli", role: "MEMBER", logoUpdatedAt: null }]);
     expect(await listMyClubs(outsider)).toEqual([]);
   });
 

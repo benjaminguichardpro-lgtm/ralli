@@ -1,4 +1,5 @@
 import type { ClubRole } from "@/generated/prisma/client";
+import type { ClubProfileFields } from "@/lib/clubs/profile";
 import { generateInviteCode, isWellFormedInviteCode } from "@/lib/clubs/invite-code";
 import { db } from "@/lib/db";
 import { DomainError, isUniqueViolation } from "./errors";
@@ -84,21 +85,23 @@ export async function setMemberRole(actorId: string, clubId: string, targetUserI
   }, { isolationLevel: "Serializable" }); // deux admins qui se retirent le rôle en même temps
 }
 
-export type MyClub = { id: string; name: string; role: ClubRole };
+export type MyClub = { id: string; name: string; role: ClubRole; logoUpdatedAt: Date | null };
 
 export async function listMyClubs(userId: string): Promise<MyClub[]> {
   const rows = await db.clubMembership.findMany({
     where: { userId },
-    select: { role: true, club: { select: { id: true, name: true } } },
+    select: { role: true, club: { select: { id: true, name: true, logoUpdatedAt: true } } },
     orderBy: { club: { name: "asc" } },
   });
-  return rows.map((r) => ({ id: r.club.id, name: r.club.name, role: r.role }));
+  return rows.map((r) => ({ id: r.club.id, name: r.club.name, role: r.role, logoUpdatedAt: r.club.logoUpdatedAt }));
 }
 
 export type ClubView = {
   id: string;
   name: string;
   myRole: ClubRole;
+  /** Fiche du club (champs facultatifs, voir server/club-profile.ts). */
+  profile: ClubProfileFields & { logoUpdatedAt: Date | null };
   /** Visible des admins uniquement. */
   inviteCode: string | null;
   members: { userId: string; displayName: string; role: ClubRole; joinedAt: Date; avatarKey: string; avatarPhotoAt: Date | null }[];
@@ -113,6 +116,16 @@ export async function getClubView(actorId: string, clubId: string): Promise<Club
       id: true,
       name: true,
       inviteCode: true,
+      logoUpdatedAt: true,
+      foundedYear: true,
+      licenseeCount: true,
+      address: true,
+      postalCode: true,
+      city: true,
+      websiteUrl: true,
+      description: true,
+      indoorCourts: true,
+      outdoorCourts: true,
       memberships: {
         select: { role: true, joinedAt: true, user: { select: { id: true, displayName: true, avatarKey: true, avatarPhotoAt: true } } },
         orderBy: [{ role: "desc" }, { joinedAt: "asc" }], // ADMIN avant MEMBER (ordre de l'enum)
@@ -124,6 +137,18 @@ export async function getClubView(actorId: string, clubId: string): Promise<Club
     id: club.id,
     name: club.name,
     myRole,
+    profile: {
+      logoUpdatedAt: club.logoUpdatedAt,
+      foundedYear: club.foundedYear,
+      licenseeCount: club.licenseeCount,
+      address: club.address,
+      postalCode: club.postalCode,
+      city: club.city,
+      websiteUrl: club.websiteUrl,
+      description: club.description,
+      indoorCourts: club.indoorCourts,
+      outdoorCourts: club.outdoorCourts,
+    },
     inviteCode: myRole === "ADMIN" ? club.inviteCode : null,
     members: club.memberships.map((m) => ({
       userId: m.user.id,

@@ -131,6 +131,18 @@ model Club {
   createdById String
   createdAt   DateTime @default(now())
 
+  // Fiche du club : tout est facultatif, rempli par les admins. logoUpdatedAt = null : pas de logo.
+  foundedYear   Int?
+  licenseeCount Int?
+  address       String?
+  postalCode    String?
+  city          String?
+  websiteUrl    String?
+  description   String?
+  indoorCourts  Int?
+  outdoorCourts Int?
+  logoUpdatedAt DateTime?
+
   createdBy   User             @relation("ClubCreatedBy", fields: [createdById], references: [id])
   memberships ClubMembership[]
   teams       Team[]

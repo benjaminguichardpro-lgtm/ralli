@@ -23,6 +23,36 @@ const checks: Check[] = [
     expect: "ok",
   },
   {
+    label: "Fiche du club valide (année 1974, 250 licenciés, site https, 2 courts)",
+    sql: `UPDATE "Club" SET "foundedYear" = 1974, "licenseeCount" = 250, "websiteUrl" = 'https://www.monclub.fr', "indoorCourts" = 2 WHERE id = 'verif_c'`,
+    expect: "ok",
+  },
+  {
+    label: "Fiche du club : année de fondation avant 1800",
+    sql: `UPDATE "Club" SET "foundedYear" = 1700 WHERE id = 'verif_c'`,
+    expect: "error",
+  },
+  {
+    label: "Fiche du club : nombre de licenciés négatif",
+    sql: `UPDATE "Club" SET "licenseeCount" = -1 WHERE id = 'verif_c'`,
+    expect: "error",
+  },
+  {
+    label: "Fiche du club : plus de 100 courts extérieurs",
+    sql: `UPDATE "Club" SET "outdoorCourts" = 101 WHERE id = 'verif_c'`,
+    expect: "error",
+  },
+  {
+    label: "Fiche du club : site web en javascript:",
+    sql: `UPDATE "Club" SET "websiteUrl" = 'javascript:alert(1)' WHERE id = 'verif_c'`,
+    expect: "error",
+  },
+  {
+    label: "Fiche du club : description de plus de 500 caractères",
+    sql: `UPDATE "Club" SET description = repeat('x', 501) WHERE id = 'verif_c'`,
+    expect: "error",
+  },
+  {
     label: "Double sans ses deux joueurs supplémentaires (kind DOUBLES, joueurs 2 absents)",
     sql: `INSERT INTO "Match"(id,"encounterId","order",kind,"homePlayerId","awayPlayerId") VALUES ('verif_d0','verif_e',2,'DOUBLES','verif_pl1','verif_pl2')`,
     expect: "error",
