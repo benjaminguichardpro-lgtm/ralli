@@ -16,7 +16,8 @@ export type DomainErrorCode =
   | "PLAYER_LOCKED"
   | "ALREADY_LINKED"
   | "CONFLICT"
-  | "INVALID_TRANSITION";
+  | "INVALID_TRANSITION"
+  | "STORAGE_UNAVAILABLE";
 
 /** Erreur métier attendue, avec un message affichable tel quel à l'utilisateur. */
 export class DomainError extends Error {

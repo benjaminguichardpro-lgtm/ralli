@@ -14,10 +14,12 @@ let dir: string;
 beforeEach(async () => {
   dir = await mkdtemp(path.join(os.tmpdir(), "ralli-avatar-"));
   process.env.AVATAR_DIR = dir;
-  vi.clearAllMocks();
+  vi.resetAllMocks(); // efface aussi les réponses simulées du test précédent
 });
 afterEach(async () => {
   delete process.env.BLOB_READ_WRITE_TOKEN;
+  delete process.env.BLOB_STORE_ID;
+  delete process.env.VERCEL;
   delete process.env.AVATAR_DIR;
   await rm(dir, { recursive: true, force: true });
 });
@@ -37,6 +39,47 @@ describe("sans jeton Vercel Blob : dossier local", () => {
   it("refuse d'écrire sous un identifiant qui ressemble à un chemin", async () => {
     await expect(savePhoto("../secret", photo)).rejects.toThrow("Identifiant d'avatar invalide");
     expect(await readPhoto("a/b")).toBeNull(); // lecture : introuvable, comme avant
+  });
+});
+
+describe("stockage relié par Vercel (BLOB_STORE_ID, identification automatique) : sans jeton", () => {
+  it("utilise Vercel Blob en accès privé, sans toucher au disque, même sur Vercel", async () => {
+    process.env.BLOB_STORE_ID = "store_abc123";
+    process.env.VERCEL = "1";
+    await savePhoto("abc123", photo);
+    expect(blob.put).toHaveBeenCalledWith("avatar/abc123.webp", photo, expect.objectContaining({ access: "private", allowOverwrite: true }));
+    await expect(readFile(path.join(dir, "abc123.webp"))).rejects.toThrow();
+    blob.get.mockResolvedValue({ statusCode: 200, stream: new Response(photo).body });
+    expect((await readPhoto("abc123"))?.equals(photo)).toBe(true);
+    await deletePhoto("abc123");
+    expect(blob.del).toHaveBeenCalledWith("avatar/abc123.webp");
+  });
+});
+
+describe("pannes de stockage : un message clair, jamais un plantage", () => {
+  beforeEach(() => vi.spyOn(console, "error").mockImplementation(() => undefined));
+  afterEach(() => vi.restoreAllMocks());
+
+  it("sur Vercel sans jeton Blob : photos pas encore activées, rien n'est écrit sur le disque", async () => {
+    process.env.VERCEL = "1";
+    await expect(savePhoto("abc123", photo)).rejects.toMatchObject({ code: "STORAGE_UNAVAILABLE", message: expect.stringContaining("pas encore activées") });
+    await expect(readFile(path.join(dir, "abc123.webp"))).rejects.toThrow();
+  });
+
+  it("Vercel Blob qui refuse l'enregistrement : message utilisateur, cause dans les journaux", async () => {
+    process.env.BLOB_READ_WRITE_TOKEN = "jeton-de-test";
+    blob.put.mockRejectedValue(new Error("Cannot use private access on a public store"));
+    await expect(savePhoto("abc123", photo)).rejects.toMatchObject({ code: "STORAGE_UNAVAILABLE", message: expect.not.stringContaining("public store") });
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  it("lecture ou suppression en panne : pas d'exception (photo absente, suppression ignorée)", async () => {
+    process.env.BLOB_READ_WRITE_TOKEN = "jeton-de-test";
+    blob.get.mockRejectedValue(new Error("réseau"));
+    blob.del.mockRejectedValue(new Error("réseau"));
+    expect(await readPhoto("abc123")).toBeNull();
+    await expect(deletePhoto("abc123")).resolves.toBeUndefined();
+    expect(console.error).toHaveBeenCalledTimes(2);
   });
 });
 
