@@ -114,7 +114,7 @@ test("parieur1 : portefeuille et classements (saison et semaine) bien remplis", 
 
 test("anti-trucage : admin, capitaine et joueur lié sont bloqués sur la rencontre ouverte", async ({ browser }) => {
   const reasons: [string, string][] = [
-    ["admin_lyon", "Les admins du club ne peuvent pas pronostiquer les rencontres de leur club."],
+    ["admin_lyon", "Les admins ne peuvent pas pronostiquer les matchs de leurs clubs."],
     ["capitaine_lyon", "Un capitaine ne peut pas pronostiquer la rencontre de son équipe."],
     ["joueur_lyon", "Vous êtes aligné dans cette rencontre : vous ne pouvez pas la pronostiquer."],
   ];
@@ -122,7 +122,7 @@ test("anti-trucage : admin, capitaine et joueur lié sont bloqués sur la rencon
     const p = await login(browser, pseudo);
     await p.goto(`/rencontres/${ids.open}`);
     await expect(p.getByTestId("blocked").first()).toHaveText(reason);
-    await expect(p.getByTestId("matches").getByRole("button")).toHaveCount(0);
+    await expect(p.getByTestId("predict")).toHaveCount(0); // pas de formulaire de pronostic (les cotes ouvrent seulement la fenêtre d\'explication)
   }
 });
 

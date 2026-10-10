@@ -164,7 +164,7 @@ test("publication : le double a ses cotes (moyenne des niveaux), Pablo pronostiq
   // Les participants (capitaine, admin) ne peuvent pas pronostiquer : le double aussi est protégé.
   await cedric.goto(url);
   await expect(cedric.getByTestId("blocked").first()).toHaveText("Un capitaine ne peut pas pronostiquer la rencontre de son équipe.");
-  await expect(cedric.getByTestId("matches").getByRole("button")).toHaveCount(0);
+  await expect(cedric.getByTestId("predict")).toHaveCount(0); // pas de formulaire de pronostic (les cotes ouvrent seulement la fenêtre d\'explication)
 });
 
 test("score : le double est saisi comme un simple, il rapporte 2 points ; décompte 1 – 2", async () => {

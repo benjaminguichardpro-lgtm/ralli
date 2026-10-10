@@ -89,10 +89,10 @@ test("3. Cyril compose et publie la rencontre (deux simples)", async () => {
 test("4. Anti-trucage : ni le capitaine ni l'admin ne peuvent pronostiquer leur rencontre", async () => {
   await cyril.goto(encounterUrl);
   await expect(cyril.getByTestId("blocked").first()).toHaveText("Un capitaine ne peut pas pronostiquer la rencontre de son équipe.");
-  await expect(cyril.getByTestId("matches").getByRole("button")).toHaveCount(0);
+  await expect(cyril.getByTestId("predict")).toHaveCount(0); // pas de formulaire de pronostic (les cotes ouvrent seulement la fenêtre d\'explication)
   await alma.goto(encounterUrl);
-  await expect(alma.getByTestId("blocked").first()).toHaveText("Les admins du club ne peuvent pas pronostiquer les rencontres de leur club.");
-  await expect(alma.getByTestId("matches").getByRole("button")).toHaveCount(0);
+  await expect(alma.getByTestId("blocked").first()).toHaveText("Les admins ne peuvent pas pronostiquer les matchs de leurs clubs.");
+  await expect(alma.getByTestId("predict")).toHaveCount(0); // pas de formulaire de pronostic (les cotes ouvrent seulement la fenêtre d\'explication)
 });
 
 test("5. Bruno et Chloe pronostiquent, leur solde baisse", async () => {

@@ -38,7 +38,7 @@ type EncounterForRules = {
  */
 export async function exclusionReason(tx: Tx, userId: string, e: EncounterForRules): Promise<string | null> {
   if ((await getClubRole(userId, e.organizerClubId, tx)) === "ADMIN") {
-    return "Les admins du club ne peuvent pas pronostiquer les rencontres de leur club.";
+    return "Les admins ne peuvent pas pronostiquer les matchs de leurs clubs.";
   }
   if (e.homeTeam.captainId === userId || e.awayTeam.captainId === userId) {
     return "Un capitaine ne peut pas pronostiquer la rencontre de son équipe.";

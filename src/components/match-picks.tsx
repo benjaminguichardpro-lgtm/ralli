@@ -16,7 +16,8 @@ export type Mine = { side: Side; committedAces: number; odds: string; status: Pr
 /** Ce que le lecteur peut faire sur ce match. */
 export type Access =
   | { kind: "predict"; balance: number }
-  | { kind: "note"; text: string; testId?: string }
+  /** `explainOnTouch` : toucher une cote ouvre une fenêtre qui donne la raison (pronostic impossible pour ce compte). */
+  | { kind: "note"; text: string; testId?: string; explainOnTouch?: boolean }
   | { kind: "login" }
   | { kind: "none" };
 
@@ -149,6 +150,8 @@ export function MatchPicks({
   }
 
   const interactive = access.kind === "predict" && !mine;
+  // Compte qui ne peut pas pronostiquer (admin, capitaine, joueur aligné) : toucher une cote explique pourquoi.
+  const explain = access.kind === "note" && access.explainOnTouch === true;
 
   if (mine) {
     const pickedName = picks[mine.side].name;
@@ -212,6 +215,18 @@ export function MatchPicks({
               onTouch={() => touch(s)}
               onFilled={openSheet}
             />
+          ) : explain ? (
+            <button
+              key={s}
+              type="button"
+              onClick={() => dialog.current?.showModal()}
+              aria-haspopup="dialog"
+              aria-label={`${picks[s].name}, cote ${picks[s].odds} : pronostic impossible, touche pour savoir pourquoi`}
+              data-testid="blocked-odd"
+              className={`${oddBase} cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`}
+            >
+              <OddsFace pick={picks[s]} />
+            </button>
           ) : (
             <div key={s} className={oddBase}>
               <OddsFace pick={picks[s]} />
@@ -232,6 +247,31 @@ export function MatchPicks({
         <p className="text-sm text-ink-muted" data-testid={access.testId}>
           {access.text}
         </p>
+      )}
+
+      {explain && access.kind === "note" && (
+        <dialog
+          ref={dialog}
+          className="sheet"
+          aria-label="Pronostic impossible"
+          data-testid="blocked-dialog"
+          onClick={(e) => e.target === dialog.current && dialog.current?.close()}
+        >
+          <div className="mx-auto grid w-full max-w-xl gap-4 rounded-t-3xl bg-primary-dark px-5 pb-6 pt-3 text-center text-on-primary">
+            <div className="mx-auto h-1 w-10 rounded-full bg-on-primary-soft opacity-60" aria-hidden="true" />
+            <p className="text-xs font-bold uppercase tracking-widest text-on-primary-soft">Pronostic impossible</p>
+            <p className="font-serif text-2xl font-semibold leading-snug" data-testid="blocked-dialog-text">
+              {access.text}
+            </p>
+            <button
+              type="button"
+              onClick={() => dialog.current?.close()}
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-gold px-4 font-semibold text-on-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            >
+              J&apos;ai compris
+            </button>
+          </div>
+        </dialog>
       )}
 
       {interactive && (

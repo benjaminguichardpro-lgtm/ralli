@@ -191,7 +191,7 @@ function accessFor(e: EncounterPageView, loggedIn: boolean, panel: Awaited<Retur
   if (e.status !== "OPEN") return { kind: "none" };
   if (!loggedIn) return { kind: "login" };
   if (!panel.isMember) return { kind: "note", text: "Réservé aux membres du club organisateur." };
-  if (panel.blockedReason) return { kind: "note", text: panel.blockedReason, testId: "blocked" };
+  if (panel.blockedReason) return { kind: "note", text: panel.blockedReason, testId: "blocked", explainOnTouch: true };
   return { kind: "predict", balance: panel.balance };
 }
 

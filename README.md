@@ -147,6 +147,8 @@ Un pronostic remboursé passe au statut `REFUNDED` et donne lieu à une écritur
 ### Anti-trucage (appliqué côté serveur)
 Ne peuvent pas pronostiquer une rencontre : les capitaines des deux équipes, les joueurs alignés dans un de ses matchs et les comptes liés à ces joueurs, ainsi que les admins des clubs concernés. Les autres membres des effectifs le peuvent.
 
+**Fenêtre « Pronostic impossible »** (`src/components/match-picks.tsx`, demandée par Benjamin) : pour ces comptes (admin, capitaine, joueur aligné ou lié), les cotes sont des boutons ; en toucher une, sur n'importe quel match et n'importe quel joueur, ouvre une fenêtre du bas avec la raison et un bouton « J'ai compris » (Échap ou un toucher à côté la ferme aussi). La note sous les cotes reste affichée avec le même texte. Messages : « Les admins ne peuvent pas pronostiquer les matchs de leurs clubs. » (« pronostiquer » et non « parier » : mot interdit), « Un capitaine ne peut pas pronostiquer la rencontre de son équipe. », « Vous êtes aligné dans cette rencontre : vous ne pouvez pas la pronostiquer. » Aucune fenêtre quand les pronostics sont fermés ou pour un simple membre. Tests E2E : `slice22-fenetre-blocage.spec.ts`.
+
 ### Portefeuille
 Le solde n'est jamais stocké : c'est la somme du ledger (`LedgerEntry`). La page montre le solde, les pronostics en cours et l'historique des 50 derniers mouvements ; la liste des pronostics terminés est dans l'onglet Résultats (tranche 19).
 

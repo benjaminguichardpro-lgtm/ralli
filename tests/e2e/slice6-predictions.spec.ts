@@ -141,7 +141,7 @@ test("portefeuille de Kevin : solde, en attente, historique", async () => {
 });
 
 test("anti-trucage : admin et capitaine voient le motif, pas de formulaire", async () => {
-  for (const [page, motif] of [[ivan, /admins du club ne peuvent pas/], [jade, /capitaine ne peut pas/]] as const) {
+  for (const [page, motif] of [[ivan, /admins ne peuvent pas pronostiquer les matchs de leurs clubs/], [jade, /capitaine ne peut pas/]] as const) {
     await page.goto(encounterUrl);
     await expect(page.getByTestId("predict")).toHaveCount(0);
     await expect(page.getByTestId("blocked")).toHaveCount(2);
