@@ -197,7 +197,7 @@ test("règlement : le pronostic sur le double est gagné à 2,78 et le portefeui
   await pablo.goto("/portefeuille");
   await expect(pablo.getByTestId("balance")).toHaveText("1 178 Aces"); // 1000 − 100 + 278
   await checkPage(pablo, "103-double-portefeuille");
-  await pablo.goto("/resultats");
+  await pablo.goto("/rallis");
   await expect(pablo.getByTestId("results-list")).toContainText("Léa M. / Hugo D. contre Paul V. / Marc L.");
   await expect(pablo.getByTestId("results-list")).toContainText("Gagné");
   await expect(pablo.getByTestId("results-list")).toContainText("+178 Aces"); // 278 − 100

@@ -5,38 +5,65 @@ import { ResultFilters } from "@/components/result-filters";
 import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
 import { PAGE_SIZE, formatDelta, hitsSentence, parseLimit, parseResultFilter, resultLine } from "@/lib/predictions/results";
-import { formatParisDay } from "@/lib/time";
+import { formatParis, formatParisDay } from "@/lib/time";
+import { getWallet } from "@/server/predictions";
 import { getResults } from "@/server/results";
 
-export const metadata: Metadata = { title: "Résultats · Ralli" };
+export const metadata: Metadata = { title: "Mes rallis · Ralli" };
 
 type Props = { searchParams: Promise<{ statut?: string | string[]; limite?: string | string[] }> };
 
-export default function ResultsPage(props: Props) {
+export default function MyRallisPage(props: Props) {
   return (
     <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
-      <Results {...props} />
+      <MyRallis {...props} />
     </Suspense>
   );
 }
 
 const TONE = { won: "text-success-ink", lost: "text-danger", neutral: "text-ink-muted" } as const;
 const aces = (n: number) => `${n.toLocaleString("fr-FR")} Aces`;
+const signed = (n: number) => `${n > 0 ? "+" : ""}${n.toLocaleString("fr-FR")} Aces`;
 
-async function Results({ searchParams }: Props) {
+async function MyRallis({ searchParams }: Props) {
   const user = await requireUser();
   const sp = await searchParams;
   const filter = parseResultFilter(sp.statut);
   const limit = parseLimit(sp.limite);
-  const r = await getResults(user.id, filter, limit);
+  const [r, w] = await Promise.all([getResults(user.id, filter, limit), getWallet(user.id)]);
   const s = r.summary;
-  const moreHref = `/resultats?${filter === "tous" ? "" : `statut=${filter}&`}limite=${limit + PAGE_SIZE}`;
+  const moreHref = `/rallis?${filter === "tous" ? "" : `statut=${filter}&`}limite=${limit + PAGE_SIZE}`;
 
   return (
     <section className="space-y-6">
       <div className="space-y-1">
-        <h1 className="font-serif text-3xl text-primary">Résultats</h1>
-        <p className="text-ink-muted">Le résultat de tous tes rallis terminés, dans tous tes clubs.</p>
+        <h1 className="font-serif text-3xl text-primary">Mes rallis</h1>
+        <p className="text-ink-muted">Tes rallis en cours et terminés, dans tous tes clubs.</p>
+      </div>
+
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="pending-section">
+        <h2 className="font-serif text-xl text-primary">En cours</h2>
+        {w.pending.length === 0 ? (
+          <p className="text-ink-muted">Aucun ralli en attente de résultat.</p>
+        ) : (
+          <>
+            <ul className="divide-y divide-line" data-testid="pending">
+              {w.pending.map((p) => (
+                <li key={p.id}>
+                  <Link href={`/rencontres/${p.encounterId}`} className="block min-h-11 py-2">
+                    <span className="font-medium text-primary">{p.matchLabel}</span>
+                    <span className="block text-sm text-ink-muted">
+                      Ton ralli : {p.pickedName}, {aces(p.committedAces)} engagés à la cote {p.odds}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="text-sm text-ink-muted" data-testid="pending-aces">
+              Dont engagés en attente de résultat : {aces(w.pendingAces)} (déjà déduits de ton solde).
+            </p>
+          </>
+        )}
       </div>
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="results-summary">
@@ -117,6 +144,28 @@ async function Results({ searchParams }: Props) {
           )}
         </>
       )}
+
+      <details className="rounded-2xl bg-surface p-4 shadow-sm" data-testid="ledger-section">
+        <summary className="inline-flex min-h-11 cursor-pointer items-center font-serif text-xl text-primary">Historique des Aces</summary>
+        <ul className="divide-y divide-line" data-testid="ledger">
+          {w.entries.map((x) => (
+            <li key={x.id} className="flex min-h-11 items-center justify-between gap-3 py-2">
+              <span>
+                {x.encounterId ? (
+                  <Link href={`/rencontres/${x.encounterId}`} className="font-medium text-primary underline">
+                    {x.label}
+                  </Link>
+                ) : (
+                  <span className="font-medium">{x.label}</span>
+                )}
+                <span className="block text-sm text-ink-muted">{formatParis(x.createdAt)}</span>
+              </span>
+              <strong>{signed(x.amount)}</strong>
+            </li>
+          ))}
+        </ul>
+        <p className="pt-2 text-sm text-ink-muted">Les 50 derniers mouvements sont affichés.</p>
+      </details>
     </section>
   );
 }

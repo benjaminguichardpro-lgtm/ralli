@@ -269,7 +269,7 @@ test("règlement : Vera voit son pronostic perdu et son pronostic gagné", async
   await expect(vera.getByTestId("ledger")).toContainText("+139 Aces");
   await checkPage(vera, "45-portefeuille-apres-reglement");
   // …ils sont dans l'onglet Résultats : 3 rallis (100 perdus, 40 perdus, 50 gagnés à 2,78 = 139).
-  await vera.goto("/resultats");
+  await vera.goto("/rallis");
   await expect(vera.getByTestId("result-item")).toHaveCount(3);
   await expect(vera.getByTestId("results-list")).toContainText("Perdu");
   await expect(vera.getByTestId("results-list")).toContainText("Gagné");

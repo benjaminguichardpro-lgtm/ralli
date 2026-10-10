@@ -27,8 +27,8 @@ export function BalancePill({ initial }: { initial: number }) {
 
   return (
     <Link
-      href="/portefeuille"
-      aria-label="Mon portefeuille"
+      href="/rallis"
+      aria-label="Mes rallis et mon solde"
       data-tour="solde"
       className="inline-flex min-h-11 items-center gap-2 whitespace-nowrap rounded-full bg-primary-dark px-4 text-[0.9375rem] font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >

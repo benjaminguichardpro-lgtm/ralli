@@ -131,13 +131,14 @@ test("Kevin pronostique : validations dans le panneau, récapitulatif, puis succ
   await checkPage(kevin, "31-pronostic-enregistre");
 });
 
-test("portefeuille de Kevin : solde, en attente, historique", async () => {
-  await kevin.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Portefeuille" }).click();
+test("Mes rallis de Kevin : solde, en attente, historique", async () => {
+  await kevin.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Mes rallis" }).click();
   await expect(balance(kevin)).toHaveText("700 Aces");
   await expect(kevin.getByTestId("pending-aces")).toContainText("300 Aces");
   await expect(kevin.getByTestId("pending")).toContainText("Léa M. contre Paul V.");
   await expect(kevin.getByTestId("ledger").locator("li")).toHaveText([/Aces engagés[\s\S]*-300 Aces/, /Bonus d'inscription[\s\S]*\+1\s000 Aces/]);
-  await checkPage(kevin, "32-portefeuille");
+  await expect(kevin.getByTestId("ledger-section")).not.toHaveAttribute("open", ""); // l'historique est replié par défaut
+  await checkPage(kevin, "32-mes-rallis");
 });
 
 test("anti-trucage : admin et capitaine voient le motif, pas de formulaire", async () => {

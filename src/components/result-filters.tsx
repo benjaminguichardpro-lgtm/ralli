@@ -11,7 +11,7 @@ export function ResultFilters({ current, counts }: { current: ResultFilterKey; c
           return (
             <li key={f.key}>
               <Link
-                href={f.key === "tous" ? "/resultats" : `/resultats?statut=${f.key}`}
+                href={f.key === "tous" ? "/rallis" : `/rallis?statut=${f.key}`}
                 scroll={false}
                 aria-current={on ? "true" : undefined}
                 data-testid={`result-filter-${f.key}`}

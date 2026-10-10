@@ -19,21 +19,16 @@ const STEPS: readonly Step[] = [
     textNoClub: "Ici tu verras les rencontres de ton club. Touche une rencontre, puis une cote, choisis ton montant et valide ton ralli. Rejoins d'abord un club.",
   },
   {
-    target: "resultats",
-    title: "Résultats",
-    text: "Le résultat de tous tes rallis terminés : gagné, perdu ou remboursé, avec ton bilan.",
-    textNoClub: "Ici tu verras le résultat de tes rallis une fois qu'ils seront terminés : gagné, perdu ou remboursé, avec ton bilan.",
+    target: "rallis",
+    title: "Mes rallis",
+    text: "Tes rallis en cours et terminés : gagné, perdu ou remboursé, avec ton bilan et l'historique de tes Aces.",
+    textNoClub: "Ici tu verras tes rallis, en cours puis terminés : gagné, perdu ou remboursé, avec ton bilan et l'historique de tes Aces.",
   },
   {
     target: "classement",
     title: "Classement",
     text: "Ta place parmi les membres de ton club, selon tes résultats.",
     textNoClub: "Ici tu verras ton classement dans ton club, une fois que tu en auras rejoint un.",
-  },
-  {
-    target: "portefeuille",
-    title: "Portefeuille",
-    text: "Ton solde, tes pronostics en cours et l'historique de tes Aces.",
   },
   {
     target: "club",

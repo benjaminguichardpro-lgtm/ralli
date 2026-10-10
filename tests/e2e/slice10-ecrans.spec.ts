@@ -170,9 +170,9 @@ test("pour pronostiquer : toucher la carte, puis la cote, le montant, valider ; 
   await placeBet(yanis, yanis.getByTestId("matches").locator("li").first(), /Lou P\. gagne/, "100");
   await expect(yanis.getByTestId("my-prediction")).toContainText("100 Aces engagés à la cote 2,78");
   await expect(yanis.getByTestId("balance")).toHaveText("900 Aces");
-  await yanis.getByRole("link", { name: "Portefeuille" }).first().click();
-  await expect(yanis).toHaveURL(/\/portefeuille$/);
-  await expect(yanis.getByTestId("wallet-balance")).toHaveText("900 Aces");
+  await yanis.getByRole("link", { name: "Mes rallis et mon solde" }).click(); // le solde de l'en-tête mène à « Mes rallis »
+  await expect(yanis).toHaveURL(/\/rallis$/);
+  await expect(yanis.getByTestId("pending")).toContainText("Lou P."); // le ralli vient d'être validé : il est « en cours »
   await expect(yanis.getByTestId("balance")).toHaveText("900 Aces");
 });
 
@@ -187,7 +187,7 @@ test("après le pronostic, l'accueil reste une simple carte vers la rencontre", 
 test("barre du bas : un seul club mène directement au classement et au club, onglet actif signalé", async () => {
   await yanis.goto("/");
   const nav = tabs(yanis);
-  await expect(nav.getByRole("link")).toHaveText(["Matchs", "Résultats", "Classement", "Portefeuille", "Club"]);
+  await expect(nav.getByRole("link")).toHaveText(["Matchs", "Mes rallis", "Classement", "Club"]);
   await expect(nav.getByRole("link", { name: "Matchs" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "Classement" })).toHaveAttribute("href", `/clubs/${clubId}/classement`);
   await expect(nav.getByRole("link", { name: "Club" })).toHaveAttribute("href", `/clubs/${clubId}`);

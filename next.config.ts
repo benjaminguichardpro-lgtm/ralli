@@ -8,6 +8,13 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // Photos de profil : 5 Mo au maximum (src/lib/avatars.ts), plus la marge du format multipart.
   experimental: { serverActions: { bodySizeLimit: "6mb" } },
+  // Anciennes adresses du Portefeuille et des Résultats, regroupés dans « Mes rallis » (les paramètres, comme ?statut=, sont conservés).
+  async redirects() {
+    return [
+      { source: "/portefeuille", destination: "/rallis", permanent: false },
+      { source: "/resultats", destination: "/rallis", permanent: false },
+    ];
+  },
   turbopack: {
     // Un package-lock.json égaré dans le dossier personnel fausse la détection de la racine.
     root: path.join(__dirname),

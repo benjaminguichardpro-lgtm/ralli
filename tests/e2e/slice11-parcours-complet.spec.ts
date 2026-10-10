@@ -143,7 +143,7 @@ test("7. Alma confirme : score définitif et règlement des pronostics", async (
   await chloe.goto("/portefeuille");
   await expect(chloe.getByTestId("balance")).toHaveText("860 Aces");
   await checkPage(chloe, "81-parcours-portefeuille");
-  await chloe.goto("/resultats");
+  await chloe.goto("/rallis");
   await expect(chloe.getByTestId("results-list")).toContainText("Perdu");
   await expect(chloe.getByTestId("results-hits")).toContainText("0 ralli juste sur 2");
 });

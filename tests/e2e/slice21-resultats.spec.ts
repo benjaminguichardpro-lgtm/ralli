@@ -1,7 +1,7 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
 import { checkPage, queryTestDb, seedDemoOnTestDb, signIn, signUp, wipeTestDb } from "./helpers";
 
-// Onglet « Résultats » : charge la vraie démo (comptes parieur1…) et compare l'écran à la base de test.
+// Onglet « Mes rallis » (rallis en cours et terminés, anciens Résultats et Portefeuille) : charge la vraie démo (comptes parieur1…) et compare l'écran à la base de test.
 
 test.describe.configure({ mode: "serial" });
 
@@ -39,18 +39,18 @@ test.afterAll(async () => {
   await wipeTestDb();
 });
 
-test("la barre du bas a « Résultats » entre Matchs et Classement, et l'onglet est signalé sur la page", async ({ browser }) => {
+test("la barre du bas a 4 onglets, « Mes rallis » entre Matchs et Classement, et l'onglet est signalé sur la page", async ({ browser }) => {
   const p = await login(browser, "parieur1");
   const nav = p.getByRole("navigation", { name: "Navigation principale" });
-  await expect(nav.getByRole("link")).toHaveText(["Matchs", "Résultats", "Classement", "Portefeuille", "Club"]);
+  await expect(nav.getByRole("link")).toHaveText(["Matchs", "Mes rallis", "Classement", "Club"]);
   for (const h of await nav.getByRole("link").evaluateAll((els) => els.map((e) => [e.textContent, e.getBoundingClientRect().height, e.scrollWidth <= e.clientWidth + 1] as const))) {
     expect(h[1], `hauteur de « ${h[0]} »`).toBeGreaterThanOrEqual(44);
     expect(h[2], `« ${h[0]} » ne déborde pas de sa case`).toBe(true);
   }
-  await nav.getByRole("link", { name: "Résultats" }).click();
-  await expect(p).toHaveURL(/\/resultats$/);
-  await expect(p.getByRole("heading", { name: "Résultats", level: 1 })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Résultats" })).toHaveAttribute("aria-current", "page");
+  await nav.getByRole("link", { name: "Mes rallis" }).click();
+  await expect(p).toHaveURL(/\/rallis$/);
+  await expect(p.getByRole("heading", { name: "Mes rallis", level: 1 })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Mes rallis" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "Matchs" })).not.toHaveAttribute("aria-current", "page");
   await checkPage(p, "210-resultats");
 });
@@ -63,7 +63,7 @@ test("parieur1 : le résumé et les compteurs correspondent exactement à la bas
   const payout = num(rows, "WON", "payout");
 
   const p = await login(browser, "parieur1");
-  await p.goto("/resultats");
+  await p.goto("/rallis");
   const hits = `${won} ralli${won > 1 ? "s" : ""} juste${won > 1 ? "s" : ""} sur ${won + lost}`;
   if (won + lost > 0) await expect(p.getByTestId("results-hits")).toContainText(hits);
   await expect(p.getByTestId("results-committed")).toHaveText(`${committed.toLocaleString("fr-FR")} Aces`);
@@ -83,10 +83,10 @@ test("les filtres ne gardent que le résultat choisi, dans l'adresse ; une valeu
   const rows = await truth("parieur1");
   const won = num(rows, "WON", "n"), lost = num(rows, "LOST", "n");
   const p = await login(browser, "parieur1");
-  await p.goto("/resultats");
+  await p.goto("/rallis");
   if (won > 0) {
     await p.getByTestId("result-filter-gagnes").click();
-    await expect(p).toHaveURL(/\/resultats\?statut=gagnes$/);
+    await expect(p).toHaveURL(/\/rallis\?statut=gagnes$/);
     await expect(p.getByTestId("result-filter-gagnes")).toHaveAttribute("aria-current", "true");
     await expect(p.getByTestId("result-item")).toHaveCount(Math.min(20, won));
     for (const t of await p.getByTestId("result-item").allInnerTexts()) expect(t).toMatch(/Gagné/);
@@ -96,7 +96,7 @@ test("les filtres ne gardent que le résultat choisi, dans l'adresse ; une valeu
     await expect(p).toHaveURL(/statut=perdus$/);
     for (const t of await p.getByTestId("result-item").allInnerTexts()) expect(t).toMatch(/Perdu/);
   }
-  await p.goto("/resultats?statut=nimporte<script>&limite=abc");
+  await p.goto("/rallis?statut=nimporte<script>&limite=abc");
   await expect(p.getByTestId("result-filter-tous")).toHaveAttribute("aria-current", "true");
   await expect(p.getByTestId("result-item").first()).toBeVisible();
   await p.getByTestId("result-item").first().click(); // toucher une ligne ouvre la rencontre
@@ -107,27 +107,43 @@ test("chacun ne voit que ses rallis : parieur2 voit le décompte de sa propre ba
   const r2 = await truth("parieur2");
   const total2 = r2.reduce((s, r) => s + Number(r.n), 0);
   const p = await login(browser, "parieur2");
-  await p.goto("/resultats");
+  await p.goto("/rallis");
   if (total2 === 0) await expect(p.getByTestId("results-empty")).toBeVisible();
   else await expect(p.getByTestId("result-filter-tous")).toContainText(String(total2));
   // Un compte sans aucun ralli (admin du club) ne voit aucune ligne.
   const a = await login(browser, "admin_nantes");
-  await a.goto("/resultats");
+  await a.goto("/rallis");
   await expect(a.getByTestId("result-item")).toHaveCount(0);
 });
 
-test("le Portefeuille garde le solde, les rallis en cours et l'historique ; plus de liste des terminés", async ({ browser }) => {
+test("les anciennes adresses mènent à « Mes rallis » (filtre conservé) ; l'historique des Aces est replié, les rallis en cours sont en haut", async ({ browser }) => {
   const p = await login(browser, "parieur1");
   await p.goto("/portefeuille");
-  await expect(p.getByTestId("ledger")).toBeVisible();
+  await expect(p).toHaveURL(/\/rallis$/);
+  await p.goto("/resultats?statut=gagnes");
+  await expect(p).toHaveURL(/\/rallis\?statut=gagnes$/);
+  await expect(p.getByTestId("result-filter-gagnes")).toHaveAttribute("aria-current", "true");
+  await p.goto("/rallis");
+  await expect(p.getByRole("heading", { name: "En cours" })).toBeVisible();
   await expect(p.getByTestId("settled")).toHaveCount(0);
   await expect(p.getByRole("heading", { name: "Pronostics terminés" })).toHaveCount(0);
+  // L'historique est un bloc replié : fermé au départ, il s'ouvre au toucher et montre les mouvements.
+  const ledger = p.getByTestId("ledger-section");
+  await expect(ledger).not.toHaveAttribute("open", "");
+  await expect(p.getByTestId("ledger")).toBeHidden();
+  await ledger.locator("summary").click();
+  await expect(p.getByTestId("ledger")).toBeVisible();
+  await expect(p.getByTestId("ledger")).toContainText("Aces gagnés");
+  // Ordre de la page : en cours, bilan, liste, historique.
+  const y = async (id: string) => (await p.getByTestId(id).boundingBox())!.y;
+  expect(await y("pending-section")).toBeLessThan(await y("results-summary"));
+  expect(await y("results-summary")).toBeLessThan(await y("ledger-section"));
 });
 
 test("compte neuf : écran vide expliqué, sans filtres, avec un lien vers les matchs ; visiteur renvoyé à la connexion", async ({ browser }) => {
   const rita = await newPage(browser);
   await signUp(rita, "Rita21");
-  await rita.goto("/resultats");
+  await rita.goto("/rallis");
   await expect(rita.getByTestId("results-hits")).toHaveText("Aucun ralli terminé pour l'instant");
   await expect(rita.getByTestId("results-empty")).toContainText("Aucun ralli terminé pour l'instant");
   await expect(rita.getByTestId("result-filters")).toHaveCount(0);
