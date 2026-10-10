@@ -53,12 +53,12 @@ async function expectSpotOn(page: Page, target: string) {
 }
 
 async function expectStep(page: Page, n: number, title: string, target: string) {
-  await expect(page.getByTestId("tour-counter")).toHaveText(`${n}/6`);
+  await expect(page.getByTestId("tour-counter")).toHaveText(`${n}/7`);
   await expect(page.getByTestId("tour-title")).toHaveText(title);
   await expectSpotOn(page, target);
 }
 
-test("guide : écran d'accueil, puis visite des 6 éléments (compte sans club), puis plus jamais", async () => {
+test("guide : écran d'accueil, puis visite des 7 éléments (compte sans club), puis plus jamais", async () => {
   await signUpRaw(nina, "Nina17");
   await expect(guide(nina)).toBeVisible();
   await expect(nina.getByTestId("onboarding-title")).toHaveText("Tu as 1 000 Aces");
@@ -78,21 +78,24 @@ test("guide : écran d'accueil, puis visite des 6 éléments (compte sans club),
   await expect(nina.getByTestId("tour-text")).toContainText("Ici tu verras les rencontres de ton club"); // compte sans club
   await checkPage(nina, "172-visite-matchs");
   await tour(nina).getByRole("button", { name: "Suivant" }).click();
-  await expectStep(nina, 3, "Classement", "classement");
+  await expectStep(nina, 3, "Résultats", "resultats");
+  await expect(nina.getByTestId("tour-text")).toContainText("Ici tu verras le résultat de tes rallis une fois qu'ils seront terminés");
+  await tour(nina).getByRole("button", { name: "Suivant" }).click();
+  await expectStep(nina, 4, "Classement", "classement");
   await expect(nina.getByTestId("tour-text")).toContainText("une fois que tu en auras rejoint un");
 
   // « Précédent » revient en arrière.
   await tour(nina).getByRole("button", { name: "Précédent" }).click();
-  await expectStep(nina, 2, "Matchs", "matchs");
+  await expectStep(nina, 3, "Résultats", "resultats");
   await tour(nina).getByRole("button", { name: "Suivant" }).click();
   await tour(nina).getByRole("button", { name: "Suivant" }).click();
-  await expectStep(nina, 4, "Portefeuille", "portefeuille");
-  await expect(nina.getByTestId("tour-text")).toHaveText("Tes pronostics en cours et terminés, et l'historique de tes Aces.");
+  await expectStep(nina, 5, "Portefeuille", "portefeuille");
+  await expect(nina.getByTestId("tour-text")).toHaveText("Ton solde, tes pronostics en cours et l'historique de tes Aces.");
   await tour(nina).getByRole("button", { name: "Suivant" }).click();
-  await expectStep(nina, 5, "Club", "club");
+  await expectStep(nina, 6, "Club", "club");
   await expect(nina.getByTestId("tour-text")).toContainText("rejoindre un club avec son code d'invitation, ou en créer un");
   await tour(nina).getByRole("button", { name: "Suivant" }).click();
-  await expectStep(nina, 6, "Ton profil", "profil");
+  await expectStep(nina, 7, "Ton profil", "profil");
   await expect(tour(nina).getByRole("button", { name: "Passer" })).toHaveCount(0); // « Terminer » prend sa place
   await checkPage(nina, "173-visite-profil");
   await awaitServerAction(nina, () => tour(nina).getByRole("button", { name: "Terminer" }).click());
@@ -128,9 +131,10 @@ test("guide : « Passer » ferme tout dès l'accueil ; « Revoir le guide » rej
   await omar.evaluate(() => document.querySelector('[data-tour="portefeuille"]')!.removeAttribute("data-tour"));
   await tour(omar).getByRole("button", { name: "Suivant" }).click();
   await tour(omar).getByRole("button", { name: "Suivant" }).click();
-  await expectStep(omar, 3, "Classement", "classement");
   await tour(omar).getByRole("button", { name: "Suivant" }).click();
-  await expectStep(omar, 5, "Club", "club"); // saute le 4
+  await expectStep(omar, 4, "Classement", "classement");
+  await tour(omar).getByRole("button", { name: "Suivant" }).click();
+  await expectStep(omar, 6, "Club", "club"); // saute le 5
 
   await omar.keyboard.press("Escape");
   await expect(tour(omar)).toBeHidden();
@@ -319,6 +323,8 @@ test("un membre de club rejoue la visite depuis son profil : textes « avec club
   await expect(oscar.getByTestId("tour-text")).toHaveText(
     "Les rencontres de tes clubs. Touche une rencontre, puis la cote du joueur que tu penses gagnant, choisis ton montant et valide ton ralli.",
   );
+  await tour(oscar).getByRole("button", { name: "Suivant" }).click();
+  await expect(oscar.getByTestId("tour-text")).toHaveText("Le résultat de tous tes rallis terminés : gagné, perdu ou remboursé, avec ton bilan.");
   await tour(oscar).getByRole("button", { name: "Suivant" }).click();
   await expect(oscar.getByTestId("tour-text")).toHaveText("Ta place parmi les membres de ton club, selon tes résultats.");
   await tour(oscar).getByRole("button", { name: "Suivant" }).click();

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth/current-user";
-import { predictionSideLabel } from "@/lib/predictions/labels";
 import { formatParis } from "@/lib/time";
 import { getWallet } from "@/server/predictions";
 
@@ -48,27 +47,6 @@ async function Wallet() {
                   <span className="block text-sm text-ink-muted">
                     Vous : {p.pickedName}, {p.committedAces.toLocaleString("fr-FR")} Aces engagés à la cote {p.odds}
                   </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <h2 className="font-serif text-xl text-primary">Pronostics terminés</h2>
-        {w.settled.length === 0 ? (
-          <p className="text-ink-muted">Aucun pronostic terminé pour l&apos;instant.</p>
-        ) : (
-          <ul className="divide-y divide-line" data-testid="settled">
-            {w.settled.map((p) => (
-              <li key={p.id}>
-                <Link href={`/rencontres/${p.encounterId}`} className="block min-h-11 py-2">
-                  <span className="font-medium text-primary">{p.matchLabel}</span>
-                  <span className="block text-sm text-ink-muted">
-                    Vous : {p.pickedName}, {p.committedAces.toLocaleString("fr-FR")} Aces engagés à la cote {p.odds}
-                  </span>
-                  <span className="block text-sm font-semibold">{predictionSideLabel(p.status, p.payoutAces)}</span>
                 </Link>
               </li>
             ))}

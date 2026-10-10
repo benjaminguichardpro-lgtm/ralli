@@ -12,6 +12,7 @@ export async function AppNav() {
     <TabBar
       hrefs={{
         matchs: "/",
+        resultats: "/resultats",
         classement: only ? `/clubs/${only}/classement` : "/classement",
         portefeuille: "/portefeuille",
         club: only ? `/clubs/${only}` : "/clubs",

@@ -196,7 +196,9 @@ test("score : le double est saisi comme un simple, il rapporte 2 points ; décom
 test("règlement : le pronostic sur le double est gagné à 2,78 et le portefeuille nomme la paire", async () => {
   await pablo.goto("/portefeuille");
   await expect(pablo.getByTestId("balance")).toHaveText("1 178 Aces"); // 1000 − 100 + 278
-  await expect(pablo.getByTestId("settled")).toContainText("Léa M. / Hugo D. contre Paul V. / Marc L.");
-  await expect(pablo.getByTestId("settled")).toContainText("Gagné : 278 Aces.");
   await checkPage(pablo, "103-double-portefeuille");
+  await pablo.goto("/resultats");
+  await expect(pablo.getByTestId("results-list")).toContainText("Léa M. / Hugo D. contre Paul V. / Marc L.");
+  await expect(pablo.getByTestId("results-list")).toContainText("Gagné");
+  await expect(pablo.getByTestId("results-list")).toContainText("+178 Aces"); // 278 − 100
 });

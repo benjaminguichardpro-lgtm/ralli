@@ -36,14 +36,17 @@ export function ButtonLink({
   children,
   variant = "primary",
   className = "",
+  scroll,
 }: {
   href: string;
   children: ReactNode;
   variant?: Variant;
   className?: string;
+  /** false : reste à la même place après le clic (« Voir plus »). */
+  scroll?: boolean;
 }) {
   return (
-    <Link href={href} className={`${base} ${variants[variant]} ${className}`}>
+    <Link href={href} scroll={scroll} className={`${base} ${variants[variant]} ${className}`}>
       {children}
     </Link>
   );

@@ -142,8 +142,10 @@ test("7. Alma confirme : score définitif et règlement des pronostics", async (
   // Chloe : les deux pronostics perdus.
   await chloe.goto("/portefeuille");
   await expect(chloe.getByTestId("balance")).toHaveText("860 Aces");
-  await expect(chloe.getByTestId("settled")).toContainText("Perdu.");
   await checkPage(chloe, "81-parcours-portefeuille");
+  await chloe.goto("/resultats");
+  await expect(chloe.getByTestId("results-list")).toContainText("Perdu");
+  await expect(chloe.getByTestId("results-hits")).toContainText("0 ralli juste sur 2");
 });
 
 test("8. Classements : « cette semaine » classe Bruno premier ; la saison demande 3 pronostics", async () => {

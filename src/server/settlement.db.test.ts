@@ -6,6 +6,7 @@ import { createClub, joinClubByCode } from "./clubs";
 import { addMatch, cancelEncounter, createEncounter, publishEncounter, removeMatch } from "./encounters";
 import { getBalance } from "./ledger";
 import { getWallet, placePrediction } from "./predictions";
+import { getResults } from "./results";
 import { type MatchResultInput, confirmScore, disputeScore, proposeScore, resolveDispute } from "./scores";
 import { settleConfirmedEncounter } from "./settlement";
 import { addNewPlayerToTeam, createExternalTeam, createTeam } from "./teams";
@@ -194,7 +195,7 @@ describe("idempotence et atomicité", () => {
 });
 
 describe("portefeuille après règlement", () => {
-  it("liste les pronostics terminés avec leur résultat", async () => {
+  it("le solde et l'historique suivent ; plus rien n'est en attente (les rallis terminés sont dans l'onglet Résultats)", async () => {
     await bet(u1, mA, "HOME", 100);
     await bet(u1, mB, "AWAY", 50);
     await bet(u1, mC, "HOME", 20);
@@ -202,8 +203,9 @@ describe("portefeuille après règlement", () => {
     const w = await getWallet(u1);
     expect(w.pending).toEqual([]);
     expect(w.pendingAces).toBe(0);
-    expect(w.settled.map((s) => s.status).sort()).toEqual(["LOST", "REFUNDED", "WON"]);
     expect(w.entries.map((e) => e.label)).toContain("Aces gagnés");
-    expect(w.settled.find((s) => s.status === "WON")!.payoutAces).toBe(computePayout(100, await odds(mA, "HOME")));
+    const r = await getResults(u1);
+    expect(r.groups.flatMap((g) => g.items).map((i) => i.status).sort()).toEqual(["LOST", "REFUNDED", "WON"]);
+    expect(r.groups.flatMap((g) => g.items).find((i) => i.status === "WON")!.payoutAces).toBe(computePayout(100, await odds(mA, "HOME")));
   });
 });

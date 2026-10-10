@@ -264,13 +264,19 @@ test("règlement : Vera voit son pronostic perdu et son pronostic gagné", async
   // 1000 − 100 − 50 − 40 + 139
   await expect(vera.getByTestId("balance")).toHaveText("949 Aces");
   await expect(vera.getByTestId("pending")).toHaveCount(0);
-  const settled = vera.getByTestId("settled").locator("li");
-  await expect(settled).toHaveCount(3);
-  await expect(vera.getByTestId("settled")).toContainText("Perdu.");
-  await expect(vera.getByTestId("settled")).toContainText("Gagné : 139 Aces.");
+  await expect(vera.getByTestId("settled")).toHaveCount(0); // les rallis terminés ne sont plus dans le portefeuille
   await expect(vera.getByTestId("ledger")).toContainText("Aces gagnés");
   await expect(vera.getByTestId("ledger")).toContainText("+139 Aces");
   await checkPage(vera, "45-portefeuille-apres-reglement");
+  // …ils sont dans l'onglet Résultats : 3 rallis (100 perdus, 40 perdus, 50 gagnés à 2,78 = 139).
+  await vera.goto("/resultats");
+  await expect(vera.getByTestId("result-item")).toHaveCount(3);
+  await expect(vera.getByTestId("results-list")).toContainText("Perdu");
+  await expect(vera.getByTestId("results-list")).toContainText("Gagné");
+  await expect(vera.getByTestId("results-list")).toContainText("+89 Aces"); // 139 − 50
+  await expect(vera.getByTestId("results-list")).toContainText("−100 Aces");
+  await expect(vera.getByTestId("results-hits")).toContainText("1 ralli juste sur 3");
+  await expect(vera.getByTestId("results-net")).toHaveText("−51 Aces"); // 139 − (100 + 50 + 40)
 });
 
 test("classement du club : saison (seuil de 3) et semaine (seuil de 1)", async () => {

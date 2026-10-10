@@ -187,7 +187,7 @@ test("après le pronostic, l'accueil reste une simple carte vers la rencontre", 
 test("barre du bas : un seul club mène directement au classement et au club, onglet actif signalé", async () => {
   await yanis.goto("/");
   const nav = tabs(yanis);
-  await expect(nav.getByRole("link")).toHaveText(["Matchs", "Classement", "Portefeuille", "Club"]);
+  await expect(nav.getByRole("link")).toHaveText(["Matchs", "Résultats", "Classement", "Portefeuille", "Club"]);
   await expect(nav.getByRole("link", { name: "Matchs" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "Classement" })).toHaveAttribute("href", `/clubs/${clubId}/classement`);
   await expect(nav.getByRole("link", { name: "Club" })).toHaveAttribute("href", `/clubs/${clubId}`);

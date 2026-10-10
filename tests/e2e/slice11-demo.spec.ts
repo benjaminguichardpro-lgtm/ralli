@@ -96,8 +96,11 @@ test("parieur1 : portefeuille et classements (saison et semaine) bien remplis", 
   const p = await login(browser, "parieur1");
   await p.goto("/portefeuille");
   await expect(p.getByTestId("ledger")).toContainText("Aces gagnés");
-  await expect(p.getByTestId("settled").locator("li").first()).toBeVisible();
   await checkPage(p, "77-demo-portefeuille");
+  await p.goto("/resultats");
+  await expect(p.getByTestId("result-item").first()).toBeVisible();
+  await checkPage(p, "77b-demo-resultats");
+  await p.goto("/portefeuille");
 
   await p.goto(`/clubs/${clubId}/classement`);
   const rows = p.getByTestId("leaderboard-row");
