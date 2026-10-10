@@ -5,10 +5,11 @@ import { useActionState } from "react";
 import { changePasswordAction, signInAction, signUpAction } from "@/app/actions/auth";
 import { initialFormState } from "@/app/actions/types";
 import { PASSWORD_MIN } from "@/lib/validation/account";
-import { Field, FormMessage, SubmitButton } from "./ui";
+import { Field, FormMessage, PasswordField, SubmitButton, useRevealPassword } from "./ui";
 
 export function SignUpForm({ invitation }: { invitation?: string }) {
   const [state, action] = useActionState(signUpAction, initialFormState);
+  const [shown, toggle] = useRevealPassword(state);
   const e = state.errors ?? {};
   return (
     <form action={action} className="space-y-4" noValidate>
@@ -24,10 +25,11 @@ export function SignUpForm({ invitation }: { invitation?: string }) {
         error={e.displayName}
         hint="Affiché dans les classements. 3 à 20 caractères."
       />
-      <Field
+      <PasswordField
         label="Mot de passe"
         name="password"
-        type="password"
+        shown={shown}
+        onToggle={toggle}
         autoComplete="new-password"
         required
         error={e.password}
@@ -48,6 +50,7 @@ export function SignUpForm({ invitation }: { invitation?: string }) {
 
 export function SignInForm({ invitation }: { invitation?: string }) {
   const [state, action] = useActionState(signInAction, initialFormState);
+  const [shown, toggle] = useRevealPassword(state);
   const e = state.errors ?? {};
   return (
     <form action={action} className="space-y-4" noValidate>
@@ -63,7 +66,7 @@ export function SignInForm({ invitation }: { invitation?: string }) {
         defaultValue={state.values?.identifier}
         error={e.identifier}
       />
-      <Field label="Mot de passe" name="password" type="password" autoComplete="current-password" required error={e.password} />
+      <PasswordField label="Mot de passe" name="password" shown={shown} onToggle={toggle} autoComplete="current-password" required error={e.password} />
       <SubmitButton className="w-full" pendingLabel="Connexion…">
         Se connecter
       </SubmitButton>
@@ -82,19 +85,21 @@ export function SignInForm({ invitation }: { invitation?: string }) {
 
 export function ChangePasswordForm() {
   const [state, action] = useActionState(changePasswordAction, initialFormState);
+  const [shown, toggle] = useRevealPassword(state); // un seul œil pour les deux champs : on compare d'un coup d'œil
   const e = state.errors ?? {};
   return (
     <form action={action} className="space-y-4" noValidate>
-      <Field
+      <PasswordField
         label="Nouveau mot de passe"
         name="password"
-        type="password"
+        shown={shown}
+        onToggle={toggle}
         autoComplete="new-password"
         required
         error={e.password}
         hint={`Au moins ${PASSWORD_MIN} caractères.`}
       />
-      <Field label="Confirmer le mot de passe" name="confirm" type="password" autoComplete="new-password" required error={e.confirm} />
+      <PasswordField label="Confirmer le mot de passe" name="confirm" shown={shown} autoComplete="new-password" required error={e.confirm} />
       <SubmitButton className="w-full">Enregistrer</SubmitButton>
     </form>
   );

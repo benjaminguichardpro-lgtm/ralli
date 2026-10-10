@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type ComponentProps, type ReactNode, useId } from "react";
+import { type ComponentProps, type ReactNode, useId, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 // Composants d'interface partagés. Couleurs : uniquement via les tokens du thème (globals.css).
@@ -54,8 +54,9 @@ export function Field({
   name,
   error,
   hint,
+  adornment,
   ...input
-}: { label: string; name: string; error?: string; hint?: string } & ComponentProps<"input">) {
+}: { label: string; name: string; error?: string; hint?: string; adornment?: ReactNode } & ComponentProps<"input">) {
   const id = useId();
   const describedBy = error ? `${id}-err` : hint ? `${id}-hint` : undefined;
   return (
@@ -63,14 +64,17 @@ export function Field({
       <label htmlFor={id} className="block font-medium">
         {label}
       </label>
-      <input
-        id={id}
-        name={name}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        className="block min-h-11 w-full rounded-lg border border-ink-muted bg-surface px-3 text-ink focus-visible:outline-2 focus-visible:outline-primary"
-        {...input}
-      />
+      <div className="relative">
+        <input
+          id={id}
+          name={name}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          className={`block min-h-11 w-full rounded-lg border border-ink-muted bg-surface px-3 text-ink focus-visible:outline-2 focus-visible:outline-primary ${adornment ? "pr-12" : ""}`}
+          {...input}
+        />
+        {adornment}
+      </div>
       {hint && !error && (
         <p id={`${id}-hint`} className="text-sm text-ink-muted">
           {hint}
@@ -78,6 +82,54 @@ export function Field({
       )}
       {error && <FieldError id={`${id}-err`}>{error}</FieldError>}
     </div>
+  );
+}
+
+/**
+ * Afficher / masquer un mot de passe. `resetKey` est l'état renvoyé par le formulaire (useActionState) :
+ * dès que le serveur répond (formulaire refusé…), le mot de passe se cache de nouveau. Il se cache aussi en quittant l'écran.
+ */
+export function useRevealPassword(resetKey: unknown): [boolean, () => void] {
+  const [revealed, setRevealed] = useState<{ key: unknown } | null>(null);
+  const shown = revealed !== null && revealed.key === resetKey;
+  return [shown, () => setRevealed(shown ? null : { key: resetKey })];
+}
+
+function EyeButton({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={shown ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+      aria-pressed={shown}
+      className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center rounded-lg text-ink-muted focus-visible:outline-2 focus-visible:outline-primary"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="size-6 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+        <circle cx="12" cy="12" r="3" />
+        {shown && <path d="M4 4l16 16" />}
+      </svg>
+    </button>
+  );
+}
+
+/**
+ * Champ de mot de passe avec son œil. Sans `onToggle`, le champ suit `shown` sans avoir son propre bouton
+ * (cas d'un second champ commandé par l'œil du premier).
+ */
+export function PasswordField({
+  shown,
+  onToggle,
+  ...field
+}: Omit<ComponentProps<typeof Field>, "type" | "adornment"> & { shown: boolean; onToggle?: () => void }) {
+  return (
+    <Field
+      {...field}
+      type={shown ? "text" : "password"}
+      // Une fois affiché, c'est un champ de texte : pas de majuscule ni de correction automatique du téléphone.
+      {...(shown ? { autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : {})}
+      adornment={onToggle ? <EyeButton shown={shown} onToggle={onToggle} /> : undefined}
+    />
   );
 }
 

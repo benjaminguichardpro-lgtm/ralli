@@ -226,8 +226,8 @@ test("reset-password : mot de passe temporaire puis changement forcé", async ({
   // Tant que le mot de passe n'est pas changé, les autres pages renvoient ici.
   await page.goto(clubUrl);
   await expect(page).toHaveURL(/\/mot-de-passe$/);
-  await page.getByLabel("Nouveau mot de passe").fill("nouveaumdp1");
-  await page.getByLabel("Confirmer le mot de passe").fill("nouveaumdp1");
+  await page.getByLabel("Nouveau mot de passe", { exact: true }).fill("nouveaumdp1");
+  await page.getByLabel("Confirmer le mot de passe", { exact: true }).fill("nouveaumdp1");
   await page.getByRole("button", { name: "Enregistrer" }).click();
   await expect(page.getByTestId("balance")).toBeVisible();
   await page.goto(clubUrl);
