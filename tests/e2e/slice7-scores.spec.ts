@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, forceStarted, placeBet, signUp, revealInviteCode } from "./helpers";
+import { awaitServerAction, checkPage, forceStarted, placeBet, signUp, revealInviteCode } from "./helpers";
 
 // Sacha (admin), Tess (capitaine Messieurs 1), Ugo (capitaine Messieurs 2), Vera (membre), un visiteur sans compte.
 
@@ -244,6 +244,10 @@ test("seconde rencontre : retrait puis nouvelle proposition, confirmée par une 
   await expect(tess.getByText("Score proposé", { exact: true })).toBeVisible();
 
   await ugo.goto(url2);
+  // Ugo avait pronostiqué la première rencontre, réglée entre-temps : son récapitulatif passe d'abord.
+  await expect(ugo.getByTestId("results-recap")).toBeVisible();
+  await ugo.getByTestId("results-recap").getByRole("button").last().click();
+  await expect(ugo.getByTestId("results-recap")).toBeHidden();
   ugo.once("dialog", (d) => void d.accept());
   await ugo.getByRole("button", { name: "Confirmer le score" }).click();
   await expect(ugo.getByText("Terminée", { exact: true })).toBeVisible();
@@ -272,6 +276,10 @@ test("règlement : Vera voit son pronostic perdu et son pronostic gagné", async
 test("classement du club : saison (seuil de 3) et semaine (seuil de 1)", async () => {
   // Vera : 3 pronostics terminés (−40, −100, +89), Ugo : 1 (+178).
   await vera.goto(`${clubUrl}/classement`);
+  // Vera a des pronostics réglés qu'elle n'a pas encore vus : le récapitulatif passe d'abord.
+  await expect(vera.getByTestId("results-recap")).toBeVisible();
+  await awaitServerAction(vera, () => vera.getByTestId("results-recap").getByRole("button").last().click());
+  await expect(vera.getByTestId("results-recap")).toBeHidden();
   const rows = vera.getByTestId("leaderboard-row");
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText("Vera");

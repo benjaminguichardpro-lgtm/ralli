@@ -21,6 +21,7 @@ export async function UserNav() {
       <Link
         href="/profil"
         aria-label="Mon profil"
+        data-tour="profil"
         className="inline-flex size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
         <Avatar user={user} size={44} className="border-2 border-gold" />

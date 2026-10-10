@@ -3,8 +3,8 @@ import Link from "next/link";
 import { Cormorant_Garamond, DM_Sans, Norican } from "next/font/google";
 import { Suspense } from "react";
 import { AppNav } from "@/components/app-nav";
-import { DailyBonus } from "@/components/daily-bonus";
 import { UserNav } from "@/components/user-nav";
+import { WelcomePopups } from "@/components/welcome-popups";
 import "./globals.css";
 
 // Seules les graisses utilisées sont chargées (un texte demandé en 600 avec DM Sans s'affiche en 700).
@@ -39,7 +39,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <AppNav />
         </Suspense>
         <Suspense fallback={null}>
-          <DailyBonus />
+          <WelcomePopups />
         </Suspense>
       </body>
     </html>

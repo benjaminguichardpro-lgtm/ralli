@@ -32,15 +32,32 @@ export async function signUp(page: Page, name: string, opts: { email?: string } 
   await page.goto("/inscription");
   await page.getByLabel("Email").fill(opts.email ?? `${name.toLowerCase()}@club.test`);
   await page.getByLabel("Pseudo").fill(name);
-  await page.getByLabel("Mot de passe").fill("motdepasse");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
   await page.getByRole("button", { name: "Créer mon compte" }).click();
+  // Une inscription refusée (pseudo pris…) n'affiche pas de guide : on ne l'attend pas plus de quelques secondes.
+  const shown = await page.getByRole("dialog", { name: "Guide de démarrage" }).waitFor({ timeout: 5000 }).then(() => true, () => false);
+  if (shown) await skipGuide(page);
+}
+
+/** Exécute `trigger` (un clic, Échap…) et attend que la réponse du serveur soit revenue : l'enregistrement « vu » est alors terminé. */
+export async function awaitServerAction(page: Page, trigger: () => Promise<void>) {
+  const done = page.waitForResponse((r) => r.request().method() === "POST");
+  await trigger();
+  await done;
+}
+
+/** Passe le guide du premier lancement (fenêtre affichée à un compte neuf), pour que la suite du test ne soit pas bloquée. */
+export async function skipGuide(page: Page) {
+  const guide = page.getByRole("dialog", { name: "Guide de démarrage" });
+  await awaitServerAction(page, () => guide.getByRole("button", { name: "Passer" }).click());
+  await expect(guide).toBeHidden();
 }
 
 /** Connexion par email (par défaut) ou, avec `identifier`, par ce texte tel quel (pseudo, éventuellement en autres majuscules). */
 export async function signIn(page: Page, name: string, password = "motdepasse", identifier?: string) {
   await page.goto("/connexion");
   await page.getByLabel("Email ou pseudo").fill(identifier ?? `${name.toLowerCase()}@club.test`);
-  await page.getByLabel("Mot de passe").fill(password);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Se connecter" }).click();
 }
 

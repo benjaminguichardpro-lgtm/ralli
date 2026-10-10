@@ -109,6 +109,8 @@ model User {
   mustChangePassword Boolean   @default(false) // posé par `npm run reset-password`
   avatarKey          String    @default("service") // avatar prédéfini (src/lib/avatars.ts)
   avatarPhotoAt      DateTime? // date de la photo importée (fichier dans le dossier avatar/) ; null = pas de photo
+  onboardingSeenAt   DateTime? // guide du premier lancement vu ou passé ; null = à montrer (comptes existants : marqués vus par la migration)
+  resultsSeenAt      DateTime? // les pronostics réglés avant cette date ont déjà été montrés dans le récapitulatif
   createdAt          DateTime  @default(now())
 
   memberships        ClubMembership[]

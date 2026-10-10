@@ -4,7 +4,9 @@ import { Suspense } from "react";
 import { signOutAction } from "@/app/actions/auth";
 import { Avatar } from "@/components/avatar";
 import { AvatarPicker, PhotoUploadButton } from "@/components/profile-forms";
+import { GuideReplayButton } from "@/components/onboarding-guide";
 import { requireUser } from "@/lib/auth/current-user";
+import { listMyClubs } from "@/server/clubs";
 
 export const metadata: Metadata = { title: "Mon profil · Ralli" };
 
@@ -21,6 +23,7 @@ export default function ProfilePage() {
 
 async function Content() {
   const user = await requireUser();
+  const hasClub = (await listMyClubs(user.id)).length > 0;
   return (
     <>
       <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface p-5 shadow-sm">
@@ -37,9 +40,14 @@ async function Content() {
       </div>
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <Link href="/mot-de-passe" className="inline-flex min-h-11 items-center font-semibold text-primary underline">
-          Changer de mot de passe
-        </Link>
+        <div>
+          <Link href="/mot-de-passe" className="inline-flex min-h-11 items-center font-semibold text-primary underline">
+            Changer de mot de passe
+          </Link>
+        </div>
+        <div>
+          <GuideReplayButton hasClub={hasClub} />
+        </div>
         <form action={signOutAction}>
           <button
             type="submit"

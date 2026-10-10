@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, signIn, signUp } from "./helpers";
+import { checkPage, signIn, signUp, skipGuide } from "./helpers";
 
 // Lien d'invitation (/rejoindre/CODE), parcours inscription / connexion puis confirmation, écrans vides selon le rôle.
 
@@ -45,8 +45,9 @@ test("sans compte : le lien mène à l'inscription, puis à la confirmation, pui
   await expect(page).toHaveURL(new RegExp(`/inscription\\?invitation=${code}`));
   await page.getByLabel("Email").fill("nouveau16@club.test");
   await page.getByLabel("Pseudo").fill("Nouveau16");
-  await page.getByLabel("Mot de passe").fill("motdepasse");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
   await page.getByRole("button", { name: "Créer mon compte" }).click();
+  await skipGuide(page);
   // Confirmation demandée : on n'entre pas dans un club en touchant un lien.
   await expect(visibleClub(page)).toHaveText(`Rejoindre ${CLUB} ?`);
   await expect(page).toHaveURL(new RegExp(`/rejoindre/${code}$`));
@@ -69,7 +70,7 @@ test("avec un compte existant : « J'ai déjà un compte », connexion, « Non m
   await page.getByRole("link", { name: "J'ai déjà un compte" }).click();
   await expect(page).toHaveURL(new RegExp(`/connexion\\?invitation=${code}`));
   await page.getByLabel("Email ou pseudo").fill("joueur16@club.test");
-  await page.getByLabel("Mot de passe").fill("motdepasse");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(visibleClub(page)).toHaveText(`Rejoindre ${CLUB} ?`);
   await page.getByRole("link", { name: "Non merci" }).click();
@@ -94,7 +95,7 @@ test("une adresse de retour truquée ne redirige jamais hors de Ralli", async ({
   const page = await newPage(browser);
   await page.goto("/connexion?invitation=https://evil.example");
   await page.getByLabel("Email ou pseudo").fill("joueur16@club.test");
-  await page.getByLabel("Mot de passe").fill("motdepasse");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(page.getByTestId("nav-user")).toHaveText("Joueur16");
   expect(new URL(page.url()).pathname).toBe("/");

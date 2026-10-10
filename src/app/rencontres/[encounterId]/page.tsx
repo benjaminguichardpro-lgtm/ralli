@@ -76,7 +76,7 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
       </div>
       {published && e.status !== "CANCELLED" && (
         <WhatsAppShare
-          text={`${e.home} – ${e.away}, ${formatParisDay(e.startsAt)} à ${formatParisTime(e.startsAt)} 🎾 Pronostiquez sur Ralli :`}
+          text={`${e.home} – ${e.away}, ${formatParisDay(e.startsAt)} à ${formatParisTime(e.startsAt)} 🎾 Fais ton pronostic sur Ralli (jeu gratuit, sans argent réel) :`}
           path={`/rencontres/${e.id}`}
           label="Partager la rencontre"
         />

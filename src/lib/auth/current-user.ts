@@ -5,7 +5,7 @@ import { connection } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 
-export type CurrentUser = { id: string; displayName: string; mustChangePassword: boolean; avatarKey: string; avatarPhotoAt: Date | null };
+export type CurrentUser = { id: string; displayName: string; mustChangePassword: boolean; avatarKey: string; avatarPhotoAt: Date | null; onboardingSeenAt: Date | null };
 
 /**
  * Utilisateur connecté, relu en base (null si pas de session ou compte disparu).
@@ -20,7 +20,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!id) return null;
   return db.user.findUnique({
     where: { id },
-    select: { id: true, displayName: true, mustChangePassword: true, avatarKey: true, avatarPhotoAt: true },
+    select: { id: true, displayName: true, mustChangePassword: true, avatarKey: true, avatarPhotoAt: true, onboardingSeenAt: true },
   });
 });
 

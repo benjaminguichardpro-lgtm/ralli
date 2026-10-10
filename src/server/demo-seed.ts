@@ -151,7 +151,7 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
     users[pseudo] = id;
     accounts.push({ pseudo, role });
     // Compte « ancien » : la connexion quotidienne (+10 Aces, popup) se déclenche dès la première ouverture.
-    await db.user.update({ where: { id }, data: { createdAt: at(-30 * DAY) } });
+    await db.user.update({ where: { id }, data: { createdAt: at(-30 * DAY), onboardingSeenAt: at(-30 * DAY) } });
     return id;
   }
 
@@ -395,6 +395,9 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
 
   // 7. Brouillon : visible des admins et capitaines seulement, pas publié.
   await build({ ...lyonBase, ...D, opponent: opp.bron, oppPlayers: oppPlayers.bron, home: true, startsInMs: 10 * DAY, matches: 3 });
+
+  // Les résultats déjà réglés de la démo ne sont pas remontés en récapitulatif à la première connexion.
+  await db.user.updateMany({ where: { id: { in: Object.values(users) } }, data: { resultsSeenAt: new Date() } });
 
   return {
     password: DEMO_PASSWORD,

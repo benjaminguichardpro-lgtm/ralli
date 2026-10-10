@@ -54,6 +54,7 @@ export function TabBar({ hrefs }: { hrefs: Record<Tab, string> }) {
               <Link
                 href={hrefs[tab]}
                 aria-current={on ? "page" : undefined}
+                data-tour={tab}
                 className={`relative flex min-h-16 flex-col items-center justify-center gap-0.5 text-xs font-semibold focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${
                   on ? "text-primary" : "text-ink-muted"
                 }`}
