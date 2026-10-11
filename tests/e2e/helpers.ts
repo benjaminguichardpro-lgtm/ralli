@@ -127,6 +127,19 @@ export async function backdateAccount(displayName: string, days: number) {
   await c.end();
 }
 
+/** Accepte une demande « admin de club » pour tous les comptes qui n'ont pas déjà un droit de création disponible (la validation par l'équipe Ralli n'a pas d'écran). */
+export async function allowClubCreation() {
+  const c = new Client({ connectionString: parse(readFileSync(".env.test")).DATABASE_URL });
+  await c.connect();
+  await c.query(
+    `INSERT INTO "ClubCreationRequest"(id,"userId","fullName","clubName",city,role,"fftNumber",phone,status,"decidedAt")
+     SELECT 'req_' || u.id || '_' || extract(epoch from clock_timestamp())::bigint::text, u.id, u."displayName", 'Club', 'Ville', 'Président', '0000', '0600000000', 'APPROVED', now()
+     FROM "User" u
+     WHERE NOT EXISTS (SELECT 1 FROM "ClubCreationRequest" r WHERE r."userId" = u.id AND r.status = 'APPROVED' AND r."clubId" IS NULL)`,
+  );
+  await c.end();
+}
+
 /** Insère au ledger les bonus de connexion des `days` derniers jours (hier, avant-hier…), comme si le compte s'était connecté chaque jour. */
 export async function seedLoginStreak(displayName: string, days: number) {
   const c = new Client({ connectionString: parse(readFileSync(".env.test")).DATABASE_URL });

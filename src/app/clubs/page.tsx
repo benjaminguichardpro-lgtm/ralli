@@ -42,8 +42,8 @@ async function Clubs() {
         )}
         <div className="flex flex-wrap gap-3 pt-2">
           <ButtonLink href="/clubs/rejoindre">Rejoindre un club</ButtonLink>
-          <ButtonLink href="/clubs/nouveau" variant="ghost">
-            Créer un club
+          <ButtonLink href="/clubs/demande" variant="ghost">
+            Je suis admin d&apos;un club
           </ButtonLink>
         </div>
       </div>

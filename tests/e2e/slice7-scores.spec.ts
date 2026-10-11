@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { awaitServerAction, checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp } from "./helpers";
+import { awaitServerAction, checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp, allowClubCreation } from "./helpers";
 
 // Sacha (admin), Tess (capitaine Messieurs 1), Ugo (capitaine Messieurs 2), Vera (membre), un visiteur sans compte.
 
@@ -58,6 +58,7 @@ test.beforeAll(async ({ browser }) => {
 
 test("mise en place : club, deux équipes, deux rencontres publiées", async () => {
   await register(sacha, "Sacha");
+  await allowClubCreation();
   await sacha.goto("/clubs/nouveau");
   await sacha.getByLabel("Nom du club").fill("TC Scores");
   await sacha.getByRole("button", { name: "Créer le club" }).click();

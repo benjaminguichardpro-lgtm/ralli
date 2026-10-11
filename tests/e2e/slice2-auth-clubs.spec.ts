@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, openSection, resetPassword, signIn, signUp, signOut, revealInviteCode } from "./helpers";
+import { checkPage, openSection, resetPassword, signIn, signUp, signOut, revealInviteCode, allowClubCreation } from "./helpers";
 
 // Scénario multi-rôles : Alice (admin), Bob (membre), Carole (extérieure).
 // Chaque personne a son propre contexte navigateur (cookies séparés).
@@ -51,7 +51,25 @@ test("pseudo déjà pris (insensible à la casse)", async () => {
   await expect(carole.getByText("Un compte existe déjà avec cet email")).toBeVisible();
 });
 
+test("sans demande acceptée, « créer un club » renvoie vers la demande d'admin", async () => {
+  await alice.goto("/clubs/nouveau");
+  await expect(alice).toHaveURL(/\/clubs\/demande$/);
+  await expect(alice.getByRole("heading", { name: "Je suis admin d'un club" })).toBeVisible();
+  await alice.getByLabel("Nom complet").fill("Alice Martin");
+  await alice.getByLabel("Nom du club").fill("TC Ralli");
+  await alice.getByLabel("Ville").fill("Lyon");
+  await alice.getByLabel("Fonction dans le club").fill("Présidente");
+  await alice.getByLabel("Numéro d'affiliation FFT du club").fill("12345678");
+  await alice.getByLabel("Téléphone").fill("06 12 34 56 78");
+  await alice.getByRole("button", { name: "Envoyer ma demande" }).click();
+  await expect(alice.getByTestId("request-pending")).toBeVisible();
+  // En attente : toujours pas de création possible.
+  await alice.goto("/clubs/nouveau");
+  await expect(alice).toHaveURL(/\/clubs\/demande$/);
+});
+
 test("Alice crée un club et voit le code d'invitation", async () => {
+  await allowClubCreation();
   await alice.goto("/clubs/nouveau");
   await alice.getByLabel("Nom du club").fill("TC Ralli");
   await alice.getByRole("button", { name: "Créer le club" }).click();

@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp } from "./helpers";
+import { checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp, allowClubCreation } from "./helpers";
 
 // Parcours complet, de la création du club au classement.
 // Alma (admin), Cyril (capitaine), Bruno et Chloe (membres qui pronostiquent).
@@ -31,6 +31,7 @@ test.beforeAll(async ({ browser }) => {
 
 test("1. Alma crée le club, les autres le rejoignent avec le code", async () => {
   await register(alma, "Alma");
+  await allowClubCreation();
   await alma.goto("/clubs/nouveau");
   await alma.getByLabel("Nom du club").fill("TC Parcours");
   await alma.getByRole("button", { name: "Créer le club" }).click();

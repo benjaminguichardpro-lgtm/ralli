@@ -39,8 +39,8 @@ async function HomeContent() {
           <p className="text-ink-muted">Avec le code d&apos;invitation de votre club, vous pronostiquez ses rencontres d&apos;interclubs.</p>
           <div className="flex flex-wrap gap-3">
             <ButtonLink href="/clubs/rejoindre">Rejoindre un club</ButtonLink>
-            <ButtonLink href="/clubs/nouveau" variant="ghost">
-              Créer un club
+            <ButtonLink href="/clubs/demande" variant="ghost">
+              Je suis admin d&apos;un club
             </ButtonLink>
           </div>
         </div>

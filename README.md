@@ -73,6 +73,7 @@ Quand un compte Neon existera :
 ## Règles métier notables
 
 ### Rôles de club
+- **Créer un club est réservé aux comptes dont la demande « Je suis admin d'un club » a été acceptée** (tranche 26, `src/server/club-requests.ts`, page `/clubs/demande`, table `ClubCreationRequest`). Formulaire : nom complet, club, ville, fonction, numéro d'affiliation FFT, site (facultatif), téléphone, message (facultatif) ; une seule demande en attente par compte ; refusée = on peut en refaire une. Une demande acceptée donne droit à **un seul club**. Pour l'instant **aucun écran ni commande de validation** (un email viendra plus tard) : l'équipe Ralli passe la demande en `APPROVED` directement en base. `/clubs/nouveau` renvoie vers la demande sans droit ; les clubs déjà créés ne changent pas.
 - Le créateur d'un club en est **admin**. Rejoindre par code donne le rôle **membre**.
 - Seuls les admins voient le code d'invitation, le régénèrent (l'ancien cesse alors de fonctionner) et nomment ou retirent des admins. Un club garde toujours au moins un admin.
 - Un non-membre qui ouvre l'URL d'un club voit « Page introuvable », exactement comme pour un club inexistant. Le statut HTTP reste 200, parce que le contrôle s'exécute dans un bloc streamé ; aucune donnée du club n'est envoyée.

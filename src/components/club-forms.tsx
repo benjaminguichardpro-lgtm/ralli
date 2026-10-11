@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import {
   createClubAction,
+  submitClubRequestAction,
   joinClubAction,
   regenerateInviteCodeAction,
   setMemberRoleAction,
@@ -17,8 +18,43 @@ export function CreateClubForm() {
   return (
     <form action={action} className="space-y-4" noValidate>
       <Field label="Nom du club" name="name" required defaultValue={state.values?.name} error={state.errors?.name} />
+      {state.message ? <FieldError>{state.message}</FieldError> : null}
       <SubmitButton className="w-full" pendingLabel="Création…">
         Créer le club
+      </SubmitButton>
+    </form>
+  );
+}
+
+export function ClubRequestForm() {
+  const [state, action] = useActionState(submitClubRequestAction, initialFormState);
+  const f = (name: string) => ({ name, defaultValue: state.values?.[name], error: state.errors?.[name] });
+  return (
+    <form action={action} className="space-y-4" noValidate>
+      <Field label="Nom complet" autoComplete="name" required {...f("fullName")} />
+      <Field label="Nom du club" required {...f("clubName")} />
+      <Field label="Ville" required {...f("city")} />
+      <Field label="Fonction dans le club" hint="Président, responsable des interclubs…" required {...f("role")} />
+      <Field label="Numéro d'affiliation FFT du club" required {...f("fftNumber")} />
+      <Field label="Site ou page du club (facultatif)" type="url" inputMode="url" {...f("website")} />
+      <Field label="Téléphone" type="tel" autoComplete="tel" required {...f("phone")} />
+      <div className="space-y-1">
+        <label htmlFor="request-message" className="block font-medium">
+          Message (facultatif)
+        </label>
+        <textarea
+          id="request-message"
+          name="message"
+          rows={4}
+          maxLength={1000}
+          defaultValue={state.values?.message}
+          className="block w-full rounded-lg border border-ink-muted bg-surface px-3 py-2"
+        />
+        {state.errors?.message ? <FieldError>{state.errors.message}</FieldError> : null}
+      </div>
+      {state.message ? <FieldError>{state.message}</FieldError> : null}
+      <SubmitButton className="w-full" pendingLabel="Envoi…">
+        Envoyer ma demande
       </SubmitButton>
     </form>
   );

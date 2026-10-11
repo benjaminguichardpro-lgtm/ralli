@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, signIn, signUp, skipGuide } from "./helpers";
+import { checkPage, signIn, signUp, skipGuide, allowClubCreation } from "./helpers";
 
 // Lien d'invitation (/rejoindre/CODE), parcours inscription / connexion puis confirmation, écrans vides selon le rôle.
 
@@ -18,6 +18,7 @@ test("l'admin révèle le code et trouve le bouton « Inviter par WhatsApp »", 
   await signUp(capitaine, "Capi16");
   await expect(capitaine.getByTestId("nav-user")).toHaveText("Capi16");
   // Club vide pour un admin : l'accueil propose de créer la première rencontre une fois le club créé.
+  await allowClubCreation();
   await capitaine.goto("/clubs/nouveau");
   await capitaine.getByLabel("Nom du club").fill(CLUB);
   await capitaine.getByRole("button", { name: "Créer le club" }).click();

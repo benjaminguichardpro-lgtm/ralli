@@ -1,6 +1,6 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
 import sharp from "sharp";
-import { awaitServerAction, checkPage, revealInviteCode, signUp } from "./helpers";
+import { awaitServerAction, checkPage, revealInviteCode, signUp, allowClubCreation } from "./helpers";
 
 // Odile (admin), Hugo et Nina (membres), Oscar (aucun club en commun), un visiteur sans compte.
 
@@ -31,6 +31,7 @@ test.beforeAll(async ({ browser }) => {
 
 test("mise en place : club d'Odile, Hugo et Nina membres, Oscar sans club", async () => {
   await register(odile, "Odile20");
+  await allowClubCreation();
   await odile.goto("/clubs/nouveau");
   await odile.getByLabel("Nom du club").fill("TC Fiche20");
   await odile.getByRole("button", { name: "Créer le club" }).click();

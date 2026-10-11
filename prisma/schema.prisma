@@ -17,6 +17,12 @@ enum ClubRole {
   ADMIN
 }
 
+enum ClubRequestStatus {
+  PENDING // en attente d'examen par l'équipe Ralli
+  APPROVED // le compte peut créer un club
+  REFUSED
+}
+
 enum TeamKind {
   CLUB // équipe d'un club Ralli, avec un capitaine
   EXTERNAL // adversaire hors Ralli, géré par le club Ralli qui l'a créé, sans capitaine
@@ -114,14 +120,38 @@ model User {
   createdAt          DateTime  @default(now())
 
   memberships        ClubMembership[]
-  clubsCreated       Club[]           @relation("ClubCreatedBy")
-  captainOf          Team[]           @relation("TeamCaptain")
+  clubsCreated       Club[]                @relation("ClubCreatedBy")
+  captainOf          Team[]                @relation("TeamCaptain")
   player             Player?
   predictions        Prediction[]
   ledgerEntries      LedgerEntry[]
-  encountersCreated  Encounter[]      @relation("EncounterCreatedBy")
-  encountersArchived Encounter[]      @relation("EncounterArchivedBy")
+  encountersCreated  Encounter[]           @relation("EncounterCreatedBy")
+  encountersArchived Encounter[]           @relation("EncounterArchivedBy")
   encounterEvents    EncounterEvent[]
+  clubRequests       ClubCreationRequest[]
+}
+
+/// Demande d'un utilisateur pour devenir admin d'un club (et donc pouvoir en créer un). Examinée par l'équipe Ralli.
+model ClubCreationRequest {
+  id            String            @id @default(cuid())
+  userId        String
+  fullName      String
+  clubName      String
+  city          String
+  role          String // fonction dans le club
+  fftNumber     String // numéro d'affiliation FFT du club
+  website       String?
+  phone         String
+  message       String?
+  status        ClubRequestStatus @default(PENDING)
+  refusalReason String?
+  decidedAt     DateTime?
+  clubId        String? // club créé grâce à cette demande ; null = droit pas encore utilisé
+  createdAt     DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
 }
 
 model Club {

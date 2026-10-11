@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, openSection, revealInviteCode, signUp } from "./helpers";
+import { checkPage, openSection, revealInviteCode, signUp, allowClubCreation } from "./helpers";
 
 // Scénario multi-rôles : Dora (admin), Éric (capitaine M1), Fanny (capitaine M2),
 // Gaston (simple membre), Hélène (hors club).
@@ -42,6 +42,7 @@ test.beforeAll(async ({ browser }) => {
 
 test("mise en place : Dora crée le club, les autres le rejoignent", async () => {
   await register(dora, "Dora");
+  await allowClubCreation();
   await dora.goto("/clubs/nouveau");
   await dora.getByLabel("Nom du club").fill("TC Équipes");
   await dora.getByRole("button", { name: "Créer le club" }).click();

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CreateClubForm } from "@/components/club-forms";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/current-user";
+import { canCreateClub } from "@/server/club-requests";
 
 export const metadata: Metadata = { title: "Créer un club · Ralli" };
 
@@ -18,7 +20,8 @@ export default function NewClubPage() {
 }
 
 async function Guarded() {
-  await requireUser();
+  const user = await requireUser();
+  if (!(await canCreateClub(user.id))) redirect("/clubs/demande");
   return (
     <div className="rounded-2xl bg-surface p-4 shadow-sm">
       <CreateClubForm />

@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp } from "./helpers";
+import { checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp, allowClubCreation } from "./helpers";
 
 // Doubles : Mathilde (admin), Octave (capitaine de Messieurs 1), Ludo (membre qui pronostique).
 // Pseudos propres à ce fichier : la base de test n'est vidée qu'au début de la suite, deux scénarios ne doivent pas partager un pseudo.
@@ -48,6 +48,7 @@ test.beforeAll(async ({ browser }) => {
 
 test("mise en place : club, équipe de quatre joueurs, adversaire de quatre joueurs", async () => {
   await register(dora, "Mathilde");
+  await allowClubCreation();
   await dora.goto("/clubs/nouveau");
   await dora.getByLabel("Nom du club").fill("TC Doubles");
   await dora.getByRole("button", { name: "Créer le club" }).click();

@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { awaitServerAction, backdateAccount, checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp } from "./helpers";
+import { awaitServerAction, backdateAccount, checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp, allowClubCreation } from "./helpers";
 
 // Guide du premier lancement (Nina17, Omar17) et récapitulatif des pronostics réglés
 // (Pia17 admin, Quentin17 capitaine, Oscar17 et Rita17 qui pronostiquent).
@@ -159,6 +159,7 @@ test("visite : avec « réduire les animations », le cadre se déplace sans tra
 
 test("mise en place : club, équipe, rencontre publiée, pronostics d'Oscar et de Rita", async () => {
   await signUp(pia, "Pia17");
+  await allowClubCreation();
   await pia.goto("/clubs/nouveau");
   await pia.getByLabel("Nom du club").fill("TC Récap17");
   await pia.getByRole("button", { name: "Créer le club" }).click();

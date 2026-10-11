@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/current-user";
 import { clubNameSchema, fieldErrors, inviteCodeInputSchema } from "@/lib/validation/account";
-import { createClub, joinClubByCode, regenerateInviteCode, setMemberRole } from "@/server/clubs";
+import { clubRequestSchema } from "@/lib/validation/club-request";
+import { createClubWithApproval, submitClubRequest } from "@/server/club-requests";
+import { joinClubByCode, regenerateInviteCode, setMemberRole } from "@/server/clubs";
 import { DomainError } from "@/server/errors";
 import type { FormState } from "./types";
 
@@ -21,8 +23,31 @@ export async function createClubAction(_: FormState, fd: FormData): Promise<Form
   const name = fd.get("name");
   const parsed = z.object({ name: clubNameSchema }).safeParse({ name });
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values: { name: String(name ?? "") } };
-  const club = await createClub(user.id, parsed.data.name);
-  redirect(`/clubs/${club.id}`);
+  let clubId: string;
+  try {
+    ({ id: clubId } = await createClubWithApproval(user.id, parsed.data.name));
+  } catch (e) {
+    if (e instanceof DomainError) return { message: e.message, values: { name: parsed.data.name } };
+    throw e;
+  }
+  redirect(`/clubs/${clubId}`);
+}
+
+const REQUEST_FIELDS = ["fullName", "clubName", "city", "role", "fftNumber", "website", "phone", "message"] as const;
+
+export async function submitClubRequestAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const raw = Object.fromEntries(REQUEST_FIELDS.map((k) => [k, String(fd.get(k) ?? "")]));
+  const parsed = clubRequestSchema.safeParse(raw);
+  if (!parsed.success) return { errors: fieldErrors(parsed.error), values: raw };
+  try {
+    await submitClubRequest(user.id, parsed.data);
+  } catch (e) {
+    if (e instanceof DomainError) return { message: e.message, values: raw };
+    throw e;
+  }
+  refresh();
+  return { ok: true };
 }
 
 export async function joinClubAction(_: FormState, fd: FormData): Promise<FormState> {

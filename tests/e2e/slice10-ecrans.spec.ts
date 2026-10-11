@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, openSection, placeBet, revealInviteCode, signUp } from "./helpers";
+import { checkPage, openSection, placeBet, revealInviteCode, signUp, allowClubCreation } from "./helpers";
 
 // Zoe (admin et capitaine), Yanis (membre qui pronostique), un visiteur sans compte.
 
@@ -27,6 +27,7 @@ test.beforeAll(async ({ browser }) => {
 
 test("mise en place : club, équipe, rencontre publiée à 15:30", async () => {
   await register(zoe, "Zoe");
+  await allowClubCreation();
   await zoe.goto("/clubs/nouveau");
   await zoe.getByLabel("Nom du club").fill("TC Ecrans");
   await zoe.getByRole("button", { name: "Créer le club" }).click();
@@ -205,6 +206,7 @@ test("barre du bas : un seul club mène directement au classement et au club, on
 });
 
 test("plusieurs clubs : « Club » et « Classement » mènent à une liste", async () => {
+  await allowClubCreation();
   await yanis.goto("/clubs/nouveau");
   await yanis.getByLabel("Nom du club").fill("Club de Yanis");
   await yanis.getByRole("button", { name: "Créer le club" }).click();
