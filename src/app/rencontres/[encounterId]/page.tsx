@@ -17,6 +17,7 @@ import { ConfirmScoreForm, DisputeScoreForm, ProposeScoreForm, ResolveDisputeFor
 import { StatusBadge } from "@/components/encounter-list";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { kindTitle, kindWord, pointsLabel } from "@/lib/matches";
+import { predictorCountLabel } from "@/lib/predictions/labels";
 import { formatParis, formatParisDay, formatParisTime, relativeDayLabel, toParisLocalInput } from "@/lib/time";
 import { type EncounterPageView, getEncounterPage } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
@@ -102,6 +103,11 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
                   mine={panel.mine[x.id] ?? null}
                   share={{ title: `${e.home} – ${e.away}`, whenLabel: `${formatParisDay(e.startsAt)} à ${formatParisTime(e.startsAt)}`, path: `/rencontres/${e.id}` }}
                 />
+                {predictorCountLabel(x.predictorCount) && (
+                  <p className="text-sm text-ink-muted" data-testid="predictor-count">
+                    {predictorCountLabel(x.predictorCount)}
+                  </p>
+                )}
               </li>
             ))}
           </ol>

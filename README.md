@@ -271,6 +271,13 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 - **Code d'invitation** : reste en haut pour les admins (il en ont besoin dès le premier lancement) ; le paragraphe d'explication est réduit à un avertissement : « Le lien contient le code : envoie-le seulement aux personnes que tu invites. »
 - **Tests** : E2E `slice23-page-club.spec.ts` ; le helper `openSection(page, nom)` (tests/e2e/helpers.ts) ouvre une section avant d'y cliquer ; une quinzaine de tests de `slice2`, `slice3`, `slice5` à `slice7`, `slice10`, `slice11`, `slice12`, `slice14` et `slice17` l'utilisent.
 
+## Compteur de rallis par match (tranche 22, `predictorCountLabel` dans `src/lib/predictions/labels.ts`, `getEncounterPage` dans `src/server/encounters.ts`)
+
+- Sur la page d'une rencontre, sous les cotes de **chaque match** : « 12 membres ont pronostiqué » (« 1 membre a pronostiqué » au singulier). **Le nombre seulement**, jamais pour qui ni la répartition (pour ne pas influencer).
+- Rien quand le nombre est 0. Affiché **avant, pendant et après** : pronostics ouverts, fermés, score confirmé. Visible de **tout le monde**, y compris les membres qui ne peuvent pas pronostiquer (admins, capitaines) et le visiteur sans compte (la page d'une rencontre est publique).
+- Comptent : rallis en attente, gagnés, perdus. Les **remboursés** (rencontre annulée, match remplacé ou non joué) ne comptent plus. Aucune évolution de la base.
+- Tests : `src/lib/predictions/labels.test.ts`, `src/server/predictor-count.db.test.ts`, E2E `slice24-animation.spec.ts` (compare l'écran à la base avec la démo).
+
 ## Documents
 
 - [EXCLUSIONS.md](EXCLUSIONS.md) : ce qui est volontairement hors MVP.

@@ -13,3 +13,9 @@ export function predictionSideLabel(status: PredictionStatus, payoutAces: number
       return "Remboursé.";
   }
 }
+
+/** Nombre de membres qui ont pronostiqué un match : « 1 membre a pronostiqué », « 12 membres ont pronostiqué ». Rien à 0. */
+export function predictorCountLabel(n: number): string | null {
+  if (n <= 0) return null;
+  return n === 1 ? "1 membre a pronostiqué" : `${n.toLocaleString("fr-FR")} membres ont pronostiqué`;
+}

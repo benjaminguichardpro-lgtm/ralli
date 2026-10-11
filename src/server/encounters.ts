@@ -548,6 +548,8 @@ export type EncounterPageView = {
     oddsAway: string | null;
     oddsHomeX100: number | null;
     oddsAwayX100: number | null;
+    /** Membres qui ont pronostiqué ce match (nombre seulement, jamais pour qui) : en attente, gagnés ou perdus ; les remboursés ne comptent plus. */
+    predictorCount: number;
   }[];
   /** Présent seulement pour le staff (capitaine de l'équipe du club, admins). */
   manage: null | {
@@ -601,6 +603,12 @@ export async function getEncounterPage(viewerId: string | null, encounterId: str
     },
   });
   const matches = numberByKind(rawMatches);
+  const counts = await db.prediction.groupBy({
+    by: ["matchId"],
+    where: { matchId: { in: rawMatches.map((m) => m.id) }, status: { in: ["PENDING", "WON", "LOST"] } },
+    _count: { _all: true },
+  });
+  const predictorsOf = (matchId: string) => counts.find((c) => c.matchId === matchId)?._count._all ?? 0;
   const pair = (a: (typeof rawMatches)[number]["homePlayer"], b: (typeof rawMatches)[number]["homePlayer2"]) => (b ? [a, b] : [a]);
 
   const staff = viewerId ? await isStaff(viewerId, e) : false;
@@ -667,6 +675,7 @@ export async function getEncounterPage(viewerId: string | null, encounterId: str
       oddsAway: m.oddsAwayX100 === null ? null : formatOdds(m.oddsAwayX100),
       oddsHomeX100: m.oddsHomeX100,
       oddsAwayX100: m.oddsAwayX100,
+      predictorCount: predictorsOf(m.id),
     })),
     manage,
   };
