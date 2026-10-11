@@ -6,7 +6,8 @@ import { Avatar } from "@/components/avatar";
 import { ClubLogo } from "@/components/club-logo";
 import { InviteCodeReveal, MemberRoleForm } from "@/components/club-forms";
 import { ResetAvatarForm } from "@/components/profile-forms";
-import { LeaderboardTable } from "@/components/leaderboard";
+import { LeaderboardTable, RankMoveBadge } from "@/components/leaderboard";
+import { rankLabel } from "@/lib/leaderboard/rank";
 import { EncounterFilters } from "@/components/encounter-filters";
 import { EncounterList } from "@/components/encounter-list";
 import { CreateExternalTeamForm, CreateTeamForm } from "@/components/team-forms";
@@ -134,6 +135,13 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
           <p className="text-ink-muted">Personne n&apos;est encore classé sur la saison.</p>
         ) : (
           <LeaderboardTable rows={board.top} viewerId={user.id} compact />
+        )}
+        {board.myRow && (
+          <p className="text-sm text-ink-muted" data-testid="my-place">
+            Ta place : <strong className="text-ink">{rankLabel(board.myRow.rank)}</strong>
+            {board.myMove && <RankMoveBadge move={board.myMove} />}
+            {board.myMove && board.myMove.kind !== "new" && <span> depuis lundi</span>}
+          </p>
         )}
         <ButtonLink href={`/clubs/${club.id}/classement`} variant="ghost">
           Voir le classement

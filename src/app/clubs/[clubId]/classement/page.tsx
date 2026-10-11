@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { LeaderboardTable } from "@/components/leaderboard";
+import { LeaderboardTable, signedAces } from "@/components/leaderboard";
 import { LEADERBOARD_SIZE } from "@/config/season";
 import { requireUser } from "@/lib/auth/current-user";
 import { DomainError } from "@/server/errors";
@@ -44,6 +44,16 @@ async function Leaderboard({ params, searchParams }: Props) {
         <p className="text-ink-muted">Bénéfice net = Aces gagnés − Aces engagés, sur les pronostics terminés de ce club.</p>
       </div>
 
+      {board.weekLeaders && (
+        <p className="rounded-2xl bg-pale p-4" data-testid="week-leader">
+          <span className="block text-xs font-bold uppercase tracking-widest text-ink-muted">Leader de la semaine</span>
+          <span className="font-serif text-xl font-semibold text-primary" data-testid="week-leader-names">
+            {board.weekLeaders.names.join(" et ")}
+          </span>
+          <span className="font-data font-bold"> · {signedAces(board.weekLeaders.net)}</span>
+        </p>
+      )}
+
       <nav aria-label="Période" className="flex flex-wrap gap-2">
         <Link href={`/clubs/${clubId}/classement`} className={tab(period === "season")} aria-current={period === "season" ? "page" : undefined}>
           Saison
@@ -60,7 +70,7 @@ async function Leaderboard({ params, searchParams }: Props) {
           </p>
         ) : (
           <>
-            <LeaderboardTable rows={rows} viewerId={user.id} />
+            <LeaderboardTable rows={rows} viewerId={user.id} viewerMove={board.myMove} />
             {board.me && <p className="text-sm text-ink-muted">Vous êtes {board.me.rank}e sur {board.total}. Les {LEADERBOARD_SIZE} premiers sont affichés.</p>}
           </>
         )}

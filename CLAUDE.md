@@ -58,6 +58,7 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 21. Page du club allégée (équipes, adversaires, membres repliés) | ✅ | voir `git log` |
 | 22. Compteur « X membres ont pronostiqué » sur chaque match | ✅ | voir `git log` |
 | 23. Marqueur « Nouveau », éclat doré et pastille sur l'onglet Mes rallis | ✅ | voir `git log` |
+| 24. Classement vivant : mouvement de place depuis lundi, leader de la semaine | ✅ | voir `git log` |
 
 État des tests (fin de tranche 19) : 565 tests Vitest, 156 scénarios Playwright, tous verts (les scénarios `slice11-bonus-connexion`, `slice11-parcours-complet` et `slice21-resultats` ont déjà échoué une fois sur un raté de timing de la popup du bonus ou du guide sous charge, puis passé seuls : en cas d'échec isolé, relancer le fichier avant de soupçonner le code).
 

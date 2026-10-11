@@ -285,6 +285,15 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 - **La popup de résultats avec la pluie d'or est conservée** (décision de Benjamin : « comme Betclic »).
 - Tests : `src/lib/predictions/results.test.ts`, `src/server/results-badge.db.test.ts`, E2E `slice24-animation.spec.ts`.
 
+## Classement vivant (tranche 24, `rankMove` et `weekLeaders` dans `src/lib/leaderboard/rank.ts`, `getLeaderboard` dans `src/server/leaderboard.ts`)
+
+- **Mouvement de place depuis lundi** sur le classement de la **saison**, sur la ligne du lecteur : `▲2`, `▼1`, `=` ou `Nouveau` (la phrase complète, par exemple « 2 places gagnées depuis lundi », est lue par les lecteurs d'écran). Comparé au classement de la saison **tel qu'il était lundi 00 h (heure de Paris)**, recalculé avec les seules rencontres réglées avant lundi. « Nouveau » : pas classé lundi (moins de 3 rallis terminés). Pas de mouvement sur « Cette semaine ».
+- **Page du club** : sous l'aperçu du classement, « Ta place : 2e ▲1 depuis lundi » pour un lecteur classé.
+- **Leader de la semaine** : bande en haut du classement (saison et semaine), « Leader de la semaine · Jade · +120 Aces » ; en cas d'égalité en tête, les noms sont réunis par « et ». N'est affichée **que s'il y a un leader** (décision de Benjamin) ; j'ai ajouté une condition : son bénéfice de la semaine doit être **positif** (sinon personne ne « mène »).
+- **Pas de bouton de partage du classement** (décision de Benjamin).
+- Aucune évolution de la base.
+- Tests : `src/lib/leaderboard/rank.test.ts`, `src/server/leaderboard-live.db.test.ts`, E2E `slice24-animation.spec.ts` (recalcule les places depuis la base).
+
 ## Documents
 
 - [EXCLUSIONS.md](EXCLUSIONS.md) : ce qui est volontairement hors MVP.

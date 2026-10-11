@@ -1,6 +1,6 @@
 import { LEADERBOARD_SIZE, MIN_SETTLED_SEASON, MIN_SETTLED_WEEK, SEASON_END, SEASON_START } from "@/config/season";
 import { db } from "@/lib/db";
-import { type PlayerTotals, type RankedRow, rankPlayers, selectDisplay } from "@/lib/leaderboard/rank";
+import { type PlayerTotals, type RankMove, type RankedRow, rankMove, rankPlayers, selectDisplay, weekLeaders } from "@/lib/leaderboard/rank";
 import { parisWeekBounds } from "@/lib/time";
 import { requireClubMember } from "./permissions";
 
@@ -19,6 +19,12 @@ export type LeaderboardView = {
   total: number;
   /** Pronostics terminés du lecteur sur la période (pour lui dire ce qu'il lui manque). */
   mySettled: number;
+  /** Ligne du lecteur s'il est classé sur la période (qu'il soit dans l'affichage ou non). */
+  myRow: RankedRow | null;
+  /** Mouvement de place du lecteur depuis lundi 00 h : seulement sur le classement de la saison, s'il y est classé. */
+  myMove: RankMove | null;
+  /** Leader(s) de la semaine (bénéfice positif), null s'il n'y en a pas. */
+  weekLeaders: { names: string[]; net: number } | null;
 };
 
 /** Fenêtre de règlement de la période, toujours bornée par la saison. */
@@ -72,9 +78,23 @@ export async function getLeaderboard(
   await requireClubMember(viewerId, clubId);
   const { from, to } = periodWindow(period, opts.now ?? new Date());
   const minSettled = period === "season" ? MIN_SETTLED_SEASON : MIN_SETTLED_WEEK;
-  const totals = await clubTotals(clubId, from, to);
+  const now = opts.now ?? new Date();
+  const week = periodWindow("week", now);
+  const [totals, weekTotals, lastMonday] = await Promise.all([
+    clubTotals(clubId, from, to),
+    period === "week" ? Promise.resolve(null) : clubTotals(clubId, week.from, week.to),
+    // Classement de la saison tel qu'il était lundi 00 h (heure de Paris) : sert au mouvement de place.
+    period === "season" ? clubTotals(clubId, SEASON_START, week.from) : Promise.resolve(null),
+  ]);
   const ranked = rankPlayers(totals, minSettled);
   const { top, me } = selectDisplay(ranked, viewerId, opts.limit ?? LEADERBOARD_SIZE);
+  const myRow = ranked.find((r) => r.userId === viewerId) ?? null;
+  let myMove: RankMove | null = null;
+  if (myRow && lastMonday) {
+    const before = rankPlayers(lastMonday, minSettled).find((r) => r.userId === viewerId)?.rank ?? null;
+    myMove = rankMove(before, myRow.rank);
+  }
+  const weekRanked = period === "week" ? ranked : rankPlayers(weekTotals ?? [], MIN_SETTLED_WEEK);
   return {
     period,
     minSettled,
@@ -84,5 +104,8 @@ export async function getLeaderboard(
     me,
     total: ranked.length,
     mySettled: totals.find((t) => t.userId === viewerId)?.settled ?? 0,
+    myRow,
+    myMove,
+    weekLeaders: weekLeaders(weekRanked),
   };
 }
