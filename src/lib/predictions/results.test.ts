@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterCounts, formatDelta, groupByEncounter, hitsSentence, isRecentResult, parseLimit, parseResultFilter, resultLine, summarize } from "./results";
+import { filterCounts, formatDelta, currentStreak, groupByEncounter, hitsSentence, isRecentResult, parseLimit, parseResultFilter, resultLine, streakLabel, summarize } from "./results";
 
 const totals = { won: { count: 3, committed: 250, payout: 560 }, lost: { count: 2, committed: 150 }, refunded: { count: 4 } };
 
@@ -85,5 +85,25 @@ describe("marqueur « Nouveau » : réglé depuis moins de 48 heures", () => {
   });
   it("une date dans le futur n'est pas « récente »", () => {
     expect(isRecentResult(new Date(now.getTime() + 60_000), now)).toBe(false);
+  });
+});
+
+describe("série de rallis justes d'affilée", () => {
+  const st = (...xs: ("WON" | "LOST" | "REFUNDED")[]) => xs.map((status) => ({ status }));
+  it("compte les gagnés consécutifs depuis le plus récent, jusqu'au premier perdu", () => {
+    expect(currentStreak(st("WON", "WON", "WON", "LOST", "WON"))).toBe(3);
+    expect(currentStreak(st("LOST", "WON", "WON"))).toBe(0);
+    expect(currentStreak([])).toBe(0);
+  });
+  it("les remboursés ne prolongent ni n'interrompent la série", () => {
+    expect(currentStreak(st("WON", "REFUNDED", "WON", "LOST"))).toBe(2);
+    expect(currentStreak(st("REFUNDED", "REFUNDED"))).toBe(0);
+    expect(currentStreak(st("REFUNDED", "LOST", "WON"))).toBe(0);
+  });
+  it("affichée à partir de 2 d'affilée", () => {
+    expect(streakLabel(0)).toBeNull();
+    expect(streakLabel(1)).toBeNull();
+    expect(streakLabel(2)).toBe("2 d'affilée");
+    expect(streakLabel(7)).toBe("7 d'affilée");
   });
 });

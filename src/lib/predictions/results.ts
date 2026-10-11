@@ -108,3 +108,21 @@ export function isRecentResult(settledAt: Date, now: Date): boolean {
   const age = now.getTime() - settledAt.getTime();
   return age >= 0 && age < RECENT_RESULT_HOURS * 3_600_000;
 }
+
+/** Série en cours : rallis justes d'affilée, du plus récent au plus ancien. Les remboursés sont ignorés (ils ne prolongent ni n'interrompent). */
+export function currentStreak(newestFirst: readonly { status: ResultStatus }[]): number {
+  let n = 0;
+  for (const r of newestFirst) {
+    if (r.status === "REFUNDED") continue;
+    if (r.status !== "WON") break;
+    n++;
+  }
+  return n;
+}
+
+/** La série s'affiche à partir de 2 rallis justes d'affilée. */
+export const STREAK_MIN_SHOWN = 2;
+
+export function streakLabel(streak: number): string | null {
+  return streak >= STREAK_MIN_SHOWN ? `${streak} d'affilée` : null;
+}

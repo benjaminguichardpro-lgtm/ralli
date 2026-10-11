@@ -8,6 +8,7 @@ import {
   type ResultStatus,
   type ResultsSummary,
   type StatusTotals,
+  currentStreak,
   filterCounts,
   groupByEncounter,
   summarize,
@@ -31,6 +32,8 @@ export type ResultGroup = { encounterId: string; title: string; startsAt: Date; 
 
 export type ResultsView = {
   summary: ResultsSummary;
+  /** Rallis justes d'affilée en ce moment (remboursés ignorés), quel que soit le filtre affiché. */
+  streak: number;
   counts: Record<ResultFilterKey, number>;
   groups: ResultGroup[];
   /** Nombre de rallis affichés (tous groupes confondus). */
@@ -47,7 +50,7 @@ const side = (a: Person, b: Person | null) => sideName(b ? [a, b] : [a]);
  */
 export async function getResults(userId: string, filter: ResultFilterKey = "tous", limit = PAGE_SIZE): Promise<ResultsView> {
   const status = RESULT_FILTERS.find((f) => f.key === filter)!.status;
-  const [totalsRows, rows] = await Promise.all([
+  const [totalsRows, rows, recent] = await Promise.all([
     db.prediction.groupBy({
       by: ["status"],
       where: { userId, status: { in: ["WON", "LOST", "REFUNDED"] } },
@@ -84,6 +87,13 @@ export async function getResults(userId: string, filter: ResultFilterKey = "tous
         },
       },
     }),
+    // Les derniers rallis terminés, tous résultats confondus : sert à la série en cours (50 suffisent pour l'affichage).
+    db.prediction.findMany({
+      where: { userId, status: { in: ["WON", "LOST", "REFUNDED"] }, settledAt: { not: null } },
+      orderBy: [{ settledAt: "desc" }, { id: "desc" }],
+      take: 50,
+      select: { status: true },
+    }),
   ]);
 
   const pick = (s: "WON" | "LOST" | "REFUNDED") => totalsRows.find((r) => r.status === s);
@@ -118,6 +128,7 @@ export async function getResults(userId: string, filter: ResultFilterKey = "tous
 
   return {
     summary: summarize(totals),
+    streak: currentStreak(recent as { status: ResultStatus }[]),
     counts: filterCounts(totals),
     groups: groupByEncounter(items).map((g) => ({ ...meta.get(g.encounterId)!, items: g.items })),
     shown: items.length,

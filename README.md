@@ -294,6 +294,14 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 - Aucune évolution de la base.
 - Tests : `src/lib/leaderboard/rank.test.ts`, `src/server/leaderboard-live.db.test.ts`, E2E `slice24-animation.spec.ts` (recalcule les places depuis la base).
 
+## Animations et série d'affilée (tranche 25, `src/components/balance-pill.tsx`, `src/app/globals.css`, `currentStreak` dans `src/lib/predictions/results.ts`)
+
+- **Solde** : il « compte » jusqu'à sa nouvelle valeur en 0,6 s quand il change (ralli validé, gain, bonus) ; pas d'animation au premier affichage ; valeur changée tout de suite avec « réduire les animations ». `data-balance` porte toujours la vraie valeur.
+- **Cartes** : les cartes d'une page apparaissent en douceur, l'une après l'autre (`main > section > *`, 320 ms, décalage de 40 ms).
+- **Série** : « N d'affilée » dans le bilan de « Mes rallis », à partir de **2 rallis justes d'affilée** ; série **en cours**, les remboursés ne la prolongent ni ne l'interrompent ; ne dépend ni du filtre ni de « Voir plus ».
+- Toutes les animations sont coupées avec « réduire les animations » (CSS `prefers-reduced-motion` et test JavaScript pour le solde). Aucune évolution de la base.
+- Tests : `src/lib/predictions/results.test.ts`, `src/server/resultats-onglet.db.test.ts`, E2E `slice24-animation.spec.ts`.
+
 ## Documents
 
 - [EXCLUSIONS.md](EXCLUSIONS.md) : ce qui est volontairement hors MVP.

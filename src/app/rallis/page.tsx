@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { ResultFilters } from "@/components/result-filters";
 import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
-import { PAGE_SIZE, formatDelta, hitsSentence, isRecentResult, parseLimit, parseResultFilter, resultLine } from "@/lib/predictions/results";
+import { PAGE_SIZE, formatDelta, hitsSentence, isRecentResult, parseLimit, parseResultFilter, resultLine, streakLabel } from "@/lib/predictions/results";
 import { formatParis, formatParisDay } from "@/lib/time";
 import { getWallet } from "@/server/predictions";
 import { getResults } from "@/server/results";
@@ -72,6 +72,11 @@ async function MyRallis({ searchParams }: Props) {
           {hitsSentence(s)}
           {s.hitRate !== null && <span className="font-sans text-base font-medium text-ink-muted"> · {s.hitRate} % de réussite</span>}
         </p>
+        {streakLabel(r.streak) && (
+          <p className="inline-block rounded-full bg-gold px-3 py-1 text-sm font-bold text-on-gold" data-testid="results-streak">
+            {streakLabel(r.streak)}
+          </p>
+        )}
         <dl className="grid grid-cols-3 gap-2 text-center">
           <div className="rounded-xl bg-pale p-2">
             <dt className="text-xs text-ink-muted">Aces engagés</dt>

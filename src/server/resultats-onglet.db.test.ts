@@ -119,6 +119,24 @@ describe("onglet Résultats", () => {
     expect([three.shown, three.hasMore]).toEqual([3, false]);
   });
 
+  it("série en cours : rallis justes d'affilée, remboursés ignorés, indépendante du filtre et de la limite", async () => {
+    // e1 : 3 matchs. Ana gagne m0 et m1, perd m2 (e1 réglée en premier) ; puis e2 : gagne m0, m1 et m2 est remboursé (non joué).
+    await bet(ana, e1m[2]!, "AWAY", 10); // perdu
+    await bet(ana, e1m[0]!, "HOME", 10); // gagné
+    await bet(ana, e1m[1]!, "HOME", 10); // gagné
+    await settle(e1, [res(e1m[0]!, "COMPLETED", "HOME"), res(e1m[1]!, "COMPLETED", "HOME"), res(e1m[2]!, "COMPLETED", "HOME")], NOW);
+    expect((await getResults(ana)).streak).toBe(2); // le plus récent d'abord : 2 gagnés avant le perdu
+    await bet(ana, e2m[0]!, "HOME", 10);
+    await bet(ana, e2m[1]!, "HOME", 10);
+    await bet(ana, e2m[2]!, "HOME", 10);
+    await settle(e2, [res(e2m[0]!, "COMPLETED", "HOME"), res(e2m[1]!, "COMPLETED", "HOME"), res(e2m[2]!, "NOT_PLAYED", null)], LATER);
+    const all = await getResults(ana);
+    expect(all.streak).toBe(4); // 2 gagnés (e2) + remboursé ignoré + 2 gagnés (e1), puis le perdu coupe
+    expect((await getResults(ana, "perdus")).streak).toBe(4); // le filtre ne change pas la série
+    expect((await getResults(ana, "tous", 1)).streak).toBe(4); // ni la pagination
+    expect((await getResults(bob)).streak).toBe(0);
+  });
+
   it("le bénéfice net est le même que dans le classement du club", async () => {
     await bet(ana, e1m[0]!, "HOME", 100);
     await bet(ana, e1m[1]!, "AWAY", 50);
