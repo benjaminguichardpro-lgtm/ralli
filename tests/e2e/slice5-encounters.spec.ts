@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, signUp, revealInviteCode } from "./helpers";
+import { checkPage, openSection, revealInviteCode, signUp } from "./helpers";
 
 // Ivan (admin), Jade (capitaine de Messieurs 1), Kevin (simple membre), un visiteur sans compte.
 
@@ -53,6 +53,7 @@ test("mise en place : club, équipe de Jade, adversaire et joueurs", async () =>
     await expect(page.getByText(/Votre rôle/)).toBeVisible();
   }
   await ivan.goto(clubUrl);
+  await openSection(ivan, "Équipes du club");
   await ivan.getByText("Créer une équipe").click();
   await ivan.getByLabel("Nom de l'équipe", { exact: true }).fill("Messieurs 1");
   await ivan.getByLabel("Capitaine").selectOption({ label: "Jade" });
@@ -60,6 +61,7 @@ test("mise en place : club, équipe de Jade, adversaire et joueurs", async () =>
   await addPlayer(ivan, "Léa", "Martin", "30");
   await addPlayer(ivan, "Hugo", "Durand", "30/1");
   await ivan.goto(clubUrl);
+  await openSection(ivan, "Équipes adverses");
   await ivan.getByText("Ajouter une équipe adverse").click();
   await ivan.getByLabel("Club adverse").fill("TC Voisin");
   await ivan.getByLabel("Nom de l'équipe adverse").fill("TC Voisin 1");

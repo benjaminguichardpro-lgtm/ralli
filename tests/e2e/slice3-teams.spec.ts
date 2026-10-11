@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, signUp, revealInviteCode } from "./helpers";
+import { checkPage, openSection, revealInviteCode, signUp } from "./helpers";
 
 // Scénario multi-rôles : Dora (admin), Éric (capitaine M1), Fanny (capitaine M2),
 // Gaston (simple membre), Hélène (hors club).
@@ -55,6 +55,7 @@ test("mise en place : Dora crée le club, les autres le rejoignent", async () =>
 
 test("Dora crée deux équipes ; le capitaine est obligatoire", async () => {
   await dora.goto(clubUrl);
+  await openSection(dora, "Équipes du club");
   await dora.getByText("Créer une équipe").click();
   await dora.getByLabel("Nom de l'équipe", { exact: true }).fill("Messieurs 1");
   await dora.getByRole("button", { name: "Créer l'équipe" }).click();
@@ -67,6 +68,7 @@ test("Dora crée deux équipes ; le capitaine est obligatoire", async () => {
   m1Url = dora.url();
 
   await dora.goto(clubUrl);
+  await openSection(dora, "Équipes du club");
   await dora.getByText("Créer une équipe").click();
   await dora.getByLabel("Nom de l'équipe", { exact: true }).fill("Messieurs 2");
   await dora.getByLabel("Capitaine").selectOption({ label: "Fanny" });
@@ -157,6 +159,7 @@ test("Éric lie Léa au compte de Gaston, corrige un niveau, retire et supprime"
 
 test("Éric crée une équipe adverse (externe) et saisit ses joueurs, sans lien de compte", async () => {
   await eric.goto(clubUrl);
+  await openSection(eric, "Équipes adverses");
   await eric.getByText("Ajouter une équipe adverse").click();
   await eric.getByLabel("Club adverse").fill("TC Voisin");
   await eric.getByLabel("Nom de l'équipe adverse").fill("TC Voisin – Messieurs 1");

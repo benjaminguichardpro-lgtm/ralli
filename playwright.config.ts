@@ -8,8 +8,9 @@ const PORT = 3100;
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  // Les scénarios de mise en place (clubs, équipes, joueurs, rencontre, plusieurs comptes) sont longs : 60 s de marge, la machine pouvant ralentir (iCloud, serveur de dev).
-  timeout: 60_000,
+  // Les scénarios de mise en place (clubs, équipes, joueurs, rencontre, plusieurs comptes) sont longs : 120 s de marge, la machine pouvant ralentir
+  // (le dossier est synchronisé par iCloud : pendant les builds et les tests, `cloudd` et `bird` font monter la charge à plus de 10).
+  timeout: 120_000,
   fullyParallel: false,
   workers: 1,
   reporter: [["list"]],

@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { awaitServerAction, checkPage, forceStarted, placeBet, signUp, revealInviteCode } from "./helpers";
+import { awaitServerAction, checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp } from "./helpers";
 
 // Sacha (admin), Tess (capitaine Messieurs 1), Ugo (capitaine Messieurs 2), Vera (membre), un visiteur sans compte.
 
@@ -72,6 +72,7 @@ test("mise en place : club, deux équipes, deux rencontres publiées", async () 
   }
   for (const [team, captain] of [["Messieurs 1", "Tess"], ["Messieurs 2", "Ugo"]] as const) {
     await sacha.goto(clubUrl);
+    await openSection(sacha, "Équipes du club");
     await sacha.getByText("Créer une équipe").click();
     await sacha.getByLabel("Nom de l'équipe", { exact: true }).fill(team);
     await sacha.getByLabel("Capitaine").selectOption({ label: captain });
@@ -82,6 +83,7 @@ test("mise en place : club, deux équipes, deux rencontres publiées", async () 
     }
   }
   await sacha.goto(clubUrl);
+  await openSection(sacha, "Équipes adverses");
   await sacha.getByText("Ajouter une équipe adverse").click();
   await sacha.getByLabel("Club adverse").fill("TC Voisin");
   await sacha.getByLabel("Nom de l'équipe adverse").fill("TC Voisin 1");
@@ -284,7 +286,8 @@ test("classement du club : saison (seuil de 3) et semaine (seuil de 1)", async (
   await vera.goto(`${clubUrl}/classement`);
   // Vera a des pronostics réglés qu'elle n'a pas encore vus : le récapitulatif passe d'abord.
   await expect(vera.getByTestId("results-recap")).toBeVisible();
-  await awaitServerAction(vera, () => vera.getByTestId("results-recap").getByRole("button").last().click());
+  // Fermée avec Échap (le récapitulatif défile quand il y a 3 résultats : le clic automatique sur « Super » y est capricieux ; l'effet est le même).
+  await awaitServerAction(vera, () => vera.keyboard.press("Escape"));
   await expect(vera.getByTestId("results-recap")).toBeHidden();
   const rows = vera.getByTestId("leaderboard-row");
   await expect(rows).toHaveCount(1);

@@ -263,6 +263,14 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 - **Données** : aucune évolution de la base (le pronostic garde déjà choix, Aces engagés, cote, résultat et date de règlement).
 - **Tests** : `src/lib/predictions/results.test.ts`, `src/server/resultats-onglet.db.test.ts`, E2E `slice21-resultats.spec.ts` (compare l'écran à la base avec la démo) ; `slice7`, `slice11`, `slice14`, `slice17` et `slice10` ont été adaptés.
 
+## Page du club allégée (tranche 21, `src/app/clubs/[clubId]/page.tsx`)
+
+- **Pourquoi** : plan « app la plus minimaliste possible » demandé par Benjamin (point 3 ; décisions : tout selon mes recommandations, variante A).
+- **Ce qui reste visible d'emblée** : l'en-tête (logo, nom, résumé, fiche), le code d'invitation (admins), les **rencontres** (filtres, création, archives) et le **classement** (top 3).
+- **Sections repliées par défaut** (éléments `<details>`, le titre porte le nombre : « Équipes du club (2) », « Équipes adverses (5) », « Membres (12) », testids `section-teams`, `section-opponents`, `section-members`) : équipes du club (avec « Créer une équipe » pour les admins), équipes adverses (avec « Ajouter une équipe adverse » pour les admins et capitaines), membres (rôles et « Retirer la photo » pour les admins). Les droits ne changent pas ; une section se referme à chaque rechargement de la page.
+- **Code d'invitation** : reste en haut pour les admins (il en ont besoin dès le premier lancement) ; le paragraphe d'explication est réduit à un avertissement : « Le lien contient le code : envoie-le seulement aux personnes que tu invites. »
+- **Tests** : E2E `slice23-page-club.spec.ts` ; le helper `openSection(page, nom)` (tests/e2e/helpers.ts) ouvre une section avant d'y cliquer ; une quinzaine de tests de `slice2`, `slice3`, `slice5` à `slice7`, `slice10`, `slice11`, `slice12`, `slice14` et `slice17` l'utilisent.
+
 ## Documents
 
 - [EXCLUSIONS.md](EXCLUSIONS.md) : ce qui est volontairement hors MVP.

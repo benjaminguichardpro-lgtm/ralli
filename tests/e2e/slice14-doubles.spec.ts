@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, forceStarted, placeBet, revealInviteCode, signUp } from "./helpers";
+import { checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp } from "./helpers";
 
 // Doubles : Mathilde (admin), Octave (capitaine de Messieurs 1), Ludo (membre qui pronostique).
 // Pseudos propres à ce fichier : la base de test n'est vidée qu'au début de la suite, deux scénarios ne doivent pas partager un pseudo.
@@ -61,6 +61,7 @@ test("mise en place : club, équipe de quatre joueurs, adversaire de quatre joue
     await expect(page.getByText(/Votre rôle/)).toBeVisible();
   }
   await dora.goto(clubUrl);
+  await openSection(dora, "Équipes du club");
   await dora.getByText("Créer une équipe").click();
   await dora.getByLabel("Nom de l'équipe", { exact: true }).fill("Messieurs 1");
   await dora.getByLabel("Capitaine").selectOption({ label: "Octave" });
@@ -71,6 +72,7 @@ test("mise en place : club, équipe de quatre joueurs, adversaire de quatre joue
   await addPlayer(dora, "Tom", "Blanc", "NC");
 
   await dora.goto(clubUrl);
+  await openSection(dora, "Équipes adverses");
   await dora.getByText("Ajouter une équipe adverse").click();
   await dora.getByLabel("Club adverse").fill("TC Voisin");
   await dora.getByLabel("Nom de l'équipe adverse").fill("TC Voisin 1");

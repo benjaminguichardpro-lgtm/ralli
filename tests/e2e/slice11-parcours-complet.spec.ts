@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, forceStarted, placeBet, signUp, revealInviteCode } from "./helpers";
+import { checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp } from "./helpers";
 
 // Parcours complet, de la création du club au classement.
 // Alma (admin), Cyril (capitaine), Bruno et Chloe (membres qui pronostiquent).
@@ -49,6 +49,7 @@ test("1. Alma crée le club, les autres le rejoignent avec le code", async () =>
 
 test("2. Alma crée l'équipe (capitaine Cyril), l'adversaire et les joueurs", async () => {
   await alma.goto(clubUrl);
+  await openSection(alma, "Équipes du club");
   await alma.getByText("Créer une équipe").click();
   await alma.getByLabel("Nom de l'équipe", { exact: true }).fill("Messieurs 1");
   await alma.getByLabel("Capitaine").selectOption({ label: "Cyril" });
@@ -57,6 +58,7 @@ test("2. Alma crée l'équipe (capitaine Cyril), l'adversaire et les joueurs", a
   await addPlayer(alma, "Hugo", "Durand", "30/1");
 
   await alma.goto(clubUrl);
+  await openSection(alma, "Équipes adverses");
   await alma.getByText("Ajouter une équipe adverse").click();
   await alma.getByLabel("Club adverse").fill("TC Voisin");
   await alma.getByLabel("Nom de l'équipe adverse").fill("TC Voisin 1");

@@ -1,6 +1,6 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
 import sharp from "sharp";
-import { checkPage, signOut, signUp, revealInviteCode } from "./helpers";
+import { checkPage, openSection, signOut, signUp, revealInviteCode } from "./helpers";
 
 // Ines (admin), Jules et Kim (membres), Lea (aucun club en commun), un visiteur sans compte.
 
@@ -121,10 +121,12 @@ test("la photo n'est visible que du club : Kim oui, Lea (autre club) non, visite
 test("page du club : les membres ont leur avatar ; seul l'admin voit « Retirer la photo », et pas pour lui-même", async () => {
   await kim.goto(clubUrl);
   await expect(kim.getByText("Membres (3)")).toBeVisible();
-  await expect(kim.getByRole("heading", { name: /Membres/ }).locator("xpath=..").getByTestId("avatar")).toHaveCount(3);
+  await openSection(kim, "Membres");
+  await expect(kim.getByTestId("section-members").getByTestId("avatar")).toHaveCount(3);
   await expect(kim.getByRole("button", { name: "Retirer la photo" })).toHaveCount(0);
 
   await ines.goto(clubUrl);
+  await openSection(ines, "Membres");
   await expect(ines.getByRole("button", { name: "Retirer la photo" })).toHaveCount(1); // seulement Jules a une photo
   await checkPage(ines, "93-club-membres-avatars");
 });

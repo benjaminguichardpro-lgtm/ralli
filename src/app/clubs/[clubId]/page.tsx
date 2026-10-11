@@ -23,6 +23,9 @@ import { listClubTeams } from "@/server/teams";
 
 export const metadata: Metadata = { title: "Club · Ralli" };
 
+// Équipes, adversaires et membres : sections repliées par défaut (le titre porte le nombre d'éléments).
+const SECTION_SUMMARY = "inline-flex min-h-11 cursor-pointer items-center font-serif text-xl text-primary";
+
 export default function ClubPage({
   params,
   searchParams,
@@ -97,7 +100,7 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
         <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
           <h2 className="font-serif text-xl text-primary">Code d&apos;invitation</h2>
           <InviteCodeReveal code={club.inviteCode} clubId={club.id} clubName={club.name} />
-          <p className="text-sm text-ink-muted">À communiquer aux membres, joueurs et proches : par le lien WhatsApp, ou en leur donnant le code à saisir dans « Rejoindre un club ». Le lien contient le code : envoie-le seulement aux personnes que tu invites.</p>
+          <p className="text-sm text-ink-muted">Le lien contient le code : envoie-le seulement aux personnes que tu invites.</p>
         </div>
       )}
 
@@ -137,66 +140,70 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
         </ButtonLink>
       </div>
 
-      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <h2 className="font-serif text-xl text-primary">Équipes du club</h2>
-        {clubTeams.length === 0 ? (
-          <p className="text-ink-muted">Aucune équipe pour l&apos;instant.</p>
-        ) : (
-          <ul className="divide-y divide-line">
-            {clubTeams.map((t) => (
-              <li key={t.id}>
-                <Link href={`/equipes/${t.id}`} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
-                  <span className="font-medium text-primary">{t.name}</span>
-                  <span className="text-sm text-ink-muted">
-                    {t.captain ? `Cap. ${t.captain.displayName}` : "Sans capitaine"} · {t.playerCount} joueur{t.playerCount > 1 ? "s" : ""}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-        {isAdmin && (
-          <details>
-            <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Créer une équipe</summary>
-            <div className="pt-2">
-              <CreateTeamForm clubId={club.id} members={club.members.map((m) => ({ userId: m.userId, displayName: m.displayName }))} />
-            </div>
-          </details>
-        )}
-      </div>
+      <details className="rounded-2xl bg-surface p-4 shadow-sm" data-testid="section-teams">
+        <summary className={SECTION_SUMMARY}>Équipes du club ({clubTeams.length})</summary>
+        <div className="space-y-3 pt-2">
+          {clubTeams.length === 0 ? (
+            <p className="text-ink-muted">Aucune équipe pour l&apos;instant.</p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {clubTeams.map((t) => (
+                <li key={t.id}>
+                  <Link href={`/equipes/${t.id}`} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
+                    <span className="font-medium text-primary">{t.name}</span>
+                    <span className="text-sm text-ink-muted">
+                      {t.captain ? `Cap. ${t.captain.displayName}` : "Sans capitaine"} · {t.playerCount} joueur{t.playerCount > 1 ? "s" : ""}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {isAdmin && (
+            <details>
+              <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Créer une équipe</summary>
+              <div className="pt-2">
+                <CreateTeamForm clubId={club.id} members={club.members.map((m) => ({ userId: m.userId, displayName: m.displayName }))} />
+              </div>
+            </details>
+          )}
+        </div>
+      </details>
 
-      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <h2 className="font-serif text-xl text-primary">Équipes adverses</h2>
-        <p className="text-sm text-ink-muted">Adversaires qui n&apos;utilisent pas Ralli, saisis par le club.</p>
-        {externalTeams.length === 0 ? (
-          <p className="text-ink-muted">Aucune équipe adverse pour l&apos;instant.</p>
-        ) : (
-          <ul className="divide-y divide-line">
-            {externalTeams.map((t) => (
-              <li key={t.id}>
-                <Link href={`/equipes/${t.id}`} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
-                  <span className="font-medium text-primary">{t.name}</span>
-                  <span className="text-sm text-ink-muted">
-                    {t.externalClubName} · {t.playerCount} joueur{t.playerCount > 1 ? "s" : ""}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-        {(isAdmin || isCaptain) && (
-          <details>
-            <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Ajouter une équipe adverse</summary>
-            <div className="pt-2">
-              <CreateExternalTeamForm clubId={club.id} />
-            </div>
-          </details>
-        )}
-      </div>
+      <details className="rounded-2xl bg-surface p-4 shadow-sm" data-testid="section-opponents">
+        <summary className={SECTION_SUMMARY}>Équipes adverses ({externalTeams.length})</summary>
+        <div className="space-y-3 pt-2">
+          <p className="text-sm text-ink-muted">Adversaires qui n&apos;utilisent pas Ralli, saisis par le club.</p>
+          {externalTeams.length === 0 ? (
+            <p className="text-ink-muted">Aucune équipe adverse pour l&apos;instant.</p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {externalTeams.map((t) => (
+                <li key={t.id}>
+                  <Link href={`/equipes/${t.id}`} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
+                    <span className="font-medium text-primary">{t.name}</span>
+                    <span className="text-sm text-ink-muted">
+                      {t.externalClubName} · {t.playerCount} joueur{t.playerCount > 1 ? "s" : ""}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {(isAdmin || isCaptain) && (
+            <details>
+              <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Ajouter une équipe adverse</summary>
+              <div className="pt-2">
+                <CreateExternalTeamForm clubId={club.id} />
+              </div>
+            </details>
+          )}
+        </div>
+      </details>
 
-      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <h2 className="font-serif text-xl text-primary">Membres ({club.members.length})</h2>
-        <ul className="divide-y divide-line">
+      <details className="rounded-2xl bg-surface p-4 shadow-sm" data-testid="section-members">
+        <summary className={SECTION_SUMMARY}>Membres ({club.members.length})</summary>
+        <ul className="divide-y divide-line pt-2">
           {club.members.map((m) => (
             <li key={m.userId} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
               <span className="flex items-center gap-3">
@@ -216,7 +223,7 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
             </li>
           ))}
         </ul>
-      </div>
+      </details>
     </section>
   );
 }

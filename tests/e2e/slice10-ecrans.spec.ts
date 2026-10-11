@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, placeBet, signUp, revealInviteCode } from "./helpers";
+import { checkPage, openSection, placeBet, revealInviteCode, signUp } from "./helpers";
 
 // Zoe (admin et capitaine), Yanis (membre qui pronostique), un visiteur sans compte.
 
@@ -39,6 +39,8 @@ test("mise en place : club, équipe, rencontre publiée à 15:30", async () => {
   await yanis.getByRole("button", { name: "Rejoindre" }).click();
   await expect(yanis.getByText(/Votre rôle/)).toBeVisible();
 
+  await openSection(zoe, "Équipes du club");
+
   await zoe.getByText("Créer une équipe").click();
   await zoe.getByLabel("Nom de l'équipe", { exact: true }).fill("Dames 1");
   await zoe.getByLabel("Capitaine").selectOption({ label: "Zoe" });
@@ -53,6 +55,7 @@ test("mise en place : club, équipe, rencontre publiée à 15:30", async () => {
   };
   await addPlayer("Eva", "Moreau", "30");
   await zoe.goto(clubUrl);
+  await openSection(zoe, "Équipes adverses");
   await zoe.getByText("Ajouter une équipe adverse").click();
   await zoe.getByLabel("Club adverse").fill("TC Voisin");
   await zoe.getByLabel("Nom de l'équipe adverse").fill("TC Voisin D1");
@@ -205,6 +208,7 @@ test("plusieurs clubs : « Club » et « Classement » mènent à une liste", as
   await yanis.goto("/clubs/nouveau");
   await yanis.getByLabel("Nom du club").fill("Club de Yanis");
   await yanis.getByRole("button", { name: "Créer le club" }).click();
+  await expect(yanis.getByRole("heading", { name: "Club de Yanis" })).toBeVisible(); // le club est créé avant de changer de page
   await yanis.goto("/");
   const nav = tabs(yanis);
   await expect(nav.getByRole("link", { name: "Club" })).toHaveAttribute("href", "/clubs");

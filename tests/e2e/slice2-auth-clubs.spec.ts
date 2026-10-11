@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, resetPassword, signIn, signUp, signOut, revealInviteCode } from "./helpers";
+import { checkPage, openSection, resetPassword, signIn, signUp, signOut, revealInviteCode } from "./helpers";
 
 // Scénario multi-rôles : Alice (admin), Bob (membre), Carole (extérieure).
 // Chaque personne a son propre contexte navigateur (cookies séparés).
@@ -107,6 +107,7 @@ test("pages protégées : redirection vers la connexion si déconnecté", async 
 
 test("Alice nomme Bob admin : Bob voit alors le code", async () => {
   await alice.goto(clubUrl);
+  await openSection(alice, "Membres");
   await alice.getByRole("button", { name: "Nommer admin Bob" }).click();
   await expect(alice.getByRole("button", { name: "Retirer le rôle admin de Bob" })).toBeVisible();
   await bob.goto(clubUrl);
@@ -139,6 +140,7 @@ test("régénérer le code invalide l'ancien", async () => {
 test("se retirer soi-même le rôle admin demande confirmation", async () => {
   await bob.goto(clubUrl);
   await expect(bob.getByText("Votre rôle : admin")).toBeVisible();
+  await openSection(bob, "Membres");
   const selfButton = bob.getByRole("button", { name: "Retirer le rôle admin de Bob" });
 
   // Annuler : rien ne change.
@@ -151,6 +153,7 @@ test("se retirer soi-même le rôle admin demande confirmation", async () => {
   expect(message).toBe("Êtes-vous sûr de vouloir vous retirer le rôle admin ?");
   await bob.reload();
   await expect(bob.getByText("Votre rôle : admin")).toBeVisible();
+  await openSection(bob, "Membres"); // la section est repliée après chaque rechargement
 
   // Confirmer : Bob redevient membre.
   bob.once("dialog", (d) => void d.accept());
@@ -160,6 +163,7 @@ test("se retirer soi-même le rôle admin demande confirmation", async () => {
 
 test("retirer le rôle admin d'une autre personne demande aussi confirmation", async () => {
   await alice.goto(clubUrl);
+  await openSection(alice, "Membres");
   // Nommer admin : pas de confirmation.
   let promoteDialog = false;
   alice.once("dialog", (d) => {
@@ -181,6 +185,7 @@ test("retirer le rôle admin d'une autre personne demande aussi confirmation", a
   await demote.click();
   expect(message).toBe("Êtes-vous sûr de vouloir retirer le rôle admin à Bob ?");
   await alice.reload();
+  await openSection(alice, "Membres");
   await expect(demote).toBeVisible();
 
   // Confirmer : Bob redevient membre.

@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { awaitServerAction, backdateAccount, checkPage, forceStarted, placeBet, revealInviteCode, signUp } from "./helpers";
+import { awaitServerAction, backdateAccount, checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp } from "./helpers";
 
 // Guide du premier lancement (Nina17, Omar17) et récapitulatif des pronostics réglés
 // (Pia17 admin, Quentin17 capitaine, Oscar17 et Rita17 qui pronostiquent).
@@ -173,6 +173,7 @@ test("mise en place : club, équipe, rencontre publiée, pronostics d'Oscar et d
   }
 
   await pia.goto(clubUrl);
+  await openSection(pia, "Équipes du club");
   await pia.getByText("Créer une équipe").click();
   await pia.getByLabel("Nom de l'équipe", { exact: true }).fill("Messieurs 1");
   await pia.getByLabel("Capitaine").selectOption({ label: "Quentin17" });
@@ -188,6 +189,7 @@ test("mise en place : club, équipe, rencontre publiée, pronostics d'Oscar et d
   await addPlayer("Léa", "Martin", "30");
   await addPlayer("Hugo", "Durand", "30/1");
   await pia.goto(clubUrl);
+  await openSection(pia, "Équipes adverses");
   await pia.getByText("Ajouter une équipe adverse").click();
   await pia.getByLabel("Club adverse").fill("TC Voisin");
   await pia.getByLabel("Nom de l'équipe adverse").fill("TC Voisin 1");

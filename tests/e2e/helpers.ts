@@ -10,6 +10,14 @@ const SHOTS = "test-results/screens";
 /** Vérifs communes à chaque page : vocabulaire, mention légale, boutons ≥ 44 px. */
 export async function checkPage(page: Page, shot?: string) {
   await page.waitForLoadState("networkidle");
+  // Les cartes apparaissent en douceur (animation « card-in », 0,3 s) : on mesure une fois qu'elles sont en place
+  // (pendant l'animation, les hauteurs peuvent valoir 43,9999 px au lieu de 44).
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .filter((a) => a instanceof CSSAnimation && a.animationName === "card-in")
+      .every((a) => a.playState === "finished"),
+  );
   const text = await page.locator("body").innerText();
   expect(findForbiddenWords(text), `mots interdits sur ${page.url()}`).toEqual([]);
   await expect(page.getByText("Jeu gratuit, sans argent réel.", { exact: true })).toBeVisible();
@@ -34,9 +42,19 @@ export async function signUp(page: Page, name: string, opts: { email?: string } 
   await page.getByLabel("Pseudo").fill(name);
   await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
   await page.getByRole("button", { name: "Créer mon compte" }).click();
-  // Une inscription refusée (pseudo pris…) n'affiche pas de guide : on ne l'attend pas plus de quelques secondes.
-  const shown = await page.getByRole("dialog", { name: "Guide de démarrage" }).waitFor({ timeout: 5000 }).then(() => true, () => false);
-  if (shown) await skipGuide(page);
+  // Inscription réussie : le guide s'affiche (parfois tard quand la machine est chargée). Inscription refusée (pseudo pris…) :
+  // un message d'erreur s'affiche à la place. On attend l'un ou l'autre, sans délai fixe trop court.
+  const guide = page.getByRole("dialog", { name: "Guide de démarrage" });
+  // (L'élément « alerte » du routeur de Next.js est toujours présent et vide : on ne regarde que le contenu de la page.)
+  await guide.or(page.locator('main [role="alert"]')).first().waitFor({ timeout: 30_000 }).catch(() => undefined);
+  if (await guide.isVisible()) {
+    await skipGuide(page);
+    // Garde-fou contre les ratés de timing : on attend que la base ait bien enregistré le guide comme vu, sinon un changement de page
+    // trop rapide le fait réapparaître.
+    await expect
+      .poll(async () => (await queryTestDb<{ seen: boolean }>(`SELECT "onboardingSeenAt" IS NOT NULL AS seen FROM "User" WHERE "displayName" = $1`, [name]))[0]?.seen, { timeout: 30_000 })
+      .toBe(true);
+  }
 }
 
 /** Exécute `trigger` (un clic, Échap…) et attend que la réponse du serveur soit revenue : l'enregistrement « vu » est alors terminé. */
@@ -51,6 +69,9 @@ export async function skipGuide(page: Page) {
   const guide = page.getByRole("dialog", { name: "Guide de démarrage" });
   await awaitServerAction(page, () => guide.getByRole("button", { name: "Passer" }).click());
   await expect(guide).toBeHidden();
+  // Les autres réponses du serveur (solde, bonus du jour) peuvent arriver avant celle du guide : on attend que tout soit fini,
+  // sinon un changement de page trop rapide annule l'enregistrement et le guide réapparaît.
+  await page.waitForLoadState("networkidle");
 }
 
 /** Connexion par email (par défaut) ou, avec `identifier`, par ce texte tel quel (pseudo, éventuellement en autres majuscules). */
@@ -160,4 +181,15 @@ export async function signOut(page: Page) {
 export async function revealInviteCode(page: Page): Promise<string> {
   await page.getByRole("button", { name: "Révéler le code d'invitation" }).click();
   return (await page.getByTestId("invite-code").innerText()).trim();
+}
+
+/**
+ * Ouvre une section repliée de la page du club (« Équipes du club », « Équipes adverses » ou « Membres »)
+ * si elle ne l'est pas déjà. Le titre de la section porte un compteur : on le reconnaît à son début.
+ */
+export async function openSection(page: Page, name: "Équipes du club" | "Équipes adverses" | "Membres") {
+  const summary = page.locator("summary").filter({ hasText: new RegExp(`^${name} \\(`) }).first();
+  await summary.waitFor();
+  const open = await summary.evaluate((el) => (el.parentElement as HTMLDetailsElement).open);
+  if (!open) await summary.click();
 }
