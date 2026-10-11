@@ -36,7 +36,7 @@ function activeTab(path: string): Tab | null {
 }
 
 /** Barre de navigation du bas, pour les comptes connectés. Les liens « Classement » et « Club » dépendent des clubs de l'utilisateur. */
-export function TabBar({ hrefs }: { hrefs: Record<Tab, string> }) {
+export function TabBar({ hrefs, badges = {} }: { hrefs: Record<Tab, string>; badges?: Partial<Record<Tab, boolean>> }) {
   const active = activeTab(usePathname());
   const items: [Tab, string][] = [
     ["matchs", "Matchs"],
@@ -63,6 +63,14 @@ export function TabBar({ hrefs }: { hrefs: Record<Tab, string> }) {
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="size-6 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   {ICONS[tab]}
                 </svg>
+                {badges[tab] && (
+                  <span
+                    role="img"
+                    aria-label="Nouveaux résultats"
+                    data-testid={`badge-${tab}`}
+                    className="absolute left-1/2 top-2.5 ml-2.5 size-2.5 rounded-full bg-clay ring-2 ring-surface"
+                  />
+                )}
                 {label}
               </Link>
             </li>

@@ -212,3 +212,25 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
+
+/* Ralli gagné depuis moins de 48 h : un éclat doré passe une fois sur la ligne (supprimé avec « réduire les animations »). */
+@keyframes won-shine {
+  from {
+    background-position: 160% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+.won-new {
+  background-image: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--color-gold) 55%, transparent) 50%, transparent 70%);
+  background-size: 250% 100%;
+  background-repeat: no-repeat;
+  animation: won-shine 1.8s ease-out 0.2s 1 both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .won-new {
+    animation: none;
+    background-image: none;
+  }
+}

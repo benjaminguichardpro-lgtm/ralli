@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { ResultFilters } from "@/components/result-filters";
 import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
-import { PAGE_SIZE, formatDelta, hitsSentence, parseLimit, parseResultFilter, resultLine } from "@/lib/predictions/results";
+import { PAGE_SIZE, formatDelta, hitsSentence, isRecentResult, parseLimit, parseResultFilter, resultLine } from "@/lib/predictions/results";
 import { formatParis, formatParisDay } from "@/lib/time";
 import { getWallet } from "@/server/predictions";
 import { getResults } from "@/server/results";
@@ -32,6 +32,7 @@ async function MyRallis({ searchParams }: Props) {
   const limit = parseLimit(sp.limite);
   const [r, w] = await Promise.all([getResults(user.id, filter, limit), getWallet(user.id)]);
   const s = r.summary;
+  const now = new Date();
   const moreHref = `/rallis?${filter === "tous" ? "" : `statut=${filter}&`}limite=${limit + PAGE_SIZE}`;
 
   return (
@@ -113,11 +114,19 @@ async function MyRallis({ searchParams }: Props) {
                   <ul className="divide-y divide-line">
                     {g.items.map((p) => {
                       const line = resultLine(p);
+                      const recent = isRecentResult(p.settledAt, now);
                       return (
-                        <li key={p.id} data-testid="result-item">
+                        <li key={p.id} data-testid="result-item" data-recent={recent ? "true" : undefined} className={recent && p.status === "WON" ? "won-new" : undefined}>
                           <Link href={`/rencontres/${p.encounterId}`} className="flex min-h-11 items-center justify-between gap-3 py-2">
                             <span>
-                              <span className="block font-medium">{p.matchLabel}</span>
+                              <span className="block font-medium">
+                                {p.matchLabel}
+                                {recent && (
+                                  <span className="ml-2 rounded-full bg-gold px-2 py-0.5 align-middle text-xs font-bold text-on-gold" data-testid="new-tag">
+                                    Nouveau
+                                  </span>
+                                )}
+                              </span>
                               <span className="block text-sm text-ink-muted">
                                 Ton ralli : {p.pickedName}, {aces(p.committedAces)} engagés à la cote {p.odds}
                               </span>

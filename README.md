@@ -278,6 +278,13 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 - Comptent : rallis en attente, gagnés, perdus. Les **remboursés** (rencontre annulée, match remplacé ou non joué) ne comptent plus. Aucune évolution de la base.
 - Tests : `src/lib/predictions/labels.test.ts`, `src/server/predictor-count.db.test.ts`, E2E `slice24-animation.spec.ts` (compare l'écran à la base avec la démo).
 
+## Marqueur « Nouveau » et pastille de l'onglet (tranche 23, `isRecentResult` dans `src/lib/predictions/results.ts`, `hasUnseenResults` dans `src/server/onboarding.ts`)
+
+- Dans « Mes rallis », un ralli réglé depuis **moins de 48 heures** porte un marqueur « **Nouveau** » ; s'il est **gagné**, un éclat doré passe une fois sur sa ligne (`.won-new`, coupé avec « réduire les animations »). Calculé à partir de la date de règlement : pas de nouvelle donnée en base.
+- **Pastille** sur l'onglet « Mes rallis » (point de terre battue, libellé « Nouveaux résultats » pour les lecteurs d'écran) tant que des rallis ont été réglés depuis la dernière fermeture de la popup de résultats (même date `User.resultsSeenAt`). Demandée par Benjamin « pour tester » : comme la popup de résultats s'ouvre dès la connexion, la pastille ne se voit en pratique que derrière la popup, ou pour des résultats arrivés pendant la session. Elle disparaît à la fermeture de la popup.
+- **La popup de résultats avec la pluie d'or est conservée** (décision de Benjamin : « comme Betclic »).
+- Tests : `src/lib/predictions/results.test.ts`, `src/server/results-badge.db.test.ts`, E2E `slice24-animation.spec.ts`.
+
 ## Documents
 
 - [EXCLUSIONS.md](EXCLUSIONS.md) : ce qui est volontairement hors MVP.

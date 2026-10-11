@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterCounts, formatDelta, groupByEncounter, hitsSentence, parseLimit, parseResultFilter, resultLine, summarize } from "./results";
+import { filterCounts, formatDelta, groupByEncounter, hitsSentence, isRecentResult, parseLimit, parseResultFilter, resultLine, summarize } from "./results";
 
 const totals = { won: { count: 3, committed: 250, payout: 560 }, lost: { count: 2, committed: 150 }, refunded: { count: 4 } };
 
@@ -70,5 +70,20 @@ describe("regroupement par rencontre", () => {
   });
   it("liste vide", () => {
     expect(groupByEncounter([])).toEqual([]);
+  });
+});
+
+describe("marqueur « Nouveau » : réglé depuis moins de 48 heures", () => {
+  const now = new Date("2026-10-12T12:00:00Z");
+  const ago = (h: number) => new Date(now.getTime() - h * 3_600_000);
+  it("récent jusqu'à 48 h exclu", () => {
+    expect(isRecentResult(ago(0), now)).toBe(true);
+    expect(isRecentResult(ago(5), now)).toBe(true);
+    expect(isRecentResult(ago(47.9), now)).toBe(true);
+    expect(isRecentResult(ago(48), now)).toBe(false);
+    expect(isRecentResult(ago(200), now)).toBe(false);
+  });
+  it("une date dans le futur n'est pas « récente »", () => {
+    expect(isRecentResult(new Date(now.getTime() + 60_000), now)).toBe(false);
   });
 });

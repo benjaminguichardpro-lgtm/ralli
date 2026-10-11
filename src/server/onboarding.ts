@@ -106,6 +106,20 @@ export async function getUnseenResults(userId: string): Promise<ResultsRecap | n
   return { cutoff: last.toISOString(), wonAces, won, lost, refunded, encounters: [...byEncounter.values()] };
 }
 
+/** Vrai s'il y a des rallis réglés depuis la dernière fermeture de la popup de résultats : pastille sur l'onglet « Mes rallis ». */
+export async function hasUnseenResults(userId: string): Promise<boolean> {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { resultsSeenAt: true, onboardingSeenAt: true } });
+  if (!user) return false;
+  const n = await db.prediction.count({
+    where: {
+      userId,
+      status: { in: ["WON", "LOST", "REFUNDED"] },
+      settledAt: user.resultsSeenAt ? { gt: user.resultsSeenAt } : { not: null },
+    },
+  });
+  return n > 0;
+}
+
 /**
  * Le récapitulatif a été vu jusqu'à `cutoff` (la date du dernier pronostic montré, pas « maintenant » :
  * un pronostic réglé pendant que la fenêtre était ouverte sera montré la fois suivante). Ne recule jamais.

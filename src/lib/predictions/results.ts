@@ -100,3 +100,11 @@ export function groupByEncounter<T extends { encounterId: string }>(items: reado
   }
   return [...groups.values()];
 }
+
+/** Un ralli réglé depuis moins de 48 heures porte le marqueur « Nouveau » (et l'animation dorée s'il est gagné). */
+export const RECENT_RESULT_HOURS = 48;
+
+export function isRecentResult(settledAt: Date, now: Date): boolean {
+  const age = now.getTime() - settledAt.getTime();
+  return age >= 0 && age < RECENT_RESULT_HOURS * 3_600_000;
+}
