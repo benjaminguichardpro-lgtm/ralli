@@ -4,7 +4,8 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { clubProfileSchema } from "@/lib/clubs/profile";
 import { db } from "@/lib/db";
 import { makeUser } from "../../tests/db/factories";
-import { createClub, getClubView, joinClubByCode, listMyClubs, setMemberRole } from "./clubs";
+import { joinClub } from "./club-directory";
+import { createClub, getClubView, listMyClubs, setMemberRole } from "./clubs";
 import { getClubLogoFor, getClubProfile, removeClubLogo, updateClubProfile, uploadClubLogo } from "./club-profile";
 
 const png = (w: number, h: number) => sharp({ create: { width: w, height: h, channels: 4, background: "#b4502b" } }).png().toBuffer();
@@ -20,7 +21,7 @@ beforeEach(async () => {
   [admin, admin2, member, outsider] = (await Promise.all(["Admin", "Admin2", "Membre", "Dehors"].map(makeUser))) as [string, string, string, string];
   const club = await createClub(admin, "TC Fiche");
   clubId = club.id;
-  for (const u of [admin2, member]) await joinClubByCode(u, club.inviteCode);
+  for (const u of [admin2, member]) await joinClub(u, club.id);
   await setMemberRole(admin, clubId, admin2, "ADMIN");
 });
 

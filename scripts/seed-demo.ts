@@ -65,8 +65,8 @@ async function main() {
   console.log(`Mot de passe de tous les comptes : ${s.password}`);
   console.log("Connexion avec le pseudo ci-dessous (ou l'email pseudo" + DEMO_EMAIL_DOMAIN + ").\n");
   for (const a of s.accounts) console.log(`  ${a.pseudo.padEnd(22)} ${a.role}`);
-  console.log("\nCodes d'invitation des clubs :");
-  for (const c of s.clubs) console.log(`  ${c.name.padEnd(20)} ${c.inviteCode}`);
+  console.log("\nClubs (à chercher dans l'onglet Clubs) :");
+  for (const c of s.clubs) console.log(`  ${c.name.padEnd(20)} /clubs/${c.id}`);
 }
 
 main()

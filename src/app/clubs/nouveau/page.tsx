@@ -11,7 +11,7 @@ export default function NewClubPage() {
   return (
     <section className="space-y-6">
       <h1 className="font-serif text-3xl text-primary">Créer un club</h1>
-      <p className="text-ink-muted">Vous en serez l&apos;admin. Un code d&apos;invitation sera généré pour faire venir les membres.</p>
+      <p className="text-ink-muted">Vous en serez l&apos;admin. Les membres te trouveront en cherchant le club, ou avec le lien que tu partages.</p>
       <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
         <Guarded />
       </Suspense>

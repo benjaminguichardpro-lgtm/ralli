@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp, allowClubCreation } from "./helpers";
+import { checkPage, forceStarted, openSection, placeBet, currentClubId, joinClubById, signUp, allowClubCreation } from "./helpers";
 
 // Doubles : Mathilde (admin), Octave (capitaine de Messieurs 1), Ludo (membre qui pronostique).
 // Pseudos propres à ce fichier : la base de test n'est vidée qu'au début de la suite, deux scénarios ne doivent pas partager un pseudo.
@@ -52,13 +52,11 @@ test("mise en place : club, équipe de quatre joueurs, adversaire de quatre joue
   await dora.goto("/clubs/nouveau");
   await dora.getByLabel("Nom du club").fill("TC Doubles");
   await dora.getByRole("button", { name: "Créer le club" }).click();
-  const code = await revealInviteCode(dora);
+  const code = await currentClubId(dora);
   clubUrl = dora.url();
   for (const [page, name] of [[cedric, "Octave"], [pablo, "Ludo"]] as const) {
     await register(page, name);
-    await page.goto("/clubs/rejoindre");
-    await page.getByLabel("Code d'invitation").fill(code);
-    await page.getByRole("button", { name: "Rejoindre" }).click();
+    await joinClubById(page, code);
     await expect(page.getByText(/Votre rôle/)).toBeVisible();
   }
   await dora.goto(clubUrl);

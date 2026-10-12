@@ -4,11 +4,11 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/current-user";
-import { clubNameSchema, fieldErrors, inviteCodeInputSchema } from "@/lib/validation/account";
+import { clubNameSchema, fieldErrors } from "@/lib/validation/account";
 import { clubRequestSchema } from "@/lib/validation/club-request";
 import { createClubWithApproval, submitClubRequest } from "@/server/club-requests";
-import { joinClub, leaveClub } from "@/server/club-directory";
-import { joinClubByCode, regenerateInviteCode, setMemberRole } from "@/server/clubs";
+import { decideReturn, joinClub, leaveClub, removeMember, requestReturn } from "@/server/club-directory";
+import { setMemberRole } from "@/server/clubs";
 import { DomainError } from "@/server/errors";
 import type { FormState } from "./types";
 
@@ -51,36 +51,6 @@ export async function submitClubRequestAction(_: FormState, fd: FormData): Promi
   return { ok: true };
 }
 
-export async function joinClubAction(_: FormState, fd: FormData): Promise<FormState> {
-  const user = await requireUser();
-  const code = fd.get("code");
-  const values = { code: String(code ?? "") };
-  const parsed = z.object({ code: inviteCodeInputSchema }).safeParse({ code });
-  if (!parsed.success) return { errors: fieldErrors(parsed.error), values };
-  let clubId: string;
-  try {
-    ({ clubId } = await joinClubByCode(user.id, parsed.data.code));
-  } catch (e) {
-    if (e instanceof DomainError) return { errors: { code: e.message }, values };
-    throw e;
-  }
-  redirect(`/clubs/${clubId}`);
-}
-
-export async function regenerateInviteCodeAction(_: FormState, fd: FormData): Promise<FormState> {
-  const user = await requireUser();
-  const parsed = idSchema.safeParse(fd.get("clubId"));
-  if (!parsed.success) return { message: "Requête invalide" };
-  try {
-    await regenerateInviteCode(user.id, parsed.data);
-  } catch (e) {
-    if (e instanceof DomainError) return { message: e.message };
-    throw e;
-  }
-  refresh();
-  return { message: "Nouveau code généré. L'ancien ne fonctionne plus.", ok: true };
-}
-
 export async function setMemberRoleAction(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireUser();
   const parsed = roleChangeSchema.safeParse({
@@ -120,6 +90,50 @@ export async function leaveClubAction(_: FormState, fd: FormData): Promise<FormS
   if (!parsed.success) return { message: "Requête invalide" };
   try {
     await leaveClub(user.id, parsed.data);
+  } catch (e) {
+    if (e instanceof DomainError) return { message: e.message };
+    throw e;
+  }
+  refresh();
+  return { ok: true };
+}
+
+export async function removeMemberAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const parsed = z.object({ clubId: idSchema, userId: idSchema }).safeParse({ clubId: fd.get("clubId"), userId: fd.get("userId") });
+  if (!parsed.success) return { message: "Requête invalide" };
+  try {
+    await removeMember(user.id, parsed.data.clubId, parsed.data.userId);
+  } catch (e) {
+    if (e instanceof DomainError) return { message: e.message };
+    throw e;
+  }
+  refresh();
+  return { ok: true };
+}
+
+export async function requestReturnAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const parsed = idSchema.safeParse(fd.get("clubId"));
+  if (!parsed.success) return { message: "Requête invalide" };
+  try {
+    await requestReturn(user.id, parsed.data);
+  } catch (e) {
+    if (e instanceof DomainError) return { message: e.message };
+    throw e;
+  }
+  refresh();
+  return { ok: true };
+}
+
+export async function decideReturnAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const parsed = z
+    .object({ clubId: idSchema, userId: idSchema, decision: z.enum(["accept", "decline"]) })
+    .safeParse({ clubId: fd.get("clubId"), userId: fd.get("userId"), decision: fd.get("decision") });
+  if (!parsed.success) return { message: "Requête invalide" };
+  try {
+    await decideReturn(user.id, parsed.data.clubId, parsed.data.userId, parsed.data.decision === "accept");
   } catch (e) {
     if (e instanceof DomainError) return { message: e.message };
     throw e;

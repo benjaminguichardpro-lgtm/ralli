@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { effectiveStatus } from "@/lib/encounters/state";
 import { makeUser } from "../../tests/db/factories";
-import { createClub, joinClubByCode } from "./clubs";
+import { joinClub } from "./club-directory";
+import { createClub } from "./clubs";
 import { addMatch, cancelEncounter, createEncounter, publishEncounter } from "./encounters";
 import { getBalance } from "./ledger";
 import { placePrediction } from "./predictions";
@@ -23,7 +24,7 @@ beforeEach(async () => {
   ];
   const club = await createClub(admin, "TC Ralli");
   clubId = club.id;
-  for (const u of [admin2, capA, capB, member]) await joinClubByCode(u, club.inviteCode);
+  for (const u of [admin2, capA, capB, member]) await joinClub(u, club.id);
   await db.clubMembership.update({ where: { userId_clubId: { userId: admin2, clubId } }, data: { role: "ADMIN" } });
   await createClub(outsider, "AS Ailleurs");
   const m1 = (await createTeam(admin, clubId, { name: "Messieurs 1", captainUserId: capA })).id;

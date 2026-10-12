@@ -62,12 +62,13 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 25. Animations (solde qui compte, cartes en douceur) et série d'affilée | ✅ | voir `git log` |
 | 26. Création de club réservée aux admins validés (demande « Je suis admin d'un club ») | ✅ | afe9bd8 |
 | 27. Stories de club et « à la une » (24 h, admins et capitaines) | ✅ | voir `git log` |
+| 30. Retrait d'un membre par un admin, demande de retour, suppression du code d'invitation | ✅ (en attente de validation) | voir `git log` |
 
 | 29. Annuaire des clubs : recherche, page du club pour un non-membre, Rejoindre / Quitter, compteur, onglet « Clubs » | ✅ | voir `git log` |
 
 État des tests (fin de tranche 27) : 632 tests Vitest, ~195 scénarios Playwright, tous verts (voir « Tests E2E : pièges » plus bas : un scénario isolé peut échouer sur un raté de timing, à relancer seul avant de soupçonner le code).
 
-**Tranches prévues après la 29** (décisions de Benjamin) : B = retrait d'un membre par un admin + suppression du code d'invitation et des liens `/rejoindre/CODE` + réécriture des tests qui rejoignent par code ; C = page carte (`/clubs/recherche` avec carte OpenStreetMap, épingles groupées, filtres région / taille / rencontre à venir, latitude et longitude calculées à l'enregistrement de la fiche avec l'API adresse de l'État, région déduite du code postal). Rangée « Rejoindre par code » toujours en place jusqu'à B. Tranche 28 (rallis gagnants en story) reste à faire : rallis gagnants en story (bouton « Partager ma victoire », carte automatique, commentaire de 140 caractères, partage WhatsApp, réaction 🎾 unique, signalement). Détail des décisions de Benjamin sur les stories : README, section « Stories de club et « à la une » ».
+**Tranche B faite (30)** : retrait d'un membre, demande de retour, plus de code d'invitation (voir README « Retrait d'un membre »). **Tranche prévue** (décision de Benjamin) : C = page carte (`/clubs/recherche` avec carte OpenStreetMap, épingles groupées, filtres région / taille / rencontre à venir, latitude et longitude calculées à l'enregistrement de la fiche avec l'API adresse de l'État, région déduite du code postal). Tranche 28 (rallis gagnants en story) reste à faire : rallis gagnants en story (bouton « Partager ma victoire », carte automatique, commentaire de 140 caractères, partage WhatsApp, réaction 🎾 unique, signalement). Détail des décisions de Benjamin sur les stories : README, section « Stories de club et « à la une » ».
 
 ## Décisions prises (en plus du brief)
 

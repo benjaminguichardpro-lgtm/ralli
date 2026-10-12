@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, openSection, placeBet, revealInviteCode, signUp, allowClubCreation } from "./helpers";
+import { checkPage, openSection, placeBet, currentClubId, joinClubById, signUp, allowClubCreation } from "./helpers";
 
 // Zoe (admin et capitaine), Yanis (membre qui pronostique), un visiteur sans compte.
 
@@ -31,13 +31,11 @@ test("mise en place : club, équipe, rencontre publiée à 15:30", async () => {
   await zoe.goto("/clubs/nouveau");
   await zoe.getByLabel("Nom du club").fill("TC Ecrans");
   await zoe.getByRole("button", { name: "Créer le club" }).click();
-  const code = await revealInviteCode(zoe);
+  const code = await currentClubId(zoe);
   clubUrl = zoe.url();
   clubId = clubUrl.split("/").pop()!;
   await register(yanis, "Yanis");
-  await yanis.goto("/clubs/rejoindre");
-  await yanis.getByLabel("Code d'invitation").fill(code);
-  await yanis.getByRole("button", { name: "Rejoindre" }).click();
+  await joinClubById(yanis, code);
   await expect(yanis.getByText(/Votre rôle/)).toBeVisible();
 
   await openSection(zoe, "Équipes du club");

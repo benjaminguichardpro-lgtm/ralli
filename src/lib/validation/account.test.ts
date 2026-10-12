@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   changePasswordSchema,
   displayNameKey,
-  inviteCodeInputSchema,
   loginLookup,
   signUpSchema,
 } from "./account";
@@ -46,15 +45,6 @@ describe("changePasswordSchema", () => {
   it("exige deux saisies identiques", () => {
     expect(changePasswordSchema.safeParse({ password: "nouveaumdp", confirm: "autre" }).success).toBe(false);
     expect(changePasswordSchema.safeParse({ password: "nouveaumdp", confirm: "nouveaumdp" }).success).toBe(true);
-  });
-});
-
-describe("inviteCodeInputSchema", () => {
-  it("met en majuscules et retire les espaces", () => {
-    expect(inviteCodeInputSchema.parse(" ab3k9z ")).toBe("AB3K9Z");
-  });
-  it("refuse une longueur incorrecte", () => {
-    expect(inviteCodeInputSchema.safeParse("ABC").success).toBe(false);
   });
 });
 

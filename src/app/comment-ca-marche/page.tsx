@@ -16,7 +16,7 @@ const STEPS: { title: string; body: React.ReactNode }[] = [
     title: "Rejoins ton club",
     body: (
       <p>
-        Ton club te donne un code d&apos;invitation (ou un lien). Dès que tu l&apos;as saisi, tu vois les rencontres d&apos;interclubs que ton capitaine ou ton admin publie, avec leurs joueurs.
+        Cherche ton club dans Ralli et appuie sur « Rejoindre le club ». Tu vois les rencontres d&apos;interclubs que ton capitaine ou ton admin publie, avec leurs joueurs.
       </p>
     ),
   },

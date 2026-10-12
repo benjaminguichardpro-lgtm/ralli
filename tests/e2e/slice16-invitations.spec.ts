@@ -1,19 +1,17 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
 import { checkPage, signIn, signUp, skipGuide, allowClubCreation } from "./helpers";
 
-// Lien d'invitation (/rejoindre/CODE), parcours inscription / connexion puis confirmation, écrans vides selon le rôle.
+// Lien d'invitation = adresse de la page du club (/clubs/<id>) : parcours inscription / connexion puis « Rejoindre le club », écrans vides selon le rôle.
 
 test.describe.configure({ mode: "serial" });
 
 const CLUB = "TC Invitation16";
-let code: string, clubId: string;
+let clubId: string;
 let capitaine: Page;
 
-// Next 16 garde l'écran précédent dans le DOM, masqué : on ne cible que le titre visible.
-const visibleClub = (p: Page) => p.locator('[data-testid="invitation-club"]:visible');
 const newPage = async (b: Browser) => (await b.newContext()).newPage();
 
-test("l'admin révèle le code et trouve le bouton « Inviter par WhatsApp »", async ({ browser }) => {
+test("l'admin trouve le bouton « Inviter par WhatsApp », qui partage le lien de la page du club", async ({ browser }) => {
   capitaine = await newPage(browser);
   await signUp(capitaine, "Capi16");
   await expect(capitaine.getByTestId("nav-user")).toHaveText("Capi16");
@@ -24,77 +22,70 @@ test("l'admin révèle le code et trouve le bouton « Inviter par WhatsApp »", 
   await capitaine.getByRole("button", { name: "Créer le club" }).click();
   await expect(capitaine.getByRole("heading", { name: CLUB })).toBeVisible();
   clubId = capitaine.url().split("/").pop()!;
-  await expect(capitaine.getByRole("link", { name: "Inviter par WhatsApp" })).toHaveCount(0);
-  await capitaine.getByRole("button", { name: "Révéler le code d'invitation" }).click();
-  code = (await capitaine.getByTestId("invite-code").innerText()).trim();
-  expect(code).toMatch(/^[A-Z2-9]{6}$/);
+  await expect(capitaine.getByText("Code d'invitation")).toHaveCount(0);
   const share = capitaine.getByRole("link", { name: "Inviter par WhatsApp" });
   const href = decodeURIComponent((await share.getAttribute("href"))!);
   expect(href).toContain("https://wa.me/?text=");
   expect(href).toContain(CLUB);
-  expect(href).toContain(`/rejoindre/${code}`);
+  expect(href).toContain(`/clubs/${clubId}`);
   await checkPage(capitaine, "160-invitation-admin");
 });
 
-test("sans compte : le lien mène à l'inscription, puis à la confirmation, puis au club", async ({ browser }) => {
+test("sans compte : le lien mène à la connexion puis à l'inscription, puis au club, où l'on rejoint d'un bouton", async ({ browser }) => {
   const page = await newPage(browser);
-  await page.goto(`/rejoindre/${code.toLowerCase()}`);
-  await expect(visibleClub(page)).toHaveText(CLUB);
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  await page.goto(`/clubs/${clubId}`);
+  await expect(page).toHaveURL(new RegExp(`/connexion\\?club=${clubId}$`));
   await checkPage(page, "161-invitation-visiteur");
-  await page.getByRole("link", { name: "Créer un compte" }).click();
-  await expect(page).toHaveURL(new RegExp(`/inscription\\?invitation=${code}`));
-  await page.getByLabel("Email").fill("nouveau16@club.test");
-  await page.getByLabel("Pseudo").fill("Nouveau16");
-  await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
-  await page.getByRole("button", { name: "Créer mon compte" }).click();
+  await page.getByRole("link", { name: "S'inscrire" }).click();
+  await expect(page).toHaveURL(new RegExp(`/inscription\\?club=${clubId}`));
+  // Next garde l'écran précédent (la connexion) dans le DOM, masqué : on cible les champs du formulaire d'inscription par leur nom.
+  const form = page.locator("form").filter({ has: page.locator('input[name="displayName"]') });
+  await form.locator('input[name="email"]').fill("nouveau16@club.test");
+  await form.locator('input[name="displayName"]').fill("Nouveau16");
+  await form.locator('input[name="password"]').fill("motdepasse");
+  await form.getByRole("button", { name: "Créer mon compte" }).click();
   await skipGuide(page);
-  // Confirmation demandée : on n'entre pas dans un club en touchant un lien.
-  await expect(visibleClub(page)).toHaveText(`Rejoindre ${CLUB} ?`);
-  await expect(page).toHaveURL(new RegExp(`/rejoindre/${code}$`));
-  await checkPage(page, "162-invitation-confirmation");
-  await page.getByRole("button", { name: `Rejoindre ${CLUB}` }).click();
+  // On arrive sur la page du club, sans y être entré : il faut appuyer sur « Rejoindre le club ».
   await expect(page).toHaveURL(new RegExp(`/clubs/${clubId}$`));
+  await expect(page.getByTestId("visitor-club")).toBeVisible();
+  await checkPage(page, "162-invitation-confirmation");
+  await page.getByRole("button", { name: "Rejoindre le club" }).click();
+  await expect(page.getByText("Votre rôle : membre")).toBeVisible();
   await expect(page.getByRole("heading", { name: CLUB })).toBeVisible();
-  // Membre simple : jamais le code ni le bouton d'invitation.
-  await expect(page.getByRole("button", { name: "Révéler le code d'invitation" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Nommer admin|Retirer du club/ })).toHaveCount(0);
   await expect(page.getByTestId("empty-member").or(page.getByText("Ton capitaine publiera bientôt la prochaine rencontre."))).toBeVisible();
   await page.close();
 });
 
-test("avec un compte existant : « J'ai déjà un compte », connexion, « Non merci » laisse hors du club", async ({ browser }) => {
+test("avec un compte existant : connexion depuis le lien, on arrive sur le club sans y entrer", async ({ browser }) => {
   const other = await newPage(browser);
   await signUp(other, "Joueur16");
   await other.context().clearCookies();
   const page = await newPage(browser);
-  await page.goto(`/rejoindre/${code}`);
-  await page.getByRole("link", { name: "J'ai déjà un compte" }).click();
-  await expect(page).toHaveURL(new RegExp(`/connexion\\?invitation=${code}`));
+  await page.goto(`/clubs/${clubId}`);
+  await expect(page).toHaveURL(new RegExp(`/connexion\\?club=${clubId}$`));
   await page.getByLabel("Email ou pseudo").fill("joueur16@club.test");
   await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
   await page.getByRole("button", { name: "Se connecter" }).click();
-  await expect(visibleClub(page)).toHaveText(`Rejoindre ${CLUB} ?`);
-  await page.getByRole("link", { name: "Non merci" }).click();
-  await expect(page.getByRole("heading", { name: "Trouve ton club" })).toBeVisible();
-  // Déjà membre : le lien ne propose plus de rejoindre.
-  await capitaine.goto(`/rejoindre/${code}`);
-  await expect(capitaine.getByRole("heading", { name: `Tu es déjà membre de ${CLUB}` })).toBeVisible();
+  await expect(page.getByTestId("visitor-club")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Rejoindre le club" })).toBeVisible();
+  // Déjà membre : le lien ouvre simplement le club.
+  await capitaine.goto(`/clubs/${clubId}`);
+  await expect(capitaine.getByText("Votre rôle : admin")).toBeVisible();
   await page.close();
 });
 
-test("lien invalide ou code périmé : message clair, jamais le nom d'un club", async ({ browser }) => {
-  const page = await newPage(browser);
-  await page.goto("/rejoindre/ZZZZZZ");
-  await expect(page.getByTestId("invitation-invalide")).toBeVisible();
-  await page.goto("/rejoindre/AB0123");
-  await expect(page.getByTestId("invitation-invalide")).toBeVisible();
-  await checkPage(page, "163-invitation-invalide");
-  await page.close();
+test("ancien lien /rejoindre/CODE : redirigé vers la recherche de clubs, sans erreur", async () => {
+  await capitaine.goto("/rejoindre/ZZZZZZ");
+  await expect(capitaine).toHaveURL(/\/clubs\/recherche$/);
+  await capitaine.goto("/clubs/rejoindre");
+  await expect(capitaine).toHaveURL(/\/clubs\/recherche$/);
+  await checkPage(capitaine, "163-ancien-lien");
 });
 
 test("une adresse de retour truquée ne redirige jamais hors de Ralli", async ({ browser }) => {
   const page = await newPage(browser);
-  await page.goto("/connexion?invitation=https://evil.example");
+  await page.goto("/connexion?club=https://evil.example");
   await page.getByLabel("Email ou pseudo").fill("joueur16@club.test");
   await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
   await page.getByRole("button", { name: "Se connecter" }).click();
@@ -115,8 +106,8 @@ test("écrans vides de l'accueil : l'admin crée une rencontre, le membre invite
   const share = membre.getByRole("link", { name: "Inviter des coéquipiers" });
   const href = decodeURIComponent((await share.getAttribute("href"))!);
   expect(href).toContain("/inscription");
-  // Le lien général d'inscription ne contient jamais le code du club.
-  expect(href).not.toContain(code);
+  // Le lien général d'inscription ne mène pas à un club précis.
+  expect(href).not.toContain(clubId);
   await checkPage(membre, "165-vide-membre");
   await membre.close();
 });

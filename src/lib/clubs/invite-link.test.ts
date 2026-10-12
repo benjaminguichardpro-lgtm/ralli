@@ -1,24 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { afterAuthPath, invitePath, parseInviteParam } from "./invite-link";
+import { afterAuthPath, clubPath, parseClubParam } from "./invite-link";
 
-describe("lien d'invitation", () => {
-  it("construit l'adresse à partir du code", () => {
-    expect(invitePath("ABC234")).toBe("/rejoindre/ABC234");
+const ID = "cmgx1abc2def3ghi4jkl5mno6";
+
+describe("lien vers la page d'un club", () => {
+  it("construit l'adresse à partir de l'identifiant", () => {
+    expect(clubPath(ID)).toBe(`/clubs/${ID}`);
   });
 
-  it("accepte un code bien formé, quelle que soit la casse", () => {
-    expect(parseInviteParam("abc234")).toBe("ABC234");
-    expect(parseInviteParam(" ABC234 ")).toBe("ABC234");
+  it("accepte un identifiant bien formé", () => {
+    expect(parseClubParam(` ${ID} `)).toBe(ID);
   });
 
-  it("refuse tout le reste (0/O/1/I, longueur, tableau, vide)", () => {
-    for (const bad of ["AB0234", "ABC23", "ABC2345", "", undefined, null, ["ABC234"], "//evil.com"]) {
-      expect(parseInviteParam(bad as never)).toBeNull();
+  it("refuse tout le reste (adresse, majuscules, trop court, tableau, vide)", () => {
+    for (const bad of ["//evil.com", "https://evil.com", "ABC234", "c123", "", undefined, null, [ID]]) {
+      expect(parseClubParam(bad as never)).toBeNull();
     }
   });
 
-  it("ne redirige jamais ailleurs que vers /rejoindre/CODE ou l'accueil", () => {
-    expect(afterAuthPath("abc234")).toBe("/rejoindre/ABC234");
+  it("ne redirige jamais ailleurs que vers /clubs/<id> ou l'accueil", () => {
+    expect(afterAuthPath(ID)).toBe(`/clubs/${ID}`);
     expect(afterAuthPath("https://evil.com")).toBe("/");
     expect(afterAuthPath(undefined)).toBe("/");
   });

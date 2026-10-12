@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { computePayout } from "@/lib/predictions/payout";
 import { makeUser } from "../../tests/db/factories";
-import { createClub, joinClubByCode } from "./clubs";
+import { joinClub } from "./club-directory";
+import { createClub } from "./clubs";
 import { addMatch, createEncounter, publishEncounter } from "./encounters";
 import { getLeaderboard } from "./leaderboard";
 import { grantWeeklyBonus } from "./weekly-bonus";
@@ -23,7 +24,7 @@ beforeEach(async () => {
   ];
   const club = await createClub(admin, "TC Ralli");
   clubId = club.id;
-  for (const u of [capA, capB, ana, bob, cleo, dan]) await joinClubByCode(u, club.inviteCode);
+  for (const u of [capA, capB, ana, bob, cleo, dan]) await joinClub(u, club.id);
   otherClubId = (await createClub(outsider, "AS Ailleurs")).id;
   teamId = (await createTeam(admin, clubId, { name: "Messieurs 1", captainUserId: capA })).id;
   await createTeam(admin, clubId, { name: "Messieurs 2", captainUserId: capB });
@@ -179,7 +180,7 @@ describe("séparation entre clubs et accès", () => {
     expect((await board(ana, "week")).total).toBe(1);
     // Ana est aussi membre de l'autre club : rien ne s'y retrouve.
     const other = await db.club.findUniqueOrThrow({ where: { id: otherClubId } });
-    await joinClubByCode(ana, other.inviteCode);
+    await joinClub(ana, other.id);
     expect((await board(ana, "week", otherClubId)).total).toBe(0);
     expect((await board(ana, "season", otherClubId)).mySettled).toBe(0);
   });

@@ -2,12 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { followersLabel } from "@/components/club-card-list";
 import { ClubLogo } from "@/components/club-logo";
-import { JoinClubButton } from "@/components/club-directory";
+import { JoinClubButton, ReturnRequestButton } from "@/components/club-directory";
 import { EncounterList } from "@/components/encounter-list";
 import { StoriesSection } from "@/components/stories-section";
 import { formatCount, isProfileEmpty, websiteLabel } from "@/lib/clubs/profile";
 import { db } from "@/lib/db";
-import { countFollowers } from "@/server/club-directory";
+import { countFollowers, getMyRemoval } from "@/server/club-directory";
 import { listPublicClubEncounters } from "@/server/encounters";
 import { getClubProfile } from "@/server/club-profile";
 
@@ -18,11 +18,12 @@ import { getClubProfile } from "@/server/club-profile";
  * Rien d'autre : ni membres, ni classement, ni stories (réservées aux membres).
  */
 export async function VisitorClub({ userId, clubId }: { userId: string; clubId: string }) {
-  const [club, followers, { upcoming, recent }, teams] = await Promise.all([
+  const [club, followers, { upcoming, recent }, teams, removal] = await Promise.all([
     getClubProfile(userId, clubId).catch(() => null),
     countFollowers(clubId),
     listPublicClubEncounters(clubId),
     db.team.findMany({ where: { clubId, kind: "CLUB" }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    getMyRemoval(userId, clubId),
   ]);
   if (!club) notFound();
   return (
@@ -50,8 +51,14 @@ export async function VisitorClub({ userId, clubId }: { userId: string; clubId: 
             )}
           </ul>
         )}
-        <JoinClubButton clubId={club.id} />
-        <p className="text-sm text-ink-muted">Rejoins le club pour pronostiquer ses rencontres.</p>
+        {removal ? (
+          <ReturnRequestButton clubId={club.id} pending={removal.requestedAt !== null} />
+        ) : (
+          <>
+            <JoinClubButton clubId={club.id} />
+            <p className="text-sm text-ink-muted">Rejoins le club pour pronostiquer ses rencontres.</p>
+          </>
+        )}
         {!isProfileEmpty(club) && (
           <Link href={`/clubs/${club.id}/fiche`} className="inline-flex min-h-11 items-center font-semibold text-primary underline">
             Voir la fiche du club

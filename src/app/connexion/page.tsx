@@ -3,11 +3,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { SignInForm } from "@/components/auth-forms";
 import { BigLogo, LawnCard } from "@/components/lawn-card";
-import { parseInviteParam } from "@/lib/clubs/invite-link";
+import { parseClubParam } from "@/lib/clubs/invite-link";
 
 export const metadata: Metadata = { title: "Connexion · Ralli" };
 
-export default function SignInPage({ searchParams }: { searchParams: Promise<{ invitation?: string | string[] }> }) {
+export default function SignInPage({ searchParams }: { searchParams: Promise<{ club?: string | string[] }> }) {
   return (
     <LawnCard>
       <Link href="/" aria-label="Retour à l'accueil de Ralli">
@@ -23,7 +23,7 @@ export default function SignInPage({ searchParams }: { searchParams: Promise<{ i
   );
 }
 
-async function Form({ searchParams }: { searchParams: Promise<{ invitation?: string | string[] }> }) {
-  const invitation = parseInviteParam((await searchParams).invitation) ?? undefined;
-  return <SignInForm invitation={invitation} />;
+async function Form({ searchParams }: { searchParams: Promise<{ club?: string | string[] }> }) {
+  const club = parseClubParam((await searchParams).club) ?? undefined;
+  return <SignInForm club={club} />;
 }

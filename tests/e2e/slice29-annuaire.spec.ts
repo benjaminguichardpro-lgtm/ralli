@@ -77,7 +77,6 @@ test("non-membre : page du club en lecture seule avec compteur, rencontres à ve
   await expect(v.getByTestId("visitor-recent")).toBeVisible();
   // Rien de réservé aux membres.
   await expect(page.getByTestId("section-members")).toHaveCount(0);
-  await expect(page.getByTestId("invite-code")).toHaveCount(0);
   await expect(page.getByTestId("club-top3")).toHaveCount(0);
   await checkPage(page, "annuaire-club-visiteur");
 });

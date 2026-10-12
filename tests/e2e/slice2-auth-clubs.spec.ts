@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, openSection, resetPassword, signIn, signUp, signOut, revealInviteCode, allowClubCreation } from "./helpers";
+import { checkPage, openSection, resetPassword, signIn, signUp, signOut, currentClubId, joinClubById, allowClubCreation } from "./helpers";
 
 // Scénario multi-rôles : Alice (admin), Bob (membre), Carole (extérieure).
 // Chaque personne a son propre contexte navigateur (cookies séparés).
@@ -10,7 +10,7 @@ let alice: Page;
 let bob: Page;
 let carole: Page;
 let clubUrl: string;
-let inviteCode: string;
+let clubId: string;
 
 async function newPage(browser: Browser) {
   return (await browser.newContext()).newPage();
@@ -68,43 +68,33 @@ test("sans demande acceptée, « créer un club » renvoie vers la demande d'adm
   await expect(alice).toHaveURL(/\/clubs\/demande$/);
 });
 
-test("Alice crée un club et voit le code d'invitation", async () => {
+test("Alice crée un club et peut inviter par WhatsApp", async () => {
   await allowClubCreation();
   await alice.goto("/clubs/nouveau");
   await alice.getByLabel("Nom du club").fill("TC Ralli");
   await alice.getByRole("button", { name: "Créer le club" }).click();
   await expect(alice.getByRole("heading", { name: "TC Ralli" })).toBeVisible();
   await expect(alice.getByText("Votre rôle : admin")).toBeVisible();
-  // Le code reste caché tant qu'on n'a pas appuyé sur le bouton, et se recache à la demande.
-  await expect(alice.getByTestId("invite-code")).toHaveCount(0);
-  await expect(alice.getByRole("button", { name: "Révéler le code d'invitation" })).toBeVisible();
-  inviteCode = await revealInviteCode(alice);
-  expect(inviteCode).toMatch(/^[A-HJ-NP-Z2-9]{6}$/);
-  await alice.getByRole("button", { name: "Masquer le code d'invitation" }).click();
-  await expect(alice.getByTestId("invite-code")).toHaveCount(0);
-  expect(inviteCode).toMatch(/^[2-9A-HJ-NP-Z]{6}$/);
+  // Plus de code : l'invitation est un lien vers la page du club.
+  await expect(alice.getByText("Code d'invitation")).toHaveCount(0);
+  clubId = await currentClubId(alice);
+  const href = await alice.getByRole("link", { name: "Inviter par WhatsApp" }).getAttribute("href");
+  expect(decodeURIComponent(href ?? "")).toContain(`/clubs/${clubId}`);
   clubUrl = alice.url();
   await checkPage(alice, "04-club-admin");
 });
 
-test("Bob s'inscrit, rejoint avec le code, et n'a aucun accès admin", async () => {
+test("Bob s'inscrit, rejoint le club d'un bouton, et n'a aucun accès admin", async () => {
   await signUp(bob, "Bob");
   await expect(bob.getByTestId("nav-user")).toHaveText("Bob");
-  await bob.goto("/clubs/rejoindre");
-  await bob.getByLabel("Code d'invitation").fill("ZZZZZZ");
-  await bob.getByRole("button", { name: "Rejoindre" }).click();
-  await expect(bob.getByText("Code d'invitation invalide")).toBeVisible();
-
-  await bob.getByLabel("Code d'invitation").fill(inviteCode.toLowerCase());
-  await bob.getByRole("button", { name: "Rejoindre" }).click();
+  await joinClubById(bob, clubId);
   await expect(bob.getByRole("heading", { name: "TC Ralli" })).toBeVisible();
   await expect(bob.getByText("Votre rôle : membre")).toBeVisible();
-  await expect(bob.getByTestId("invite-code")).toHaveCount(0);
-  await expect(bob.getByRole("button", { name: /Nommer admin|Retirer admin|nouveau code/ })).toHaveCount(0);
+  await expect(bob.getByRole("button", { name: /Nommer admin|Retirer admin|Retirer du club|Accepter/ })).toHaveCount(0);
   await checkPage(bob, "05-club-membre");
 });
 
-test("Carole (non membre) consulte le club en lecture seule : ni code, ni membres, un bouton pour rejoindre", async () => {
+test("Carole (non membre) consulte le club en lecture seule : ni membres, un bouton pour rejoindre", async () => {
   await signUp(carole, "Carole");
   await expect(carole.getByTestId("nav-user")).toHaveText("Carole");
   await carole.goto(clubUrl);
@@ -113,49 +103,27 @@ test("Carole (non membre) consulte le club en lecture seule : ni code, ni membre
   await expect(carole.getByRole("heading", { name: "TC Ralli" })).toBeVisible();
   await expect(carole.getByTestId("club-followers")).toContainText("personne");
   await expect(carole.getByRole("button", { name: "Rejoindre le club" })).toBeVisible();
-  await expect(carole.getByTestId("invite-code")).toHaveCount(0);
   await expect(carole.getByTestId("section-members")).toHaveCount(0);
-  await expect(carole.getByRole("button", { name: "Révéler le code d'invitation" })).toHaveCount(0);
 });
 
 test("pages protégées : redirection vers la connexion si déconnecté", async ({ browser }) => {
   const anon = await newPage(browser);
   await anon.goto(clubUrl);
-  await expect(anon).toHaveURL(/\/connexion$/);
+  // Le lien d'un club ouvert sans compte revient sur ce club après la connexion.
+  await expect(anon).toHaveURL(new RegExp(`/connexion\\?club=${clubId}$`));
   await anon.goto("/clubs/nouveau");
   await expect(anon).toHaveURL(/\/connexion$/);
 });
 
-test("Alice nomme Bob admin : Bob voit alors le code", async () => {
+test("Alice nomme Bob admin : Bob voit alors les outils d'admin", async () => {
   await alice.goto(clubUrl);
   await openSection(alice, "Membres");
   await alice.getByRole("button", { name: "Nommer admin Bob" }).click();
   await expect(alice.getByRole("button", { name: "Retirer le rôle admin de Bob" })).toBeVisible();
   await bob.goto(clubUrl);
   await expect(bob.getByText("Votre rôle : admin")).toBeVisible();
-  expect(await revealInviteCode(bob)).toBe(inviteCode);
-});
-
-test("régénérer le code invalide l'ancien", async () => {
-  await alice.goto(clubUrl);
-  // « Générer un nouveau code » n'existe qu'une fois le code révélé.
-  await expect(alice.getByRole("button", { name: "Générer un nouveau code" })).toHaveCount(0);
-  await alice.getByRole("button", { name: "Révéler le code d'invitation" }).click();
-  await alice.getByRole("button", { name: "Générer un nouveau code" }).click();
-  await expect(alice.getByText("Nouveau code généré. L'ancien ne fonctionne plus.")).toBeVisible();
-  await expect(alice.getByTestId("invite-code")).not.toHaveText(inviteCode);
-  const fresh = (await alice.getByTestId("invite-code").innerText()).trim();
-  await alice.getByRole("button", { name: "Masquer le code d'invitation" }).click();
-  await expect(alice.getByRole("button", { name: "Générer un nouveau code" })).toHaveCount(0);
-  expect(fresh).not.toBe(inviteCode);
-
-  await carole.goto("/clubs/rejoindre");
-  await carole.getByLabel("Code d'invitation").fill(inviteCode);
-  await carole.getByRole("button", { name: "Rejoindre" }).click();
-  await expect(carole.getByText("Code d'invitation invalide")).toBeVisible();
-  await carole.getByLabel("Code d'invitation").fill(fresh);
-  await carole.getByRole("button", { name: "Rejoindre" }).click();
-  await expect(carole.getByText("Votre rôle : membre")).toBeVisible();
+  await openSection(bob, "Membres");
+  await expect(bob.getByRole("button", { name: "Retirer le rôle admin de Alice" })).toBeVisible();
 });
 
 test("se retirer soi-même le rôle admin demande confirmation", async () => {

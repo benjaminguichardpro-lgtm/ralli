@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { computeDoublesOdds } from "@/lib/odds/model";
 import { makeUser } from "../../tests/db/factories";
-import { createClub, joinClubByCode } from "./clubs";
+import { joinClub } from "./club-directory";
+import { createClub } from "./clubs";
 import { addMatch, createEncounter, getEncounterPage, publishEncounter, removeMatch, replaceMatch } from "./encounters";
 import { getBalance } from "./ledger";
 import { getWallet, placePrediction } from "./predictions";
@@ -22,7 +23,7 @@ beforeEach(async () => {
   [admin, cap, capB, punter, punter2] = (await Promise.all(["Admin", "Cap", "CapB", "Parieur", "Parieur2"].map(makeUser))) as string[] as [string, string, string, string, string];
   const club = await createClub(admin, "TC Doubles");
   clubId = club.id;
-  for (const u of [cap, capB, punter, punter2]) await joinClubByCode(u, club.inviteCode);
+  for (const u of [cap, capB, punter, punter2]) await joinClub(u, club.id);
   teamA = (await createTeam(admin, clubId, { name: "Messieurs 1", captainUserId: cap })).id;
   teamB = (await createTeam(admin, clubId, { name: "Messieurs 2", captainUserId: capB })).id;
   ext = (await createExternalTeam(admin, clubId, { name: "TC Voisin 1", externalClubName: "TC Voisin" })).id;

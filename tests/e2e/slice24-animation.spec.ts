@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, queryTestDb, seedDemoOnTestDb, signIn, signUp, wipeTestDb } from "./helpers";
+import { checkPage, joinClubById, queryTestDb, seedDemoOnTestDb, signIn, signUp, wipeTestDb } from "./helpers";
 
 // Animation de l'app, comparée à la base avec la vraie démo : compteur « membres qui ont pronostiqué », marqueur « Nouveau »
 // et pastille de l'onglet « Mes rallis », classement vivant (mouvement de place, leader de la semaine), animations et série d'affilée.
@@ -9,7 +9,7 @@ test.describe.configure({ mode: "serial" });
 const PASSWORD = "demo-ralli-2026";
 const newPage = async (b: Browser) => (await b.newContext()).newPage();
 
-let clubId: string, inviteCode: string, openId: string, confirmedId: string;
+let clubId: string, openId: string, confirmedId: string;
 
 async function login(b: Browser, pseudo: string, closePopups = true): Promise<Page> {
   const page = await newPage(b);
@@ -26,9 +26,8 @@ async function login(b: Browser, pseudo: string, closePopups = true): Promise<Pa
 test.beforeAll(async () => {
   test.setTimeout(300_000);
   seedDemoOnTestDb();
-  const club = (await queryTestDb<{ id: string; inviteCode: string }>(`SELECT id, "inviteCode" FROM "Club" WHERE name = 'TC Démo-Lyon'`))[0]!;
+  const club = (await queryTestDb<{ id: string }>(`SELECT id FROM "Club" WHERE name = 'TC Démo-Lyon'`))[0]!;
   clubId = club.id;
-  inviteCode = club.inviteCode;
   const rows = await queryTestDb<{ id: string; status: string; started: boolean }>(
     `SELECT e.id, e.status, e."startsAt" < now() AS started FROM "Encounter" e WHERE e."organizerClubId" = $1 ORDER BY e."startsAt" DESC`,
     [clubId],
@@ -258,9 +257,7 @@ test("le solde compte jusqu'à sa nouvelle valeur après un ralli ; sans animati
     const p = await newPage(browser);
     await p.emulateMedia({ reducedMotion: reduce ? "reduce" : "no-preference" });
     await signUp(p, name);
-    await p.goto(`/rejoindre/${inviteCode}`);
-    await p.getByRole("button", { name: /Rejoindre/ }).click();
-    await expect(p.getByText(/Votre rôle/)).toBeVisible();
+    await joinClubById(p, clubId);
     await p.goto(`/rencontres/${openId}`);
     await p.getByTestId("matches").waitFor();
     const balance = p.getByTestId("balance");

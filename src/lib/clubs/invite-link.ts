@@ -1,22 +1,20 @@
-import { isWellFormedInviteCode } from "./invite-code";
-
-/** Adresse (sans le site) du lien d'invitation d'un club. */
-export function invitePath(code: string): string {
-  return `/rejoindre/${code}`;
+/** Adresse (sans le site) de la page d'un club : c'est le lien qu'un membre partage pour inviter. */
+export function clubPath(clubId: string): string {
+  return `/clubs/${clubId}`;
 }
 
-/**
- * Code d'invitation lu dans une adresse ou un champ caché : en majuscules, bien formé, sinon null.
- * Sert aussi de garde-fou : seule une adresse construite par `invitePath` est utilisée pour rediriger.
- */
-export function parseInviteParam(value: string | string[] | undefined | null): string | null {
+// Identifiant de club (cuid) : lettres minuscules et chiffres seulement, jamais d'adresse libre.
+const CLUB_ID = /^c[a-z0-9]{20,30}$/;
+
+/** Identifiant de club lu dans une adresse ou un champ caché : bien formé, sinon null. */
+export function parseClubParam(value: string | string[] | undefined | null): string | null {
   if (typeof value !== "string") return null;
-  const code = value.trim().toUpperCase();
-  return isWellFormedInviteCode(code) ? code : null;
+  const id = value.trim();
+  return CLUB_ID.test(id) ? id : null;
 }
 
-/** Où aller après une connexion ou une inscription : la page d'invitation si le code est valable, sinon l'accueil. */
-export function afterAuthPath(invitation: string | null | undefined): string {
-  const code = parseInviteParam(invitation);
-  return code ? invitePath(code) : "/";
+/** Où aller après une connexion ou une inscription : la page du club d'où l'on vient, sinon l'accueil. */
+export function afterAuthPath(club: string | null | undefined): string {
+  const id = parseClubParam(club);
+  return id ? clubPath(id) : "/";
 }

@@ -61,8 +61,7 @@ test("membre : rencontres et classement d'abord, puis trois sections repliées a
   expect(await y(p.getByTestId("club-top3"))).toBeLessThan(await y(s.teams));
   expect(await y(s.teams)).toBeLessThan(await y(s.opponents));
   expect(await y(s.opponents)).toBeLessThan(await y(s.members));
-  // Un simple membre n'a ni code d'invitation ni formulaire de création.
-  await expect(p.getByTestId("invite-code")).toHaveCount(0);
+  // Un simple membre n'a pas de formulaire de création.
   await openSection(p, "Équipes du club");
   await expect(p.getByText("Créer une équipe")).toHaveCount(0);
   await checkPage(p, "230-club-membre-replie");
@@ -82,12 +81,11 @@ test("membre : ouvrir une section montre son contenu, une équipe mène à sa pa
   await expect(p).toHaveURL(/\/equipes\//);
 });
 
-test("admin : code d'invitation raccourci, formulaires de création cachés tant que la section est repliée", async ({ browser }) => {
+test("admin : lien d'invitation, formulaires de création cachés tant que la section est repliée", async ({ browser }) => {
   const a = await login(browser, "admin_lyon");
   await a.goto(`/clubs/${clubId}`);
   await a.getByTestId("club-header").waitFor();
-  await expect(a.getByRole("button", { name: "Révéler le code d'invitation" })).toBeVisible();
-  await expect(a.getByText("Le lien contient le code : envoie-le seulement aux personnes que tu invites.")).toBeVisible();
+  await expect(a.getByRole("link", { name: "Inviter par WhatsApp" })).toBeVisible();
   await expect(a.getByText(/À communiquer aux membres, joueurs et proches/)).toHaveCount(0);
   await expect(a.getByText("Créer une équipe")).toBeHidden();
   await expect(a.getByText("Ajouter une équipe adverse")).toBeHidden();

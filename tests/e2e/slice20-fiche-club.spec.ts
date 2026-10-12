@@ -1,6 +1,6 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
 import sharp from "sharp";
-import { awaitServerAction, checkPage, revealInviteCode, signUp, allowClubCreation } from "./helpers";
+import { awaitServerAction, checkPage, currentClubId, joinClubById, signUp, allowClubCreation } from "./helpers";
 
 // Odile (admin), Hugo et Nina (membres), Oscar (aucun club en commun), un visiteur sans compte.
 
@@ -35,14 +35,12 @@ test("mise en place : club d'Odile, Hugo et Nina membres, Oscar sans club", asyn
   await odile.goto("/clubs/nouveau");
   await odile.getByLabel("Nom du club").fill("TC Fiche20");
   await odile.getByRole("button", { name: "Créer le club" }).click();
-  const code = await revealInviteCode(odile);
+  const code = await currentClubId(odile);
   clubUrl = odile.url();
   ficheUrl = `${clubUrl}/fiche`;
   for (const [page, name] of [[hugo, "Hugo20"], [nina, "Nina20"]] as const) {
     await register(page, name);
-    await page.goto("/clubs/rejoindre");
-    await page.getByLabel("Code d'invitation").fill(code);
-    await page.getByRole("button", { name: "Rejoindre" }).click();
+    await joinClubById(page, code);
     await expect(page.getByText(/Votre rôle/)).toBeVisible();
   }
   await register(oscar, "Oscar20");

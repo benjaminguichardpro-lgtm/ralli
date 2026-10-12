@@ -28,7 +28,7 @@ async function Chooser() {
         {clubs.length === 0 ? (
           <>
             <p className="text-ink-muted">Rejoignez un club pour voir son classement.</p>
-            <ButtonLink href="/clubs/rejoindre">Rejoindre un club</ButtonLink>
+            <ButtonLink href="/clubs/recherche">Rejoindre un club</ButtonLink>
           </>
         ) : (
           <>

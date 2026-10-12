@@ -4,7 +4,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { ClubLogo } from "@/components/club-logo";
-import { InviteCodeReveal, MemberRoleForm } from "@/components/club-forms";
+import { MemberRoleForm, RemoveMemberForm, ReturnRequestForm } from "@/components/club-forms";
+import { WhatsAppShare } from "@/components/share-link";
 import { ResetAvatarForm } from "@/components/profile-forms";
 import { LeaderboardTable, RankMoveBadge } from "@/components/leaderboard";
 import { rankLabel } from "@/lib/leaderboard/rank";
@@ -13,11 +14,13 @@ import { EncounterList } from "@/components/encounter-list";
 import { CreateExternalTeamForm, CreateTeamForm } from "@/components/team-forms";
 import { StoriesSection } from "@/components/stories-section";
 import { ButtonLink } from "@/components/ui";
-import { requireUser } from "@/lib/auth/current-user";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { clubPath, parseClubParam } from "@/lib/clubs/invite-link";
 import { formatCount, isProfileEmpty, websiteLabel } from "@/lib/clubs/profile";
 import { applyFilter, countFilters, parseFilter } from "@/lib/encounters/filters";
 import { type ClubView, getClubView } from "@/server/clubs";
-import { countFollowers } from "@/server/club-directory";
+import { countFollowers, listReturnRequests } from "@/server/club-directory";
 import { followersLabel } from "@/components/club-card-list";
 import { LeaveClubForm } from "@/components/club-directory";
 import { VisitorClub } from "./visitor-club";
@@ -47,8 +50,11 @@ export default function ClubPage({
 }
 
 async function Club({ params, searchParams }: { params: Promise<{ clubId: string }>; searchParams: Promise<{ statut?: string | string[] }> }) {
-  const user = await requireUser();
   const { clubId } = await params;
+  const user = await getCurrentUser();
+  // Lien partagé ouvert sans compte : on se connecte (ou s'inscrit), puis on revient sur ce club.
+  if (!user) redirect(`/connexion${parseClubParam(clubId) ? `?club=${clubId}` : ""}`);
+  if (user.mustChangePassword) redirect("/mot-de-passe");
   const filter = parseFilter((await searchParams).statut);
   // Les clubs sont publics : un compte qui n'est pas membre consulte une page en lecture seule, avec « Rejoindre le club ».
   if ((await getClubRole(user.id, clubId)) === null) return <VisitorClub userId={user.id} clubId={clubId} />;
@@ -61,12 +67,13 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
   }
   const followers = await countFollowers(club.id);
   const isAdmin = club.myRole === "ADMIN";
-  const [teams, isCaptain, encounters, archived, board] = await Promise.all([
+  const [teams, isCaptain, encounters, archived, board, returnRequests] = await Promise.all([
     listClubTeams(user.id, club.id),
     isCaptainInClub(user.id, club.id),
     listClubEncounters(user.id, club.id),
     listArchivedEncounters(user.id, club.id),
     getLeaderboard(user.id, club.id, "season", { limit: 3 }),
+    isAdmin ? listReturnRequests(user.id, club.id) : Promise.resolve([]),
   ]);
   const clubTeams = teams.filter((t) => t.kind === "CLUB");
   const externalTeams = teams.filter((t) => t.kind === "EXTERNAL");
@@ -111,11 +118,20 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
         <StoriesSection userId={user.id} clubId={club.id} clubName={club.name} />
       </Suspense>
 
-      {isAdmin && club.inviteCode && (
-        <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-          <h2 className="font-serif text-xl text-primary">Code d&apos;invitation</h2>
-          <InviteCodeReveal code={club.inviteCode} clubId={club.id} clubName={club.name} />
-          <p className="text-sm text-ink-muted">Le lien contient le code : envoie-le seulement aux personnes que tu invites.</p>
+      {returnRequests.length > 0 && (
+        <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="return-requests">
+          <h2 className="font-serif text-xl text-primary">Demandes pour revenir ({returnRequests.length})</h2>
+          <ul className="divide-y divide-line">
+            {returnRequests.map((r) => (
+              <li key={r.userId} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span className="flex items-center gap-3">
+                  <Avatar user={{ id: r.userId, avatarKey: r.avatarKey, avatarPhotoAt: r.avatarPhotoAt }} size={36} />
+                  <span className="font-medium">{r.displayName}</span>
+                </span>
+                <ReturnRequestForm clubId={club.id} userId={r.userId} displayName={r.displayName} />
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -240,12 +256,22 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
                 <span className="flex flex-wrap items-center gap-2">
                   {m.avatarPhotoAt && m.userId !== user.id && <ResetAvatarForm clubId={club.id} userId={m.userId} displayName={m.displayName} />}
                   <MemberRoleForm clubId={club.id} userId={m.userId} displayName={m.displayName} role={m.role} isSelf={m.userId === user.id} />
+                  {m.role === "MEMBER" && <RemoveMemberForm clubId={club.id} userId={m.userId} displayName={m.displayName} />}
                 </span>
               )}
             </li>
           ))}
         </ul>
       </details>
+
+      <div className="space-y-2 rounded-2xl bg-surface p-4 shadow-sm" data-testid="invite-club">
+        <h2 className="font-serif text-xl text-primary">Inviter</h2>
+        <WhatsAppShare
+          label="Inviter par WhatsApp"
+          text={`Rejoins ${club.name} sur Ralli pour pronostiquer nos interclubs de tennis (jeu gratuit, sans argent réel) :`}
+          path={clubPath(club.id)}
+        />
+      </div>
 
       <div className="space-y-2 rounded-2xl bg-surface p-4 shadow-sm" data-testid="leave-club">
         <LeaveClubForm clubId={club.id} clubName={club.name} />

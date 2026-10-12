@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { makeEncounterWithPlayer, makeUser } from "../../tests/db/factories";
-import { countFollowers, joinClub, leaveClub, searchClubs } from "./club-directory";
-import { createClub, joinClubByCode, setMemberRole } from "./clubs";
+import { countFollowers, decideReturn, getMyRemoval, joinClub, leaveClub, listReturnRequests, removeMember, requestReturn, searchClubs } from "./club-directory";
+import { createClub, getClubView, listMyClubs, setMemberRole } from "./clubs";
 import { listPublicClubEncounters } from "./encounters";
 import { getClubProfile } from "./club-profile";
 import { createTeam } from "./teams";
 
 let admin: string, other: string, visitor: string, member: string;
-let lyon: { id: string; inviteCode: string }, nantes: { id: string; inviteCode: string };
+let lyon: { id: string }, nantes: { id: string };
 
 beforeEach(async () => {
   [admin, other, visitor, member] = (await Promise.all(["Admin", "Autre", "Visiteur", "Membre"].map(makeUser))) as [string, string, string, string];
@@ -16,7 +16,7 @@ beforeEach(async () => {
   nantes = await createClub(other, "Tennis Club Nantes");
   await db.club.update({ where: { id: lyon.id }, data: { city: "Lyon", postalCode: "69003" } });
   await db.club.update({ where: { id: nantes.id }, data: { city: "Nantes", postalCode: "44000" } });
-  await joinClubByCode(member, lyon.inviteCode);
+  await joinClub(member, lyon.id);
 });
 
 describe("recherche de clubs", () => {
@@ -96,5 +96,102 @@ describe("consulter sans être membre", () => {
     expect(upcoming.map((e) => e.id)).toEqual([open]);
     await db.encounter.update({ where: { id: open }, data: { status: "CONFIRMED", archivedAt: new Date() } });
     expect(await listPublicClubEncounters(lyon.id)).toEqual({ upcoming: [], recent: [] });
+  });
+});
+
+describe("retirer un membre (tranche 30)", () => {
+  it("un admin retire un membre : il n'est plus membre, ne compte plus parmi les suiveurs, ne rejoint plus d'un clic", async () => {
+    await removeMember(admin, lyon.id, member);
+    expect(await listMyClubs(member)).toEqual([]);
+    expect(await countFollowers(lyon.id)).toBe(1);
+    expect((await getClubView(admin, lyon.id)).members.map((m) => m.displayName)).toEqual(["Admin"]);
+    await expect(joinClub(member, lyon.id)).rejects.toMatchObject({ code: "REMOVED_FROM_CLUB" });
+    expect(await getMyRemoval(member, lyon.id)).toEqual({ requestedAt: null });
+  });
+
+  it("seuls les admins du club peuvent retirer : membre, non-membre, admin d'un autre club refusés", async () => {
+    await expect(removeMember(member, lyon.id, member)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(removeMember(visitor, lyon.id, member)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(removeMember(other, lyon.id, member)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect((await listMyClubs(member)).length).toBe(1);
+  });
+
+  it("refuse de se retirer soi-même, de retirer un admin ou un non-membre", async () => {
+    await expect(removeMember(admin, lyon.id, admin)).rejects.toMatchObject({ code: "CANNOT_REMOVE" });
+    await setMemberRole(admin, lyon.id, member, "ADMIN");
+    await expect(removeMember(admin, lyon.id, member)).rejects.toMatchObject({ code: "CANNOT_REMOVE" });
+    await expect(removeMember(admin, lyon.id, visitor)).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("refuse de retirer un capitaine d'équipe, tant qu'une équipe l'a pour capitaine", async () => {
+    const team = await createTeam(admin, lyon.id, { name: "Messieurs 1", captainUserId: member });
+    await expect(removeMember(admin, lyon.id, member)).rejects.toMatchObject({ code: "CANNOT_REMOVE", message: expect.stringContaining("Messieurs 1") });
+    await db.team.update({ where: { id: team.id }, data: { captainId: admin } });
+    await removeMember(admin, lyon.id, member);
+    expect(await listMyClubs(member)).toEqual([]);
+  });
+
+  it("le lien avec la fiche de joueur reste en place", async () => {
+    const player = await db.player.create({ data: { clubId: lyon.id, firstName: "Max", lastName: "Dupont", fftRank: "R30_5", userId: member } });
+    await removeMember(admin, lyon.id, member);
+    expect((await db.player.findUniqueOrThrow({ where: { id: player.id } })).userId).toBe(member);
+  });
+
+  it("quitter soi-même n'empêche pas de revenir d'un clic", async () => {
+    await leaveClub(member, lyon.id);
+    expect(await getMyRemoval(member, lyon.id)).toBeNull();
+    await joinClub(member, lyon.id);
+    expect((await listMyClubs(member)).length).toBe(1);
+  });
+});
+
+describe("demander à revenir (tranche 30)", () => {
+  beforeEach(async () => {
+    await removeMember(admin, lyon.id, member);
+  });
+
+  it("une seule demande en attente à la fois, visible des admins seulement", async () => {
+    await requestReturn(member, lyon.id);
+    await expect(requestReturn(member, lyon.id)).rejects.toMatchObject({ code: "REQUEST_PENDING" });
+    expect((await listReturnRequests(admin, lyon.id)).map((r) => r.displayName)).toEqual(["Membre"]);
+    await expect(listReturnRequests(visitor, lyon.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(listReturnRequests(other, lyon.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("seule une personne retirée peut demander", async () => {
+    await expect(requestReturn(visitor, lyon.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("accepter : la personne redevient membre simple et la marque disparaît", async () => {
+    await requestReturn(member, lyon.id);
+    await decideReturn(admin, lyon.id, member, true);
+    expect(await listMyClubs(member)).toMatchObject([{ id: lyon.id, role: "MEMBER" }]);
+    expect(await getMyRemoval(member, lyon.id)).toBeNull();
+    expect(await listReturnRequests(admin, lyon.id)).toEqual([]);
+  });
+
+  it("refuser : elle reste retirée, la demande disparaît et elle peut redemander", async () => {
+    await requestReturn(member, lyon.id);
+    await decideReturn(admin, lyon.id, member, false);
+    expect(await listMyClubs(member)).toEqual([]);
+    expect(await getMyRemoval(member, lyon.id)).toEqual({ requestedAt: null });
+    expect(await listReturnRequests(admin, lyon.id)).toEqual([]);
+    await requestReturn(member, lyon.id);
+    expect((await listReturnRequests(admin, lyon.id)).length).toBe(1);
+  });
+
+  it("seuls les admins du club décident, et seulement s'il y a une demande en attente", async () => {
+    await requestReturn(member, lyon.id);
+    await expect(decideReturn(visitor, lyon.id, member, true)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(decideReturn(other, lyon.id, member, true)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(decideReturn(admin, lyon.id, visitor, true)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(await listMyClubs(member)).toEqual([]);
+  });
+
+  it("retirer de nouveau efface une demande en attente", async () => {
+    await requestReturn(member, lyon.id);
+    await decideReturn(admin, lyon.id, member, true);
+    await removeMember(admin, lyon.id, member);
+    expect(await getMyRemoval(member, lyon.id)).toEqual({ requestedAt: null });
   });
 });

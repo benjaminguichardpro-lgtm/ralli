@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { computeOdds } from "@/lib/odds/model";
 import { makeUser } from "../../tests/db/factories";
-import { createClub, joinClubByCode } from "./clubs";
+import { joinClub } from "./club-directory";
+import { createClub } from "./clubs";
 import {
   addMatch,
   cancelEncounter,
@@ -34,7 +35,7 @@ beforeEach(async () => {
   )) as [string, string, string, string, string, string];
   const club = await createClub(admin, "TC Ralli");
   clubId = club.id;
-  for (const u of [capA, capB, member, punter]) await joinClubByCode(u, club.inviteCode);
+  for (const u of [capA, capB, member, punter]) await joinClub(u, club.id);
   await createClub(outsider, "AS Ailleurs");
   m1 = (await createTeam(admin, clubId, { name: "Messieurs 1", captainUserId: capA })).id;
   m2 = (await createTeam(admin, clubId, { name: "Messieurs 2", captainUserId: capB })).id;

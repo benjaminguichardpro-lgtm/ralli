@@ -7,13 +7,13 @@ import { initialFormState } from "@/app/actions/types";
 import { PASSWORD_MIN } from "@/lib/validation/account";
 import { Field, FormMessage, PasswordField, SubmitButton, useRevealPassword } from "./ui";
 
-export function SignUpForm({ invitation }: { invitation?: string }) {
+export function SignUpForm({ club }: { club?: string }) {
   const [state, action] = useActionState(signUpAction, initialFormState);
   const [shown, toggle] = useRevealPassword(state);
   const e = state.errors ?? {};
   return (
     <form action={action} className="space-y-4" noValidate>
-      {invitation && <input type="hidden" name="invitation" value={invitation} />}
+      {club && <input type="hidden" name="club" value={club} />}
       <FormMessage signal={state}>{e._}</FormMessage>
       <Field label="Email" name="email" type="email" autoComplete="email" required defaultValue={state.values?.email} error={e.email} />
       <Field
@@ -40,7 +40,7 @@ export function SignUpForm({ invitation }: { invitation?: string }) {
       </SubmitButton>
       <p className="text-center text-ink-muted">
         Déjà inscrit ?{" "}
-        <Link href={invitation ? `/connexion?invitation=${invitation}` : "/connexion"} className="font-semibold text-primary underline">
+        <Link href={club ? `/connexion?club=${club}` : "/connexion"} className="font-semibold text-primary underline">
           Se connecter
         </Link>
       </p>
@@ -48,13 +48,13 @@ export function SignUpForm({ invitation }: { invitation?: string }) {
   );
 }
 
-export function SignInForm({ invitation }: { invitation?: string }) {
+export function SignInForm({ club }: { club?: string }) {
   const [state, action] = useActionState(signInAction, initialFormState);
   const [shown, toggle] = useRevealPassword(state);
   const e = state.errors ?? {};
   return (
     <form action={action} className="space-y-4" noValidate>
-      {invitation && <input type="hidden" name="invitation" value={invitation} />}
+      {club && <input type="hidden" name="club" value={club} />}
       <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
       <Field
         label="Email ou pseudo"
@@ -75,7 +75,7 @@ export function SignInForm({ invitation }: { invitation?: string }) {
       </p>
       <p className="text-center text-ink-muted">
         Pas encore de compte ?{" "}
-        <Link href={invitation ? `/inscription?invitation=${invitation}` : "/inscription"} className="font-semibold text-primary underline">
+        <Link href={club ? `/inscription?club=${club}` : "/inscription"} className="font-semibold text-primary underline">
           S&apos;inscrire
         </Link>
       </p>

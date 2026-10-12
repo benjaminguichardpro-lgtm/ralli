@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { clubMatchesQuery } from "@/lib/clubs/search";
 import { DomainError, isUniqueViolation } from "./errors";
-import { CLUB_NOT_FOUND, getClubRole } from "./permissions";
+import { CLUB_NOT_FOUND, getClubRole, requireClubAdmin } from "./permissions";
 
 // Annuaire des clubs : tous les clubs de Ralli sont publics. N'importe quel compte connecté les cherche, consulte leurs
 // rencontres et peut les rejoindre d'un bouton ; seuls les membres pronostiquent. « Suivre » un club = en être membre.
@@ -37,6 +37,9 @@ export async function countFollowers(clubId: string): Promise<number> {
 export async function joinClub(actorId: string, clubId: string): Promise<void> {
   const club = await db.club.findUnique({ where: { id: clubId }, select: { id: true } });
   if (!club) throw CLUB_NOT_FOUND;
+  // Un membre retiré par un admin ne revient pas d'un clic : il doit demander à revenir.
+  const removal = await db.clubRemoval.findUnique({ where: { userId_clubId: { userId: actorId, clubId } }, select: { userId: true } });
+  if (removal) throw new DomainError("REMOVED_FROM_CLUB", "Un admin t'a retiré de ce club : demande à revenir");
   try {
     await db.clubMembership.create({ data: { userId: actorId, clubId, role: "MEMBER" } });
   } catch (e) {
@@ -78,4 +81,70 @@ export async function leaveClub(actorId: string, clubId: string): Promise<void> 
     db.player.updateMany({ where: { clubId, userId: actorId }, data: { userId: null } }),
     db.clubMembership.delete({ where: { userId_clubId: { userId: actorId, clubId } } }),
   ]);
+}
+
+/**
+ * Un admin retire un membre simple. Refusé pour soi-même (il y a « Quitter »), pour un admin (retirer d'abord son rôle)
+ * et pour un capitaine d'équipe (le club doit d'abord changer de capitaine). Ses pronostics en cours restent valables,
+ * le lien avec sa fiche de joueur aussi. Il ne peut plus rejoindre d'un clic : voir `requestReturn`.
+ */
+export async function removeMember(actorId: string, clubId: string, targetUserId: string): Promise<void> {
+  await requireClubAdmin(actorId, clubId);
+  if (actorId === targetUserId) throw new DomainError("CANNOT_REMOVE", "Pour partir toi-même, utilise « Quitter le club »");
+  await db.$transaction(async (tx) => {
+    const target = await tx.clubMembership.findUnique({ where: { userId_clubId: { userId: targetUserId, clubId } }, select: { role: true } });
+    if (!target) throw new DomainError("NOT_FOUND", "Ce compte n'est pas membre du club");
+    if (target.role === "ADMIN") throw new DomainError("CANNOT_REMOVE", "Retire d'abord son rôle d'admin, puis retire-le du club");
+    const captaincies = await tx.team.findMany({ where: { clubId, kind: "CLUB", captainId: targetUserId }, select: { name: true } });
+    if (captaincies.length > 0) {
+      throw new DomainError("CANNOT_REMOVE", `Désigne d'abord un autre capitaine pour ${captaincies.map((t) => t.name).join(", ")}`);
+    }
+    await tx.clubMembership.delete({ where: { userId_clubId: { userId: targetUserId, clubId } } });
+    await tx.clubRemoval.upsert({
+      where: { userId_clubId: { userId: targetUserId, clubId } },
+      create: { userId: targetUserId, clubId, removedById: actorId },
+      update: { removedById: actorId, removedAt: new Date(), requestedAt: null },
+    });
+  }, { isolationLevel: "Serializable" });
+}
+
+/** Retiré du club ? `requestedAt` non vide : la demande de retour est en attente. Null : la personne n'a jamais été retirée. */
+export async function getMyRemoval(userId: string, clubId: string): Promise<{ requestedAt: Date | null } | null> {
+  return db.clubRemoval.findUnique({ where: { userId_clubId: { userId, clubId } }, select: { requestedAt: true } });
+}
+
+/** « Demander à revenir » : une seule demande en attente à la fois (c'est la même ligne). */
+export async function requestReturn(actorId: string, clubId: string): Promise<void> {
+  const removal = await db.clubRemoval.findUnique({ where: { userId_clubId: { userId: actorId, clubId } }, select: { requestedAt: true } });
+  if (!removal) throw CLUB_NOT_FOUND;
+  if (removal.requestedAt) throw new DomainError("REQUEST_PENDING", "Ta demande est déjà en attente");
+  await db.clubRemoval.update({ where: { userId_clubId: { userId: actorId, clubId } }, data: { requestedAt: new Date() } });
+}
+
+export type ReturnRequest = { userId: string; displayName: string; avatarKey: string; avatarPhotoAt: Date | null; requestedAt: Date };
+
+/** Demandes de retour en attente, pour les admins du club. */
+export async function listReturnRequests(actorId: string, clubId: string): Promise<ReturnRequest[]> {
+  await requireClubAdmin(actorId, clubId);
+  const rows = await db.clubRemoval.findMany({
+    where: { clubId, requestedAt: { not: null } },
+    select: { requestedAt: true, user: { select: { id: true, displayName: true, avatarKey: true, avatarPhotoAt: true } } },
+    orderBy: { requestedAt: "asc" },
+  });
+  return rows.map((r) => ({ userId: r.user.id, displayName: r.user.displayName, avatarKey: r.user.avatarKey, avatarPhotoAt: r.user.avatarPhotoAt, requestedAt: r.requestedAt! }));
+}
+
+/** Un admin accepte (la personne redevient membre simple) ou refuse (elle reste retirée et peut redemander). */
+export async function decideReturn(actorId: string, clubId: string, targetUserId: string, accept: boolean): Promise<void> {
+  await requireClubAdmin(actorId, clubId);
+  await db.$transaction(async (tx) => {
+    const removal = await tx.clubRemoval.findUnique({ where: { userId_clubId: { userId: targetUserId, clubId } }, select: { requestedAt: true } });
+    if (!removal || !removal.requestedAt) throw new DomainError("NOT_FOUND", "Aucune demande en attente pour ce compte");
+    if (accept) {
+      await tx.clubRemoval.delete({ where: { userId_clubId: { userId: targetUserId, clubId } } });
+      await tx.clubMembership.create({ data: { userId: targetUserId, clubId, role: "MEMBER" } });
+    } else {
+      await tx.clubRemoval.update({ where: { userId_clubId: { userId: targetUserId, clubId } }, data: { requestedAt: null } });
+    }
+  });
 }

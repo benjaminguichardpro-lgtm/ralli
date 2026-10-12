@@ -137,6 +137,8 @@ model User {
   stories            Story[]               @relation("StoryAuthor")
   storiesDeleted     Story[]               @relation("StoryDeletedBy")
   storyViews         StoryView[]
+  removedFrom        ClubRemoval[]         @relation("RemovedUser")
+  removalsMade       ClubRemoval[]         @relation("RemovedBy")
 }
 
 /// Demande d'un utilisateur pour devenir admin d'un club (et donc pouvoir en créer un). Examinée par l'équipe Ralli.
@@ -165,7 +167,6 @@ model ClubCreationRequest {
 model Club {
   id          String   @id @default(cuid())
   name        String
-  inviteCode  String   @unique // 6 caractères, alphabet sans 0/O/1/I, régénérable
   createdById String
   createdAt   DateTime @default(now())
 
@@ -188,6 +189,7 @@ model Club {
   encounters       Encounter[]
   stories          Story[]
   storyCollections StoryCollection[]
+  removals         ClubRemoval[]
 }
 
 model ClubMembership {
@@ -201,6 +203,23 @@ model ClubMembership {
 
   @@id([userId, clubId])
   @@index([clubId])
+}
+
+// Un membre retiré par un admin. Tant que cette ligne existe, « Rejoindre le club » en un clic est refusé :
+// la personne doit demander à revenir (requestedAt non vide = demande en attente, que les admins acceptent ou refusent).
+model ClubRemoval {
+  userId      String
+  clubId      String
+  removedAt   DateTime  @default(now())
+  removedById String
+  requestedAt DateTime?
+
+  user      User @relation("RemovedUser", fields: [userId], references: [id], onDelete: Cascade)
+  club      Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  removedBy User @relation("RemovedBy", fields: [removedById], references: [id])
+
+  @@id([userId, clubId])
+  @@index([clubId, requestedAt])
 }
 
 // ─────────────────────────────── Équipes et joueurs ───────────────────────────────

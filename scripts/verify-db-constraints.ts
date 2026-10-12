@@ -147,7 +147,7 @@ const fixtures = `
 INSERT INTO "User"(id,email,"passwordHash","displayName","displayNameKey","ageConfirmedAt") VALUES
   ('verif_u','verif@ralli.test','x','Verif','verif',now()),
   ('verif_u2','verif2@ralli.test','x','Verif2','verif2',now());
-INSERT INTO "Club"(id,name,"inviteCode","createdById") VALUES ('verif_c','Club vérif','VERIF1','verif_u');
+INSERT INTO "Club"(id,name,"createdById") VALUES ('verif_c','Club vérif','verif_u');
 INSERT INTO "Team"(id,"clubId",name) VALUES ('verif_t1','verif_c','Équipe A'),('verif_t2','verif_c','Équipe B');
 INSERT INTO "Player"(id,"clubId","firstName","lastName","fftRank") VALUES
   ('verif_pl1','verif_c','A','A','R30'),('verif_pl2','verif_c','B','B','R15'),

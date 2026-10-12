@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp, allowClubCreation } from "./helpers";
+import { checkPage, forceStarted, openSection, placeBet, currentClubId, joinClubById, signUp, allowClubCreation } from "./helpers";
 
 // Parcours complet, de la création du club au classement.
 // Alma (admin), Cyril (capitaine), Bruno et Chloe (membres qui pronostiquent).
@@ -35,16 +35,12 @@ test("1. Alma crée le club, les autres le rejoignent avec le code", async () =>
   await alma.goto("/clubs/nouveau");
   await alma.getByLabel("Nom du club").fill("TC Parcours");
   await alma.getByRole("button", { name: "Créer le club" }).click();
-  const code = await revealInviteCode(alma);
+  const code = await currentClubId(alma);
   clubUrl = alma.url();
   for (const [page, name] of [[cyril, "Cyril"], [bruno, "Bruno"], [chloe, "Chloe"]] as const) {
     await register(page, name);
-    await page.goto("/clubs/rejoindre");
-    await page.getByLabel("Code d'invitation").fill(code);
-    await page.getByRole("button", { name: "Rejoindre" }).click();
+    await joinClubById(page, code);
     await expect(page.getByText(/Votre rôle/)).toBeVisible();
-    // Un membre ordinaire ne voit pas le code d'invitation.
-    await expect(page.getByTestId("invite-code")).toHaveCount(0);
   }
 });
 

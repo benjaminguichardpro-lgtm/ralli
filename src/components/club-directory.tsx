@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { joinClubButtonAction, leaveClubAction } from "@/app/actions/clubs";
+import { joinClubButtonAction, leaveClubAction, requestReturnAction } from "@/app/actions/clubs";
 import { initialFormState } from "@/app/actions/types";
 import { FormMessage, SubmitButton, confirmOnSubmit } from "./ui";
 
@@ -13,6 +13,28 @@ export function JoinClubButton({ clubId, className = "" }: { clubId: string; cla
       <input type="hidden" name="clubId" value={clubId} />
       <SubmitButton className="w-full" pendingLabel="Un instant…">
         Rejoindre le club
+      </SubmitButton>
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
+    </form>
+  );
+}
+
+/** Pour un membre retiré par un admin : « Demander à revenir » (une seule demande en attente à la fois). */
+export function ReturnRequestButton({ clubId, pending }: { clubId: string; pending: boolean }) {
+  const [state, action] = useActionState(requestReturnAction, initialFormState);
+  if (pending) {
+    return (
+      <p className="rounded-lg bg-pale px-3 py-2 text-ink" data-testid="return-pending">
+        Ta demande est envoyée : les admins du club vont te répondre.
+      </p>
+    );
+  }
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="clubId" value={clubId} />
+      <p className="text-sm text-ink-muted">Un admin t&apos;a retiré de ce club. Tu peux demander à revenir.</p>
+      <SubmitButton className="w-full" pendingLabel="Un instant…">
+        Demander à revenir
       </SubmitButton>
       <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>

@@ -1,14 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { signUpSchema } from "@/lib/validation/account";
 import { registerUser } from "./accounts";
-import {
-  createClub,
-  getClubView,
-  joinClubByCode,
-  listMyClubs,
-  regenerateInviteCode,
-  setMemberRole,
-} from "./clubs";
+import { joinClub } from "./club-directory";
+import { createClub, getClubView, listMyClubs, setMemberRole } from "./clubs";
 
 async function user(name: string) {
   const { id } = await registerUser(
@@ -20,42 +14,36 @@ async function user(name: string) {
 let admin: string;
 let member: string;
 let outsider: string;
-let club: { id: string; inviteCode: string };
+let club: { id: string };
 
 beforeEach(async () => {
   admin = await user("admin");
   member = await user("membre");
   outsider = await user("exterieur");
   club = await createClub(admin, "TC Ralli");
-  await joinClubByCode(member, club.inviteCode);
+  await joinClub(member, club.id);
 });
 
 describe("création et adhésion", () => {
-  it("le créateur est ADMIN, celui qui rejoint par code est MEMBER", async () => {
+  it("le créateur est ADMIN, celui qui rejoint est MEMBER", async () => {
     expect(await listMyClubs(admin)).toEqual([{ id: club.id, name: "TC Ralli", role: "ADMIN", logoUpdatedAt: null }]);
     expect(await listMyClubs(member)).toEqual([{ id: club.id, name: "TC Ralli", role: "MEMBER", logoUpdatedAt: null }]);
     expect(await listMyClubs(outsider)).toEqual([]);
   });
 
-  it("refuse un code inconnu, mal formé, ou une seconde adhésion", async () => {
-    await expect(joinClubByCode(outsider, "ZZZZZZ")).rejects.toMatchObject({ code: "INVALID_INVITE_CODE" });
-    await expect(joinClubByCode(outsider, "AB0CDE")).rejects.toMatchObject({ code: "INVALID_INVITE_CODE" });
-    await expect(joinClubByCode(member, club.inviteCode)).rejects.toMatchObject({ code: "ALREADY_MEMBER" });
+  it("refuse un club inconnu ou une seconde adhésion", async () => {
+    await expect(joinClub(outsider, "inexistant")).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(joinClub(member, club.id)).rejects.toMatchObject({ code: "ALREADY_MEMBER" });
   });
 
   it("un utilisateur peut appartenir à plusieurs clubs", async () => {
     const other = await createClub(outsider, "AS Voisins");
-    await joinClubByCode(member, other.inviteCode);
+    await joinClub(member, other.id);
     expect((await listMyClubs(member)).map((c) => c.name)).toEqual(["AS Voisins", "TC Ralli"]);
   });
 });
 
 describe("cloisonnement des rôles", () => {
-  it("seul un admin voit le code d'invitation", async () => {
-    expect((await getClubView(admin, club.id)).inviteCode).toBe(club.inviteCode);
-    expect((await getClubView(member, club.id)).inviteCode).toBeNull();
-  });
-
   it("un non-membre ne voit pas le club (même réponse qu'un club inexistant)", async () => {
     await expect(getClubView(outsider, club.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(getClubView(outsider, "inexistant")).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -70,34 +58,26 @@ describe("cloisonnement des rôles", () => {
     ]);
   });
 
-  it("un membre ne peut ni régénérer le code ni changer un rôle", async () => {
-    await expect(regenerateInviteCode(member, club.id)).rejects.toMatchObject({ code: "FORBIDDEN" });
+  it("un membre ne peut pas changer un rôle", async () => {
     await expect(setMemberRole(member, club.id, member, "ADMIN")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(setMemberRole(member, club.id, admin, "MEMBER")).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("un non-membre reçoit NOT_FOUND sur les actions admin", async () => {
-    await expect(regenerateInviteCode(outsider, club.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(setMemberRole(outsider, club.id, member, "ADMIN")).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("l'admin d'un autre club n'a aucun droit ici", async () => {
     await createClub(outsider, "AS Voisins");
-    await expect(regenerateInviteCode(outsider, club.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(setMemberRole(outsider, club.id, member, "ADMIN")).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
 
 describe("actions admin", () => {
-  it("régénérer le code invalide l'ancien", async () => {
-    const fresh = await regenerateInviteCode(admin, club.id);
-    expect(fresh).not.toBe(club.inviteCode);
-    await expect(joinClubByCode(outsider, club.inviteCode)).rejects.toMatchObject({ code: "INVALID_INVITE_CODE" });
-    await expect(joinClubByCode(outsider, fresh)).resolves.toEqual({ clubId: club.id });
-  });
-
   it("nommer un admin, puis lui retirer le rôle", async () => {
     await setMemberRole(admin, club.id, member, "ADMIN");
     expect((await listMyClubs(member))[0]?.role).toBe("ADMIN");
-    await regenerateInviteCode(member, club.id); // désormais autorisé
+    await setMemberRole(member, club.id, admin, "ADMIN"); // désormais autorisé (aucun effet : déjà admin)
     await setMemberRole(member, club.id, admin, "MEMBER");
     expect((await listMyClubs(admin))[0]?.role).toBe("MEMBER");
   });

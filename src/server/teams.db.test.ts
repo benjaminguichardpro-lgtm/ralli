@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { FftRank } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { makeEncounterWithPlayer, makeUser } from "../../tests/db/factories";
-import { createClub, joinClubByCode } from "./clubs";
+import { joinClub } from "./club-directory";
+import { createClub } from "./clubs";
 import {
   addExistingPlayerToTeam,
   addNewPlayerToTeam,
@@ -32,7 +33,7 @@ beforeEach(async () => {
   ];
   const club = await createClub(admin, "TC Ralli");
   clubId = club.id;
-  for (const u of [capA, capB, member]) await joinClubByCode(u, club.inviteCode);
+  for (const u of [capA, capB, member]) await joinClub(u, club.id);
   await createClub(outsider, "AS Voisins");
   teamA = (await createTeam(admin, clubId, { name: "Messieurs 1", captainUserId: capA })).id;
   teamB = (await createTeam(admin, clubId, { name: "Messieurs 2", captainUserId: capB })).id;

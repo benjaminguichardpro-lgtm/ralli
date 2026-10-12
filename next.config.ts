@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/portefeuille", destination: "/rallis", permanent: false },
       { source: "/resultats", destination: "/rallis", permanent: false },
+      // Le code d'invitation n'existe plus : les anciens liens et la page « Rejoindre par code » mènent à la recherche de clubs.
+      { source: "/rejoindre/:code", destination: "/clubs/recherche", permanent: false },
+      { source: "/clubs/rejoindre", destination: "/clubs/recherche", permanent: false },
     ];
   },
   turbopack: {

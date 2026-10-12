@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { type MatchResultInput, confirmScore, disputeScore, proposeScore } from "./scores";
 import { signUpSchema } from "@/lib/validation/account";
 import { registerUser } from "./accounts";
-import { createClub, joinClubByCode } from "./clubs";
+import { joinClub } from "./club-directory";
+import { createClub } from "./clubs";
 import { addMatch, cancelEncounter, createEncounter, publishEncounter } from "./encounters";
 import { placePrediction } from "./predictions";
 import { createStory, markStoryViewed, setCollectionPinned } from "./stories";
@@ -126,7 +127,7 @@ type Resolver = (index: number) => Omit<MatchResultInput, "matchId">;
 export type DemoSummary = {
   password: string;
   accounts: { pseudo: string; role: string }[];
-  clubs: { name: string; inviteCode: string }[];
+  clubs: { name: string; id: string }[];
 };
 
 /** Petite suite pseudo-aléatoire déterministe : deux exécutions donnent exactement les mêmes pronostics. */
@@ -171,8 +172,8 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
   const lyon = await createClub(users.admin_lyon!, "TC Démo-Lyon");
   const nantes = await createClub(users.admin_nantes!, "TC Démo-Nantes");
   const bordeaux = await createClub(users.admin_bordeaux!, "TC Démo-Bordeaux");
-  for (const p of ["capitaine_lyon", "capitaine_dames_lyon", "joueur_lyon", ...parieurs]) await joinClubByCode(users[p]!, lyon.inviteCode);
-  for (const p of ["capitaine_nantes", "joueur_nantes", "parieur1", "parieur2", "parieur3"]) await joinClubByCode(users[p]!, nantes.inviteCode);
+  for (const p of ["capitaine_lyon", "capitaine_dames_lyon", "joueur_lyon", ...parieurs]) await joinClub(users[p]!, lyon.id);
+  for (const p of ["capitaine_nantes", "joueur_nantes", "parieur1", "parieur2", "parieur3"]) await joinClub(users[p]!, nantes.id);
 
   // ── Équipes et joueurs ──
   async function club(adminId: string) {
@@ -412,9 +413,9 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
     password: DEMO_PASSWORD,
     accounts,
     clubs: [
-      { name: "TC Démo-Lyon", inviteCode: lyon.inviteCode },
-      { name: "TC Démo-Nantes", inviteCode: nantes.inviteCode },
-      { name: "TC Démo-Bordeaux", inviteCode: bordeaux.inviteCode },
+      { name: "TC Démo-Lyon", id: lyon.id },
+      { name: "TC Démo-Nantes", id: nantes.id },
+      { name: "TC Démo-Bordeaux", id: bordeaux.id },
     ],
   };
 }

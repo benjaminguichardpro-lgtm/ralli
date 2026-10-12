@@ -3,7 +3,8 @@ import { Prisma } from "@/generated/prisma/client";
 export type DomainErrorCode =
   | "EMAIL_TAKEN"
   | "DISPLAY_NAME_TAKEN"
-  | "INVALID_INVITE_CODE"
+  | "REMOVED_FROM_CLUB"
+  | "CANNOT_REMOVE"
   | "ALREADY_MEMBER"
   | "REQUEST_PENDING"
   | "STORY_INVALID"

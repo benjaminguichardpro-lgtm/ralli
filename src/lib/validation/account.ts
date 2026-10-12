@@ -61,12 +61,6 @@ export const clubNameSchema = z
   .min(2, { error: "Au moins 2 caractères" })
   .max(60, { error: "Au plus 60 caractères" });
 
-export const inviteCodeInputSchema = z
-  .string({ error: "Code requis" })
-  .trim()
-  .toUpperCase()
-  .regex(/^[A-Z0-9]{6}$/, { error: "Le code fait 6 caractères" });
-
 /** Premier message d'erreur par champ, pour l'affichage dans les formulaires. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};

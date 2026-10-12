@@ -1,68 +1,21 @@
 import type { ClubRole } from "@/generated/prisma/client";
 import type { ClubProfileFields } from "@/lib/clubs/profile";
-import { generateInviteCode, isWellFormedInviteCode } from "@/lib/clubs/invite-code";
 import { db } from "@/lib/db";
-import { DomainError, isUniqueViolation } from "./errors";
-import { CLUB_NOT_FOUND, getClubRole, requireClubAdmin, requireClubMember } from "./permissions";
+import { DomainError } from "./errors";
+import { CLUB_NOT_FOUND, requireClubAdmin, requireClubMember } from "./permissions";
 
 // Toutes les fonctions prennent l'identifiant de l'acteur et vérifient ses droits en base :
 // l'UI peut masquer un bouton, mais c'est ici que le cloisonnement est garanti.
 
-/** Réessaie en cas de collision (rarissime) sur le code d'invitation. */
-async function withFreshInviteCode<T>(fn: (code: string) => Promise<T>): Promise<T> {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    try {
-      return await fn(generateInviteCode());
-    } catch (e) {
-      if (!isUniqueViolation(e, "inviteCode")) throw e;
-    }
-  }
-  throw new Error("Impossible de générer un code d'invitation unique");
-}
-
-export async function createClub(actorId: string, name: string): Promise<{ id: string; inviteCode: string }> {
-  return withFreshInviteCode((inviteCode) =>
-    db.club.create({
-      data: {
-        name,
-        inviteCode,
-        createdById: actorId,
-        memberships: { create: { userId: actorId, role: "ADMIN" } },
-      },
-      select: { id: true, inviteCode: true },
-    }),
-  );
-}
-
-/** Club derrière un code d'invitation (page du lien d'invitation) ; null si le code est faux. Ne donne que le nom. */
-export async function findClubByInviteCode(rawCode: string): Promise<{ id: string; name: string } | null> {
-  if (!isWellFormedInviteCode(rawCode)) return null;
-  return db.club.findUnique({ where: { inviteCode: rawCode }, select: { id: true, name: true } });
-}
-
-export async function joinClubByCode(actorId: string, rawCode: string): Promise<{ clubId: string }> {
-  const invalid = new DomainError("INVALID_INVITE_CODE", "Code d'invitation invalide");
-  if (!isWellFormedInviteCode(rawCode)) throw invalid;
-  const club = await db.club.findUnique({ where: { inviteCode: rawCode }, select: { id: true } });
-  if (!club) throw invalid;
-  if (await getClubRole(actorId, club.id)) {
-    throw new DomainError("ALREADY_MEMBER", "Vous êtes déjà membre de ce club");
-  }
-  try {
-    await db.clubMembership.create({ data: { userId: actorId, clubId: club.id, role: "MEMBER" } });
-  } catch (e) {
-    if (isUniqueViolation(e)) throw new DomainError("ALREADY_MEMBER", "Vous êtes déjà membre de ce club");
-    throw e;
-  }
-  return { clubId: club.id };
-}
-
-export async function regenerateInviteCode(actorId: string, clubId: string): Promise<string> {
-  await requireClubAdmin(actorId, clubId);
-  const club = await withFreshInviteCode((inviteCode) =>
-    db.club.update({ where: { id: clubId }, data: { inviteCode }, select: { inviteCode: true } }),
-  );
-  return club.inviteCode;
+export async function createClub(actorId: string, name: string): Promise<{ id: string }> {
+  return db.club.create({
+    data: {
+      name,
+      createdById: actorId,
+      memberships: { create: { userId: actorId, role: "ADMIN" } },
+    },
+    select: { id: true },
+  });
 }
 
 export async function setMemberRole(actorId: string, clubId: string, targetUserId: string, role: ClubRole): Promise<void> {
@@ -102,8 +55,6 @@ export type ClubView = {
   myRole: ClubRole;
   /** Fiche du club (champs facultatifs, voir server/club-profile.ts). */
   profile: ClubProfileFields & { logoUpdatedAt: Date | null };
-  /** Visible des admins uniquement. */
-  inviteCode: string | null;
   members: { userId: string; displayName: string; role: ClubRole; joinedAt: Date; avatarKey: string; avatarPhotoAt: Date | null }[];
 };
 
@@ -115,7 +66,6 @@ export async function getClubView(actorId: string, clubId: string): Promise<Club
     select: {
       id: true,
       name: true,
-      inviteCode: true,
       logoUpdatedAt: true,
       foundedYear: true,
       licenseeCount: true,
@@ -149,7 +99,6 @@ export async function getClubView(actorId: string, clubId: string): Promise<Club
       indoorCourts: club.indoorCourts,
       outdoorCourts: club.outdoorCourts,
     },
-    inviteCode: myRole === "ADMIN" ? club.inviteCode : null,
     members: club.memberships.map((m) => ({
       userId: m.user.id,
       displayName: m.user.displayName,

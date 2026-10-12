@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { type Browser, type Page, expect, test } from "@playwright/test";
 import { parse } from "dotenv";
-import { checkPage, openSection, revealInviteCode, signUp, allowClubCreation } from "./helpers";
+import { checkPage, openSection, currentClubId, joinClubById, signUp, allowClubCreation } from "./helpers";
 
 // Odile (admin), Pablo (capitaine), Quentin (membre), Rita (sans club), un visiteur sans compte.
 
@@ -46,13 +46,11 @@ test("mise en place : club, rencontre publiée avec deux simples", async () => {
   await ivan.goto("/clubs/nouveau");
   await ivan.getByLabel("Nom du club").fill("TC Pronostics");
   await ivan.getByRole("button", { name: "Créer le club" }).click();
-  const code = await revealInviteCode(ivan);
+  const code = await currentClubId(ivan);
   clubUrl = ivan.url();
   for (const [page, name] of [[jade, "Pablo"], [kevin, "Quentin"]] as const) {
     await register(page, name);
-    await page.goto("/clubs/rejoindre");
-    await page.getByLabel("Code d'invitation").fill(code);
-    await page.getByRole("button", { name: "Rejoindre" }).click();
+    await joinClubById(page, code);
     await expect(page.getByText(/Votre rôle/)).toBeVisible();
   }
   await register(nina, "Rita");

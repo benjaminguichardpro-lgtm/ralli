@@ -30,7 +30,7 @@ export async function submitClubRequest(userId: string, input: ClubRequestInput)
 }
 
 /** Crée le club en consommant une demande acceptée ; refuse sans demande acceptée disponible. */
-export async function createClubWithApproval(userId: string, name: string): Promise<{ id: string; inviteCode: string }> {
+export async function createClubWithApproval(userId: string, name: string): Promise<{ id: string }> {
   const approved = await db.clubCreationRequest.findFirst({
     where: { userId, status: "APPROVED", clubId: null },
     select: { id: true },

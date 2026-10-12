@@ -3,7 +3,8 @@ import sharp from "sharp";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { makeUser } from "../../tests/db/factories";
-import { createClub, getClubView, joinClubByCode } from "./clubs";
+import { joinClub } from "./club-directory";
+import { createClub, getClubView } from "./clubs";
 import { getPhotoFor, resetMemberAvatar, setPresetAvatar, uploadAvatarPhoto } from "./avatars";
 
 const png = (w: number, h: number) => sharp({ create: { width: w, height: h, channels: 3, background: "#b4502b" } }).png().toBuffer();
@@ -14,7 +15,7 @@ beforeEach(async () => {
   [admin, ana, bob, outsider] = (await Promise.all(["Admin", "Ana", "Bob", "Dehors"].map(makeUser))) as [string, string, string, string];
   const club = await createClub(admin, "TC Avatars");
   clubId = club.id;
-  for (const u of [ana, bob]) await joinClubByCode(u, club.inviteCode);
+  for (const u of [ana, bob]) await joinClub(u, club.id);
 });
 
 afterAll(() => rm("test-results/avatar-db", { recursive: true, force: true }));

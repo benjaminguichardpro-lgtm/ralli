@@ -191,10 +191,17 @@ export async function signOut(page: Page) {
   await page.getByRole("button", { name: "Déconnexion" }).click();
 }
 
-/** Admin : appuie sur « Révéler le code d'invitation » et renvoie le code affiché. */
-export async function revealInviteCode(page: Page): Promise<string> {
-  await page.getByRole("button", { name: "Révéler le code d'invitation" }).click();
-  return (await page.getByTestId("invite-code").innerText()).trim();
+/** Identifiant du club affiché (adresse `/clubs/<id>`), à lire juste après la création du club. */
+export async function currentClubId(page: Page): Promise<string> {
+  await expect(page).toHaveURL(/\/clubs\/c[a-z0-9]{20,30}(?:[/?#]|$)/); // attend la fin de la redirection après « Créer le club »
+  return /\/clubs\/([^/?#]+)/.exec(page.url())![1]!;
+}
+
+/** Un compte connecté rejoint un club d'un bouton, depuis la page du club (aucun code). */
+export async function joinClubById(page: Page, clubId: string) {
+  await page.goto(`/clubs/${clubId}`);
+  await page.getByRole("button", { name: "Rejoindre le club" }).click();
+  await expect(page.getByText("Votre rôle : membre")).toBeVisible();
 }
 
 /**

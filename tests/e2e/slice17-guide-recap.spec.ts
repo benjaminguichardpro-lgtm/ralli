@@ -1,5 +1,5 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
-import { awaitServerAction, backdateAccount, checkPage, forceStarted, openSection, placeBet, revealInviteCode, signUp, allowClubCreation } from "./helpers";
+import { awaitServerAction, backdateAccount, checkPage, forceStarted, openSection, placeBet, currentClubId, joinClubById, signUp, allowClubCreation } from "./helpers";
 
 // Guide du premier lancement (Nina17, Omar17) et récapitulatif des pronostics réglés
 // (Pia17 admin, Quentin17 capitaine, Oscar17 et Rita17 qui pronostiquent).
@@ -163,13 +163,11 @@ test("mise en place : club, équipe, rencontre publiée, pronostics d'Oscar et d
   await pia.goto("/clubs/nouveau");
   await pia.getByLabel("Nom du club").fill("TC Récap17");
   await pia.getByRole("button", { name: "Créer le club" }).click();
-  const code = await revealInviteCode(pia);
+  const code = await currentClubId(pia);
   clubUrl = pia.url();
   for (const [page, name] of [[quentin, "Quentin17"], [oscar, "Oscar17"], [rita, "Rita17"]] as const) {
     await signUp(page, name);
-    await page.goto("/clubs/rejoindre");
-    await page.getByLabel("Code d'invitation").fill(code);
-    await page.getByRole("button", { name: "Rejoindre" }).click();
+    await joinClubById(page, code);
     await expect(page.getByText(/Votre rôle/)).toBeVisible();
   }
 
