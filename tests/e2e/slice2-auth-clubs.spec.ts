@@ -104,15 +104,18 @@ test("Bob s'inscrit, rejoint avec le code, et n'a aucun accès admin", async () 
   await checkPage(bob, "05-club-membre");
 });
 
-test("Carole (non membre) obtient une 404 sur l'URL du club", async () => {
+test("Carole (non membre) consulte le club en lecture seule : ni code, ni membres, un bouton pour rejoindre", async () => {
   await signUp(carole, "Carole");
   await expect(carole.getByTestId("nav-user")).toHaveText("Carole");
   await carole.goto(clubUrl);
-  // Le contrôle d'accès s'exécute dans un <Suspense> streamé : l'en-tête HTTP (200) part avant.
-  // On vérifie donc le contenu servi, qui est la page « introuvable » sans aucune donnée du club.
-  await expect(carole.getByRole("heading", { name: "Page introuvable" })).toBeVisible();
+  // Les clubs sont publics : la page est servie dans un <Suspense>, on attend son contenu.
+  await expect(carole.getByTestId("visitor-club")).toBeVisible();
+  await expect(carole.getByRole("heading", { name: "TC Ralli" })).toBeVisible();
+  await expect(carole.getByTestId("club-followers")).toContainText("personne");
+  await expect(carole.getByRole("button", { name: "Rejoindre le club" })).toBeVisible();
   await expect(carole.getByTestId("invite-code")).toHaveCount(0);
-  await expect(carole.getByText("TC Ralli")).toHaveCount(0);
+  await expect(carole.getByTestId("section-members")).toHaveCount(0);
+  await expect(carole.getByRole("button", { name: "Révéler le code d'invitation" })).toHaveCount(0);
 });
 
 test("pages protégées : redirection vers la connexion si déconnecté", async ({ browser }) => {

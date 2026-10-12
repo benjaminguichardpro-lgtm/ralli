@@ -3,7 +3,7 @@ import { listMyClubs } from "@/server/clubs";
 import { hasUnseenResults } from "@/server/onboarding";
 import { TabBar } from "./tab-bar";
 
-/** Barre du bas : seulement pour un compte connecté. Avec un seul club, « Club » et « Classement » y mènent directement. */
+/** Barre du bas : seulement pour un compte connecté. L'onglet « Clubs » ouvre la recherche de clubs ; avec un seul club, « Classement » mène directement à son classement. */
 export async function AppNav() {
   const user = await getCurrentUser();
   if (!user || user.mustChangePassword) return null;
@@ -15,7 +15,7 @@ export async function AppNav() {
         matchs: "/",
         rallis: "/rallis",
         classement: only ? `/clubs/${only}/classement` : "/classement",
-        club: only ? `/clubs/${only}` : "/clubs",
+        club: "/clubs/recherche",
       }}
       badges={{ rallis: newResults }}
     />

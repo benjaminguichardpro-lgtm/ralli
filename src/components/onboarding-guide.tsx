@@ -16,7 +16,7 @@ const STEPS: readonly Step[] = [
     target: "matchs",
     title: "Matchs",
     text: "Les rencontres de tes clubs. Touche une rencontre, puis la cote du joueur que tu penses gagnant, choisis ton montant et valide ton ralli.",
-    textNoClub: "Ici tu verras les rencontres de ton club. Touche une rencontre, puis une cote, choisis ton montant et valide ton ralli. Rejoins d'abord un club.",
+    textNoClub: "Ici tu verras les rencontres de ton club. Touche une rencontre, puis une cote, choisis ton montant et valide ton ralli. Cherche d'abord ton club dans l'onglet Clubs.",
   },
   {
     target: "rallis",
@@ -32,9 +32,9 @@ const STEPS: readonly Step[] = [
   },
   {
     target: "club",
-    title: "Club",
-    text: "Ton club : ses équipes, ses membres, et comment inviter tes coéquipiers.",
-    textNoClub: "Ici tu peux rejoindre un club avec son code d'invitation, ou en créer un.",
+    title: "Clubs",
+    text: "Cherche n'importe quel club, regarde ses rencontres à venir et rejoins-le d'un bouton. Tes clubs sont dans ton profil.",
+    textNoClub: "Cherche ton club, regarde ses rencontres à venir et rejoins-le d'un bouton pour pronostiquer.",
   },
   {
     target: "profil",

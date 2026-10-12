@@ -75,7 +75,7 @@ test("avec un compte existant : « J'ai déjà un compte », connexion, « Non m
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(visibleClub(page)).toHaveText(`Rejoindre ${CLUB} ?`);
   await page.getByRole("link", { name: "Non merci" }).click();
-  await expect(page.getByRole("heading", { name: "Rejoignez votre club" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Trouve ton club" })).toBeVisible();
   // Déjà membre : le lien ne propose plus de rejoindre.
   await capitaine.goto(`/rejoindre/${code}`);
   await expect(capitaine.getByRole("heading", { name: `Tu es déjà membre de ${CLUB}` })).toBeVisible();

@@ -764,6 +764,23 @@ export async function listClubEncounters(actorId: string, clubId: string, now = 
   return attachResults(rows, toListItems(rows, now, { userId: actorId, isAdmin: role === "ADMIN" }));
 }
 
+/**
+ * Rencontres d'un club visibles de tout compte connecté (les clubs sont publics) : jamais de brouillon ni d'archive.
+ * Les rencontres à venir ou en cours d'abord (la plus proche en premier), puis les 5 plus récentes déjà jouées ou annulées.
+ */
+export async function listPublicClubEncounters(clubId: string, now = new Date()): Promise<{ upcoming: EncounterListItem[]; recent: EncounterListItem[] }> {
+  const rows = await db.encounter.findMany({
+    where: { organizerClubId: clubId, archivedAt: null, status: { not: "DRAFT" } },
+    orderBy: { startsAt: "desc" },
+    take: 60,
+    select: listSelect,
+  });
+  const items = await attachResults(rows, toListItems(rows, now));
+  const upcoming = items.filter((i) => i.status === "OPEN" || i.status === "LOCKED").sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+  const recent = items.filter((i) => i.status !== "OPEN" && i.status !== "LOCKED").slice(0, 5);
+  return { upcoming, recent };
+}
+
 /** Archives du club : visibles des admins et des capitaines seulement (liste vide pour un simple membre). */
 export async function listArchivedEncounters(actorId: string, clubId: string, now = new Date()): Promise<EncounterListItem[]> {
   const role = await requireClubMember(actorId, clubId);

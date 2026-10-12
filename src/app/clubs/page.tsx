@@ -24,7 +24,7 @@ async function Clubs() {
       <h1 className="font-serif text-3xl text-primary">Mes clubs</h1>
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         {clubs.length === 0 ? (
-          <p className="text-ink-muted">Vous n&apos;êtes membre d&apos;aucun club pour l&apos;instant.</p>
+          <p className="text-ink-muted">Tu n&apos;es membre d&apos;aucun club pour l&apos;instant. Cherche le tien et rejoins-le d&apos;un bouton.</p>
         ) : (
           <ul className="divide-y divide-line" data-testid="my-clubs">
             {clubs.map((c) => (
@@ -41,7 +41,7 @@ async function Clubs() {
           </ul>
         )}
         <div className="flex flex-wrap gap-3 pt-2">
-          <ButtonLink href="/clubs/rejoindre">Rejoindre un club</ButtonLink>
+          <ButtonLink href="/clubs/recherche">Rechercher un club</ButtonLink>
           <ButtonLink href="/clubs/demande" variant="ghost">
             Je suis admin d&apos;un club
           </ButtonLink>

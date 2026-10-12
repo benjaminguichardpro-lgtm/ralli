@@ -42,7 +42,7 @@ test.afterAll(async () => {
 test("la barre du bas a 4 onglets, « Mes rallis » entre Matchs et Classement, et l'onglet est signalé sur la page", async ({ browser }) => {
   const p = await login(browser, "parieur1");
   const nav = p.getByRole("navigation", { name: "Navigation principale" });
-  await expect(nav.getByRole("link")).toHaveText(["Matchs", "Mes rallis", "Classement", "Club"]);
+  await expect(nav.getByRole("link")).toHaveText(["Matchs", "Mes rallis", "Classement", "Clubs"]);
   for (const h of await nav.getByRole("link").evaluateAll((els) => els.map((e) => [e.textContent, e.getBoundingClientRect().height, e.scrollWidth <= e.clientWidth + 1] as const))) {
     expect(h[1], `hauteur de « ${h[0]} »`).toBeGreaterThanOrEqual(44);
     expect(h[2], `« ${h[0]} » ne déborde pas de sa case`).toBe(true);

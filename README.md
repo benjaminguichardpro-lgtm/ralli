@@ -315,6 +315,16 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 - **Base** : tables `Story` et `StoryView` (migration `20261012100000_stories`), type `WIN_CARD` déjà prévu pour la tranche 28 (rallis gagnants, réactions, signalement).
 - **Démo** : `seed:demo` ajoute une collection épinglée « Interclubs de la saison » à la une de Lyon, une story de Messieurs 1 et une annonce de Nantes déjà vue par `parieur1` (les stories de la démo disparaissent 24 h après le chargement ; la une reste).
 
+## Annuaire des clubs (tranche 29, `src/server/club-directory.ts`, `src/lib/clubs/search.ts`, pages `/clubs/recherche` et `/clubs/[clubId]`)
+
+- **Les clubs sont publics** : tout compte connecté les cherche, consulte leur fiche, « à la une », leurs rencontres à venir (avec matchs, joueurs « Prénom N. » et cotes) et leurs résultats récents, et peut les **rejoindre d'un bouton** (« Rejoindre le club », sans code, sans confirmation). Seuls les membres pronostiquent ; la page d'une rencontre propose « Rejoindre le club » aux non-membres. Un non-membre ne voit pas : les stories, la liste des membres, le classement, le code. Sans compte, rien (pages privées, non indexées).
+- **« Suivre » = être membre** : « X personnes suivent ce club » (`followersLabel`, « Sois le premier à suivre ce club » à zéro) sur la page du club, pour les membres comme les non-membres, et sur chaque résultat de recherche.
+- **Recherche** : barre en haut de l'accueil et page `/clubs/recherche?q=` (onglet **Clubs** de la barre du bas, 4e place, icône d'épingle de carte). Par nom, ville ou code postal, sans accents ni casse, tous les mots doivent correspondre ; sans saisie, tous les clubs, les plus suivis d'abord (50 au plus). Chaque carte : logo, nom, code postal et ville, compteur, pastille « Membre ».
+- **Mes clubs** : l'ancien contenu de l'onglet Club est dans le profil : « Voir mes clubs » mène directement au club si on n'en a qu'un, sinon à `/clubs` (liste « Mes clubs » avec « Rechercher un club » et « Je suis admin d'un club »). « Classement » mène toujours au classement du club unique, ou à la liste.
+- **Quitter le club** (bouton en bas de la page du club, avec confirmation ; les pronostics en cours restent valables). Refusé pour : le dernier admin, un capitaine d'équipe (un admin doit d'abord changer de capitaine), un joueur lié à un compte aligné dans une rencontre `OPEN` ou `SCORE_PROPOSED` (anti-trucage). Sinon la fiche de joueur est déliée du compte.
+- **Logo et fiche** : lisibles de tout compte connecté (avant : membres seulement). **Guide** : l'étape « Clubs » est réécrite.
+- **Pas encore fait** (tranches B et C décidées avec Benjamin) : retrait d'un membre par un admin, suppression du code d'invitation et des liens `/rejoindre/CODE` (le code existe toujours, caché), puis carte avec épingles et filtres (région, taille par nombre de personnes qui suivent le club, rencontre à venir) ; `Club.latitude` / `longitude` calculées avec l'API adresse de l'État.
+
 ## Documents
 
 - [EXCLUSIONS.md](EXCLUSIONS.md) : ce qui est volontairement hors MVP.

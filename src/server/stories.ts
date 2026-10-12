@@ -2,7 +2,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { type CreateStoryInput, collectionNameKey, collectionNameSchema, createStorySchema, isStoryLive, storyExpiry } from "@/lib/stories";
 import { DomainError, isUniqueViolation } from "./errors";
-import { CLUB_NOT_FOUND, requireClubAdmin, requireClubMember } from "./permissions";
+import { CLUB_NOT_FOUND, getClubRole, requireClubAdmin, requireClubMember } from "./permissions";
 
 // Stories de club : visibles 24 h par les membres du club. Les droits sont relus en base à chaque appel.
 // Le « à la une » du club est fait de collections nommées (comme les « à la une » d'Instagram) qui gardent des stories après leurs 24 h.
@@ -234,10 +234,11 @@ export type WallCollection = {
 
 /**
  * « À la une » du club : ses collections, l'épinglée d'abord puis celle dont la dernière story est la plus récente.
- * Membres seulement. Les stories d'une collection se lisent de la plus ancienne à la plus récente, même expirées.
+ * Tout compte connecté peut la lire. Les stories d'une collection se lisent de la plus ancienne à la plus récente, même expirées.
  */
 export async function listClubWall(userId: string, clubId: string): Promise<{ collections: WallCollection[]; isAdmin: boolean }> {
-  const role = await requireClubMember(userId, clubId);
+  // Les clubs sont publics : un compte qui n'est pas membre peut lire « à la une » (sans aucune commande).
+  const role = await getClubRole(userId, clubId);
   const rows = await db.storyCollection.findMany({
     where: { clubId, stories: { some: { deletedAt: null } } },
     select: { id: true, name: true, pinnedAt: true, stories: { where: { deletedAt: null }, orderBy: { createdAt: "asc" }, select: storySelect(userId) } },

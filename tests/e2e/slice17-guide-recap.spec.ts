@@ -89,8 +89,8 @@ test("guide : écran d'accueil, puis visite des 6 éléments (compte sans club),
   await expectStep(nina, 3, "Mes rallis", "rallis");
   await tour(nina).getByRole("button", { name: "Suivant" }).click();
   await tour(nina).getByRole("button", { name: "Suivant" }).click();
-  await expectStep(nina, 5, "Club", "club");
-  await expect(nina.getByTestId("tour-text")).toContainText("rejoindre un club avec son code d'invitation, ou en créer un");
+  await expectStep(nina, 5, "Clubs", "club");
+  await expect(nina.getByTestId("tour-text")).toContainText("Cherche ton club, regarde ses rencontres à venir et rejoins-le d'un bouton");
   await tour(nina).getByRole("button", { name: "Suivant" }).click();
   await expectStep(nina, 6, "Ton profil", "profil");
   await expect(tour(nina).getByRole("button", { name: "Passer" })).toHaveCount(0); // « Terminer » prend sa place
@@ -130,7 +130,7 @@ test("guide : « Passer » ferme tout dès l'accueil ; « Revoir le guide » rej
   await tour(omar).getByRole("button", { name: "Suivant" }).click(); // l'étape 3 est introuvable : on passe directement à la 4
   await expectStep(omar, 4, "Classement", "classement");
   await tour(omar).getByRole("button", { name: "Suivant" }).click();
-  await expectStep(omar, 5, "Club", "club");
+  await expectStep(omar, 5, "Clubs", "club");
 
   await omar.keyboard.press("Escape");
   await expect(tour(omar)).toBeHidden();
@@ -327,7 +327,7 @@ test("un membre de club rejoue la visite depuis son profil : textes « avec club
   await tour(oscar).getByRole("button", { name: "Suivant" }).click();
   await expect(oscar.getByTestId("tour-text")).toHaveText("Ta place parmi les membres de ton club, selon tes résultats.");
   await tour(oscar).getByRole("button", { name: "Suivant" }).click();
-  await expect(oscar.getByTestId("tour-text")).toHaveText("Ton club : ses équipes, ses membres, et comment inviter tes coéquipiers.");
+  await expect(oscar.getByTestId("tour-text")).toHaveText("Cherche n'importe quel club, regarde ses rencontres à venir et rejoins-le d'un bouton. Tes clubs sont dans ton profil.");
   await checkPage(oscar, "175-visite-club");
   await tour(oscar).getByRole("button", { name: "Passer" }).click();
   await expect(tour(oscar)).toBeHidden();

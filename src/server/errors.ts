@@ -7,6 +7,7 @@ export type DomainErrorCode =
   | "ALREADY_MEMBER"
   | "REQUEST_PENDING"
   | "STORY_INVALID"
+  | "CANNOT_LEAVE"
   | "CLUB_CREATION_NOT_ALLOWED"
   | "NOT_FOUND"
   | "FORBIDDEN"

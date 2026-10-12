@@ -188,24 +188,27 @@ test("après le pronostic, l'accueil reste une simple carte vers la rencontre", 
   await expect(yanis.getByTestId("my-prediction")).toContainText("Lou P.");
 });
 
-test("barre du bas : un seul club mène directement au classement et au club, onglet actif signalé", async () => {
+test("barre du bas : « Clubs » ouvre la recherche, « Classement » mène au classement du club unique, onglet actif signalé", async () => {
   await yanis.goto("/");
   const nav = tabs(yanis);
-  await expect(nav.getByRole("link")).toHaveText(["Matchs", "Mes rallis", "Classement", "Club"]);
+  await expect(nav.getByRole("link")).toHaveText(["Matchs", "Mes rallis", "Classement", "Clubs"]);
   await expect(nav.getByRole("link", { name: "Matchs" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "Classement" })).toHaveAttribute("href", `/clubs/${clubId}/classement`);
-  await expect(nav.getByRole("link", { name: "Club" })).toHaveAttribute("href", `/clubs/${clubId}`);
+  await expect(nav.getByRole("link", { name: "Clubs" })).toHaveAttribute("href", "/clubs/recherche");
   await nav.getByRole("link", { name: "Classement" }).click();
   await expect(yanis).toHaveURL(/\/classement$/);
   await expect(nav.getByRole("link", { name: "Classement" })).toHaveAttribute("aria-current", "page");
-  await nav.getByRole("link", { name: "Club" }).click();
-  await expect(yanis.getByRole("heading", { name: "TC Ecrans" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Club" })).toHaveAttribute("aria-current", "page");
+  await nav.getByRole("link", { name: "Clubs" }).click();
+  await expect(yanis.getByRole("heading", { name: "Rechercher un club" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Clubs" })).toHaveAttribute("aria-current", "page");
   const heights = await nav.getByRole("link").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
   for (const h of heights) expect(h).toBeGreaterThanOrEqual(44);
+  // Mon profil : « Voir mes clubs » mène directement au club quand on n'en a qu'un.
+  await yanis.goto("/profil");
+  await expect(yanis.getByTestId("see-my-clubs")).toHaveAttribute("href", `/clubs/${clubId}`);
 });
 
-test("plusieurs clubs : « Club » et « Classement » mènent à une liste", async () => {
+test("plusieurs clubs : « Voir mes clubs » du profil ouvre la liste, « Classement » aussi", async () => {
   await allowClubCreation();
   await yanis.goto("/clubs/nouveau");
   await yanis.getByLabel("Nom du club").fill("Club de Yanis");
@@ -213,9 +216,11 @@ test("plusieurs clubs : « Club » et « Classement » mènent à une liste", as
   await expect(yanis.getByRole("heading", { name: "Club de Yanis" })).toBeVisible(); // le club est créé avant de changer de page
   await yanis.goto("/");
   const nav = tabs(yanis);
-  await expect(nav.getByRole("link", { name: "Club" })).toHaveAttribute("href", "/clubs");
+  await expect(nav.getByRole("link", { name: "Clubs" })).toHaveAttribute("href", "/clubs/recherche");
   await expect(nav.getByRole("link", { name: "Classement" })).toHaveAttribute("href", "/classement");
-  await nav.getByRole("link", { name: "Club" }).click();
+  await yanis.goto("/profil");
+  await expect(yanis.getByTestId("see-my-clubs")).toHaveAttribute("href", "/clubs");
+  await yanis.getByTestId("see-my-clubs").click();
   await expect(yanis.getByTestId("my-clubs")).toContainText("TC Ecrans");
   await expect(yanis.getByTestId("my-clubs")).toContainText("Club de Yanis");
   await checkPage(yanis, "51-mes-clubs");

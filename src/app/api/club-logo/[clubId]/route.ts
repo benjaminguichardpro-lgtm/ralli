@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { getClubLogoFor } from "@/server/club-profile";
 
-// Logo d'un club : visible de ses membres seulement.
+// Logo d'un club : visible de tout compte connecté (les clubs sont publics dans Ralli).
 export async function GET(_req: Request, ctx: { params: Promise<{ clubId: string }> }) {
   const viewerId = (await auth())?.user?.id;
   if (!viewerId) return new Response(null, { status: 401 });

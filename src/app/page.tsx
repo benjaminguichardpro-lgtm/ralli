@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { ClubLogo } from "@/components/club-logo";
 import { StatusBadge } from "@/components/encounter-list";
 import { BigLogo, LawnCard, lawnButton } from "@/components/lawn-card";
+import { ClubSearchBar } from "@/components/club-directory";
 import { StoriesSection } from "@/components/stories-section";
 import { WhatsAppShare } from "@/components/share-link";
 import { ButtonLink } from "@/components/ui";
@@ -35,6 +36,8 @@ async function HomeContent() {
         Bonjour <strong className="font-semibold text-ink">{user.displayName}</strong>
       </h1>
 
+      <ClubSearchBar />
+
       {feed.hasClub && (
         <Suspense fallback={null}>
           <StoriesSection userId={user.id} />
@@ -43,10 +46,10 @@ async function HomeContent() {
 
       {!feed.hasClub ? (
         <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
-          <h2 className="font-serif text-xl text-primary">Rejoignez votre club</h2>
-          <p className="text-ink-muted">Avec le code d&apos;invitation de votre club, vous pronostiquez ses rencontres d&apos;interclubs.</p>
+          <h2 className="font-serif text-xl text-primary">Trouve ton club</h2>
+          <p className="text-ink-muted">Cherche ton club, consulte ses rencontres, puis rejoins-le d&apos;un bouton pour pronostiquer.</p>
           <div className="flex flex-wrap gap-3">
-            <ButtonLink href="/clubs/rejoindre">Rejoindre un club</ButtonLink>
+            <ButtonLink href="/clubs/recherche">Rechercher un club</ButtonLink>
             <ButtonLink href="/clubs/demande" variant="ghost">
               Je suis admin d&apos;un club
             </ButtonLink>

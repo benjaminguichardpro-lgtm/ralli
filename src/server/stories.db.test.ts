@@ -122,7 +122,7 @@ describe("suppression", () => {
 describe("« à la une » du club : collections nommées", () => {
   const wallStory = (body: string, name: string, at = T0) => createStory(admin, base({ body, onWall: true, collectionName: name }), at);
 
-  it("regroupe les stories par nom (sans tenir compte de la casse), garde après 24 h, membres seulement", async () => {
+  it("regroupe les stories par nom (sans tenir compte de la casse), garde après 24 h, lisible aussi des non-membres", async () => {
     const a = await wallStory("Tournoi 1", "Tournoi d'été", hours(0));
     const b = await wallStory("Tournoi 2", "TOURNOI D'ÉTÉ", hours(2));
     await wallStory("Infos", "Infos de la saison", hours(3));
@@ -137,7 +137,11 @@ describe("« à la une » du club : collections nommées", () => {
     // Les stories ont expiré (plus de 24 h) : elles restent à la une.
     expect(await listStoryRings(member, { now: hours(100) })).toHaveLength(0);
     expect((await listClubWall(member, clubId)).collections).toHaveLength(2);
-    await expect(listClubWall(outsider, clubId)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    // Les clubs sont publics : un compte non membre lit « à la une », sans aucune commande.
+    const visitor = await listClubWall(outsider, clubId);
+    expect(visitor.isAdmin).toBe(false);
+    expect(visitor.collections.map((c) => c.name)).toEqual(["Infos de la saison", "Tournoi d'été"]);
+    expect(visitor.collections.every((c) => c.stories.every((s) => !s.canManageWall && !s.canDelete && s.viewCount === null))).toBe(true);
     expect(a.id).not.toBe(b.id);
   });
 

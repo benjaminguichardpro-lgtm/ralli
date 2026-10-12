@@ -51,8 +51,9 @@ describe("fiche du club", () => {
     expect((await getClubProfile(admin, clubId)).name).toBe("TC Fiche");
   });
 
-  it("un non-membre ne voit rien et ne peut rien modifier (même réponse qu'un club inexistant)", async () => {
-    await expect(getClubProfile(outsider, clubId)).rejects.toMatchObject({ code: "NOT_FOUND" });
+  it("un non-membre consulte la fiche (les clubs sont publics) mais ne peut rien modifier", async () => {
+    const view = await getClubProfile(outsider, clubId);
+    expect(view.myRole).toBeNull();
     await expect(updateClubProfile(outsider, clubId, input())).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(uploadClubLogo(outsider, clubId, await png(50, 50))).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(getClubProfile(admin, "inexistant")).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -95,10 +96,10 @@ describe("logo du club", () => {
     expect([meta.width, meta.height]).toEqual([100, 80]);
   });
 
-  it("visible des membres seulement", async () => {
+  it("visible de tout compte connecté (recherche de clubs, page du club)", async () => {
     await uploadClubLogo(admin, clubId, await png(60, 60));
     expect(await getClubLogoFor(member, clubId)).not.toBeNull();
-    expect(await getClubLogoFor(outsider, clubId)).toBeNull();
+    expect(await getClubLogoFor(outsider, clubId)).not.toBeNull();
   });
 
   it("un admin peut le retirer : plus d'image, plus de date", async () => {

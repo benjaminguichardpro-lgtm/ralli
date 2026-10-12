@@ -23,7 +23,10 @@ export default function ProfilePage() {
 
 async function Content() {
   const user = await requireUser();
-  const hasClub = (await listMyClubs(user.id)).length > 0;
+  const myClubs = await listMyClubs(user.id);
+  const hasClub = myClubs.length > 0;
+  // Un seul club : le bouton y mène directement ; sinon la liste « Mes clubs ».
+  const clubsHref = myClubs.length === 1 ? `/clubs/${myClubs[0]!.id}` : "/clubs";
   return (
     <>
       <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface p-5 shadow-sm">
@@ -40,6 +43,11 @@ async function Content() {
       </div>
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
+        <div>
+          <Link href={clubsHref} data-testid="see-my-clubs" className="inline-flex min-h-11 items-center font-semibold text-primary underline">
+            Voir mes clubs
+          </Link>
+        </div>
         <div>
           <Link href="/mot-de-passe" className="inline-flex min-h-11 items-center font-semibold text-primary underline">
             Changer de mot de passe

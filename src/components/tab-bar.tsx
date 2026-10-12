@@ -21,8 +21,8 @@ const ICONS: Record<Tab, React.ReactNode> = {
   classement: <path d="M5 20V11M12 20V4M19 20v-6" />,
   club: (
     <>
-      <circle cx="9" cy="9" r="3" />
-      <path d="M3.5 19c.5-3 2.7-4.5 5.5-4.5s5 1.5 5.5 4.5M16 6.5a3 3 0 0 1 0 5.5M17.5 14.8c1.8.5 2.8 1.8 3 4.2" />
+      <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />
+      <circle cx="12" cy="10" r="2.4" />
     </>
   ),
 };
@@ -35,14 +35,14 @@ function activeTab(path: string): Tab | null {
   return null;
 }
 
-/** Barre de navigation du bas, pour les comptes connectés. Les liens « Classement » et « Club » dépendent des clubs de l'utilisateur. */
+/** Barre de navigation du bas, pour les comptes connectés. Le lien « Classement » dépend des clubs de l'utilisateur. */
 export function TabBar({ hrefs, badges = {} }: { hrefs: Record<Tab, string>; badges?: Partial<Record<Tab, boolean>> }) {
   const active = activeTab(usePathname());
   const items: [Tab, string][] = [
     ["matchs", "Matchs"],
     ["rallis", "Mes rallis"],
     ["classement", "Classement"],
-    ["club", "Club"],
+    ["club", "Clubs"],
   ];
   return (
     <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]">

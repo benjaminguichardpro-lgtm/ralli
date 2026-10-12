@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/current-user";
 import { clubNameSchema, fieldErrors, inviteCodeInputSchema } from "@/lib/validation/account";
 import { clubRequestSchema } from "@/lib/validation/club-request";
 import { createClubWithApproval, submitClubRequest } from "@/server/club-requests";
+import { joinClub, leaveClub } from "@/server/club-directory";
 import { joinClubByCode, regenerateInviteCode, setMemberRole } from "@/server/clubs";
 import { DomainError } from "@/server/errors";
 import type { FormState } from "./types";
@@ -96,4 +97,33 @@ export async function setMemberRoleAction(_: FormState, fd: FormData): Promise<F
   }
   refresh();
   return {};
+}
+
+/** « Rejoindre le club » : un seul bouton, sans code. La page se rafraîchit : les pronostics s'ouvrent. */
+export async function joinClubButtonAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const parsed = idSchema.safeParse(fd.get("clubId"));
+  if (!parsed.success) return { message: "Requête invalide" };
+  try {
+    await joinClub(user.id, parsed.data);
+  } catch (e) {
+    if (e instanceof DomainError) return { message: e.message };
+    throw e;
+  }
+  refresh();
+  return { ok: true };
+}
+
+export async function leaveClubAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const parsed = idSchema.safeParse(fd.get("clubId"));
+  if (!parsed.success) return { message: "Requête invalide" };
+  try {
+    await leaveClub(user.id, parsed.data);
+  } catch (e) {
+    if (e instanceof DomainError) return { message: e.message };
+    throw e;
+  }
+  refresh();
+  return { ok: true };
 }

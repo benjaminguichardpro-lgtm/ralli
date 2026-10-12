@@ -11,6 +11,7 @@ import {
   PublishForm,
   RescheduleForm,
 } from "@/components/encounter-forms";
+import { JoinClubButton } from "@/components/club-directory";
 import { type Access, MatchPicks } from "@/components/match-picks";
 import { WhatsAppShare } from "@/components/share-link";
 import { ConfirmScoreForm, DisputeScoreForm, ProposeScoreForm, ResolveDisputeForm, WithdrawScoreForm } from "@/components/score-forms";
@@ -81,6 +82,13 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
           path={`/rencontres/${e.id}`}
           label="Partager la rencontre"
         />
+      )}
+
+      {viewer && !panel.isMember && e.status === "OPEN" && (
+        <div className="space-y-2 rounded-2xl bg-pale p-4" data-testid="join-to-predict">
+          <p className="font-medium text-ink">Tu peux consulter les matchs et leurs cotes. Pour pronostiquer, rejoins d&apos;abord le club.</p>
+          <JoinClubButton clubId={e.clubId} />
+        </div>
       )}
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
@@ -196,7 +204,7 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
 function accessFor(e: EncounterPageView, loggedIn: boolean, panel: Awaited<ReturnType<typeof getPredictionPanel>>): Access {
   if (e.status !== "OPEN") return { kind: "none" };
   if (!loggedIn) return { kind: "login" };
-  if (!panel.isMember) return { kind: "note", text: "Réservé aux membres du club organisateur." };
+  if (!panel.isMember) return { kind: "note", text: "Rejoins le club pour pronostiquer." };
   if (panel.blockedReason) return { kind: "note", text: panel.blockedReason, testId: "blocked", explainOnTouch: true };
   return { kind: "predict", balance: panel.balance };
 }

@@ -158,7 +158,8 @@ test("visiteur et non-membre : invitation à se connecter, ou réservé aux memb
   await expect(anon.getByRole("link", { name: "Connectez-vous" })).toHaveCount(2);
   await expect(anon.getByTestId("predict")).toHaveCount(0);
   await nina.goto(encounterUrl);
-  await expect(nina.getByText("Réservé aux membres du club organisateur.")).toHaveCount(2);
+  await expect(nina.getByText("Rejoins le club pour pronostiquer.")).toHaveCount(2);
+  await expect(nina.getByTestId("join-to-predict").getByRole("button", { name: "Rejoindre le club" })).toBeVisible();
   await expect(nina.getByTestId("predict")).toHaveCount(0);
   await anon.goto("/portefeuille");
   await expect(anon).toHaveURL(/\/connexion/);

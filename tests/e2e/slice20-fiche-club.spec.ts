@@ -183,10 +183,10 @@ test("fichiers refusés : trop lourd, pas une image ; le logo en place reste int
   await expect(odile.getByTestId("club-logo").first()).toHaveAttribute("src", logoUrl);
 });
 
-test("le logo n'est visible que des membres : Hugo oui, Oscar non, visiteur non", async () => {
+test("le logo est visible de tout compte connecté (les clubs sont publics), pas du visiteur sans compte", async () => {
   expect((await hugo.request.get(logoUrl)).status()).toBe(200);
   expect((await hugo.request.get(logoUrl)).headers()["content-type"]).toBe("image/webp");
-  expect((await oscar.request.get(logoUrl)).status()).toBe(404);
+  expect((await oscar.request.get(logoUrl)).status()).toBe(200);
   expect((await anon.request.get(logoUrl)).status()).toBe(401);
   expect((await hugo.request.get("/api/club-logo/..%2F..%2Fpackage.json")).status()).toBeGreaterThanOrEqual(400);
 });
@@ -207,10 +207,11 @@ test("le membre voit un résumé et la fiche en lecture seule, sans aucun moyen 
   await checkPage(hugo, "103-fiche-membre");
 });
 
-test("un non-membre et un visiteur ne voient pas la fiche", async () => {
+test("un non-membre consulte la fiche sans pouvoir la modifier ; le visiteur sans compte doit se connecter", async () => {
   await oscar.goto(ficheUrl);
-  await expect(oscar.getByText("Page introuvable")).toBeVisible();
-  await expect(oscar.getByText("12 rue des Lilas")).toHaveCount(0);
+  await expect(oscar.getByText("12 rue des Lilas")).toBeVisible();
+  await expect(oscar.getByRole("button", { name: "Enregistrer la fiche" })).toHaveCount(0);
+  await expect(oscar.getByRole("button", { name: /logo/ })).toHaveCount(0);
   await anon.goto(ficheUrl);
   await expect(anon).toHaveURL(/\/connexion/);
 });

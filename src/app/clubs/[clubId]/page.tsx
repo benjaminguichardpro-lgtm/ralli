@@ -17,10 +17,14 @@ import { requireUser } from "@/lib/auth/current-user";
 import { formatCount, isProfileEmpty, websiteLabel } from "@/lib/clubs/profile";
 import { applyFilter, countFilters, parseFilter } from "@/lib/encounters/filters";
 import { type ClubView, getClubView } from "@/server/clubs";
+import { countFollowers } from "@/server/club-directory";
+import { followersLabel } from "@/components/club-card-list";
+import { LeaveClubForm } from "@/components/club-directory";
+import { VisitorClub } from "./visitor-club";
 import { listArchivedEncounters, listClubEncounters } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
 import { getLeaderboard } from "@/server/leaderboard";
-import { isCaptainInClub } from "@/server/permissions";
+import { getClubRole, isCaptainInClub } from "@/server/permissions";
 import { listClubTeams } from "@/server/teams";
 
 export const metadata: Metadata = { title: "Club · Ralli" };
@@ -46,14 +50,16 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
   const user = await requireUser();
   const { clubId } = await params;
   const filter = parseFilter((await searchParams).statut);
+  // Les clubs sont publics : un compte qui n'est pas membre consulte une page en lecture seule, avec « Rejoindre le club ».
+  if ((await getClubRole(user.id, clubId)) === null) return <VisitorClub userId={user.id} clubId={clubId} />;
   let club: ClubView;
   try {
     club = await getClubView(user.id, clubId);
   } catch (e) {
-    // Non-membre ou club inexistant : même réponse, pour ne rien révéler.
     if (e instanceof DomainError && e.code === "NOT_FOUND") notFound();
     throw e;
   }
+  const followers = await countFollowers(club.id);
   const isAdmin = club.myRole === "ADMIN";
   const [teams, isCaptain, encounters, archived, board] = await Promise.all([
     listClubTeams(user.id, club.id),
@@ -75,6 +81,9 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
             <p className="text-ink-muted">
               Votre rôle : {isAdmin ? "admin" : "membre"}
               {isCaptain ? " · capitaine" : ""}
+            </p>
+            <p className="text-ink-muted" data-testid="club-followers">
+              {followersLabel(followers)}
             </p>
           </div>
         </div>
@@ -237,6 +246,10 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
           ))}
         </ul>
       </details>
+
+      <div className="space-y-2 rounded-2xl bg-surface p-4 shadow-sm" data-testid="leave-club">
+        <LeaveClubForm clubId={club.id} clubName={club.name} />
+      </div>
     </section>
   );
 }
