@@ -42,6 +42,10 @@ describe("seed de démonstration", () => {
     const sums = await db.ledgerEntry.groupBy({ by: ["userId"], _sum: { amount: true } });
     for (const s of sums) expect(s._sum.amount ?? 0, "solde").toBeGreaterThanOrEqual(0);
 
+    // Stories de démo : 3 vivantes, 1 collection épinglée à la une de Lyon.
+    expect(await db.story.count({ where: { deletedAt: null } })).toBe(3);
+    expect(await db.storyCollection.count({ where: { pinnedAt: { not: null } } })).toBe(1);
+
     // Les deux classements de Lyon ont de quoi s'afficher.
     const lyon = await db.club.findFirstOrThrow({ where: { name: "TC Démo-Lyon" } });
     const viewer = await db.user.findFirstOrThrow({ where: { displayName: "parieur1" } });

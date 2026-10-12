@@ -11,6 +11,7 @@ import { rankLabel } from "@/lib/leaderboard/rank";
 import { EncounterFilters } from "@/components/encounter-filters";
 import { EncounterList } from "@/components/encounter-list";
 import { CreateExternalTeamForm, CreateTeamForm } from "@/components/team-forms";
+import { StoriesSection } from "@/components/stories-section";
 import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
 import { formatCount, isProfileEmpty, websiteLabel } from "@/lib/clubs/profile";
@@ -96,6 +97,10 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
           </ButtonLink>
         )}
       </div>
+
+      <Suspense fallback={null}>
+        <StoriesSection userId={user.id} clubId={club.id} clubName={club.name} />
+      </Suspense>
 
       {isAdmin && club.inviteCode && (
         <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">

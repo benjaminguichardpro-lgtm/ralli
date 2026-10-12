@@ -6,6 +6,7 @@ import { registerUser } from "./accounts";
 import { createClub, joinClubByCode } from "./clubs";
 import { addMatch, cancelEncounter, createEncounter, publishEncounter } from "./encounters";
 import { placePrediction } from "./predictions";
+import { createStory, markStoryViewed, setCollectionPinned } from "./stories";
 import { addNewPlayerToTeam, createExternalTeam, createTeam, setPlayerAccount } from "./teams";
 
 // Jeu de données de démonstration (tranche 11). Tout passe par les vraies fonctions du produit :
@@ -18,7 +19,7 @@ export const DEMO_PASSWORD = "demo-ralli-2026";
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-const TABLES = ["LedgerEntry", "Prediction", "Match", "EncounterEvent", "Encounter", "TeamPlayer", "Player", "Team", "ClubMembership", "Club", "User"];
+const TABLES = ["StoryView", "Story", "LedgerEntry", "Prediction", "Match", "EncounterEvent", "Encounter", "TeamPlayer", "Player", "Team", "ClubMembership", "Club", "User"];
 
 /** Vide toute la base (le ledger est append-only : seul TRUNCATE peut l'effacer). */
 export async function wipeAll(): Promise<void> {
@@ -395,6 +396,14 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
 
   // 7. Brouillon : visible des admins et capitaines seulement, pas publié.
   await build({ ...lyonBase, ...D, opponent: opp.bron, oppPlayers: oppPlayers.bron, home: true, startsInMs: 10 * DAY, matches: 3 });
+
+  // ── Stories : une annonce épinglée à la une de Lyon, une story d'équipe, une annonce à Nantes (déjà vue par parieur1) ──
+  const lyonNews = await createStory(users.admin_lyon!, { clubId: lyon.id, teamId: null, body: "Interclubs samedi : rendez-vous à 13 h au club, tenue du club obligatoire.", background: "brand", onWall: true, collectionName: "Interclubs de la saison" }, now);
+  const lyonCollection = await db.story.findUniqueOrThrow({ where: { id: lyonNews.id }, select: { collectionId: true } });
+  await setCollectionPinned(users.admin_lyon!, lyonCollection.collectionId!, true, now);
+  await createStory(users.capitaine_lyon!, { clubId: lyon.id, teamId: lyonM, body: "Messieurs 1 : composition confirmée ce soir, soyez à l'heure !", background: "clay", onWall: false }, now);
+  const nantesNews = await createStory(users.admin_nantes!, { clubId: nantes.id, teamId: null, body: "Le club ferme à 20 h ce vendredi.", background: "gold", onWall: false }, now);
+  await markStoryViewed(users.parieur1!, nantesNews.id, now);
 
   // Les résultats déjà réglés de la démo ne sont pas remontés en récapitulatif à la première connexion.
   await db.user.updateMany({ where: { id: { in: Object.values(users) } }, data: { resultsSeenAt: new Date() } });

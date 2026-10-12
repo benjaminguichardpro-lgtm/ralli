@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ClubLogo } from "@/components/club-logo";
 import { StatusBadge } from "@/components/encounter-list";
+import { StoriesSection } from "@/components/stories-section";
 import { WhatsAppShare } from "@/components/share-link";
 import { ButtonLink } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -32,6 +33,12 @@ async function HomeContent() {
       <h1 className="text-[0.9375rem] font-normal text-ink-muted">
         Bonjour <strong className="font-semibold text-ink">{user.displayName}</strong>
       </h1>
+
+      {feed.hasClub && (
+        <Suspense fallback={null}>
+          <StoriesSection userId={user.id} />
+        </Suspense>
+      )}
 
       {!feed.hasClub ? (
         <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">

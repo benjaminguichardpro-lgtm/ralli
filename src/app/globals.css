@@ -268,3 +268,19 @@ main > section > :nth-child(n + 5) {
     animation: none;
   }
 }
+
+/* Lecteur de stories : plein écran (élément <dialog> natif : focus piégé, Échap). */
+dialog.story-viewer {
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  border: 0;
+  padding: 0;
+  background: var(--color-primary-dark);
+  color: var(--color-on-primary);
+}
+dialog.story-viewer::backdrop {
+  background: var(--color-primary-dark);
+}

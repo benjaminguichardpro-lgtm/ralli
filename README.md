@@ -303,6 +303,18 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 - Toutes les animations sont coupées avec « réduire les animations » (CSS `prefers-reduced-motion` et test JavaScript pour le solde). Aucune évolution de la base.
 - Tests : `src/lib/predictions/results.test.ts`, `src/server/resultats-onglet.db.test.ts`, E2E `slice24-animation.spec.ts`.
 
+## Stories de club et « à la une » (tranche 27, `src/server/stories.ts`, `src/lib/stories.ts`, `src/components/stories-bar.tsx`)
+
+- **Story** : texte de 1 à 280 caractères sur un fond de couleur du thème (vert Ralli, vert action, terre battue, or, vert pâle), **visible 24 h** par les membres du club seulement, jamais publique. Mots interdits (pari, mise, bookmaker, euro) refusés à la publication. Pas d'image importée.
+- **Qui publie** : un admin pour tout le club, un capitaine pour son équipe (étiquette « Équipe », visible de tout le club). Seul l'admin peut cocher « Aussi à la une du club ». Aperçu puis « Publier pour … ? » avant l'envoi ; une story n'est pas modifiable.
+- **Bandeau** (haut de l'accueil et de la page du club) : « + » pour les admins et capitaines, puis un rond par club et par équipe ayant une story vivante ; liseré doré (`accent`) tant qu'il reste une story non vue, les non vues d'abord. Lecteur plein écran (touche droite = suivante, gauche = précédente, pas de lecture automatique) ; une story est « vue » dès qu'elle s'affiche (`StoryView`). L'auteur et les admins voient « Vue par N membres » (le nombre).
+- **« À la une » du club = collections** (comme les « à la une » d'Instagram) : sur la page du club, sous le bandeau de stories, une rangée « « À la une » du club » avec un rond nommé par collection (initiale du nom, couleur de la dernière story, ★ sur l'épinglée). Toucher un rond ouvre en plein écran toutes les stories de la collection, de la plus ancienne à la plus récente, même après leurs 24 h. Tous les membres les lisent ; la rangée n'existe que s'il y a au moins une collection.
+- **Qui les crée** (admins seulement) : à la publication (case « Aussi à la une du club » : choisir une collection existante ou « Nouvelle collection… » avec son nom, 1 à 40 caractères, unique dans le club sans tenir compte de la casse) ou depuis une story déjà publiée (bouton « Ajouter à la une » dans le lecteur ; « Retirer de la une » avec confirmation, la story reste visible jusqu'à ses 24 h). Une story expirée ou supprimée ne peut plus être ajoutée. Une collection sans story disparaît.
+- **Commandes d'admin dans une collection** : « Épingler en premier » / « Désépingler » (une seule épinglée par club, garanti par un index unique, l'épinglée est la première de la une), « Supprimer la collection » (avec confirmation ; les stories ne sont pas supprimées). Tables `StoryCollection` et `Story.collectionId` (migration `20261012180000_story_collections`, qui reprend les anciennes publications de la une).
+- **Suppression** : l'auteur ou un admin du club, avec confirmation ; la ligne reste en base (`deletedAt`, `deletedById`), invisible des membres. Pas de purge automatique des anciennes lignes pour l'instant.
+- **Base** : tables `Story` et `StoryView` (migration `20261012100000_stories`), type `WIN_CARD` déjà prévu pour la tranche 28 (rallis gagnants, réactions, signalement).
+- **Démo** : `seed:demo` ajoute une collection épinglée « Interclubs de la saison » à la une de Lyon, une story de Messieurs 1 et une annonce de Nantes déjà vue par `parieur1` (les stories de la démo disparaissent 24 h après le chargement ; la une reste).
+
 ## Documents
 
 - [EXCLUSIONS.md](EXCLUSIONS.md) : ce qui est volontairement hors MVP.

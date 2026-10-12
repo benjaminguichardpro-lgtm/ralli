@@ -23,6 +23,11 @@ enum ClubRequestStatus {
   REFUSED
 }
 
+enum StoryKind {
+  CLUB_POST // annonce d'un admin ou d'un capitaine
+  WIN_CARD // ralli gagnant partagé par un membre (tranche 28)
+}
+
 enum TeamKind {
   CLUB // équipe d'un club Ralli, avec un capitaine
   EXTERNAL // adversaire hors Ralli, géré par le club Ralli qui l'a créé, sans capitaine
@@ -129,6 +134,9 @@ model User {
   encountersArchived Encounter[]           @relation("EncounterArchivedBy")
   encounterEvents    EncounterEvent[]
   clubRequests       ClubCreationRequest[]
+  stories            Story[]               @relation("StoryAuthor")
+  storiesDeleted     Story[]               @relation("StoryDeletedBy")
+  storyViews         StoryView[]
 }
 
 /// Demande d'un utilisateur pour devenir admin d'un club (et donc pouvoir en créer un). Examinée par l'équipe Ralli.
@@ -173,11 +181,13 @@ model Club {
   outdoorCourts Int?
   logoUpdatedAt DateTime?
 
-  createdBy   User             @relation("ClubCreatedBy", fields: [createdById], references: [id])
-  memberships ClubMembership[]
-  teams       Team[]
-  players     Player[]
-  encounters  Encounter[]
+  createdBy        User              @relation("ClubCreatedBy", fields: [createdById], references: [id])
+  memberships      ClubMembership[]
+  teams            Team[]
+  players          Player[]
+  encounters       Encounter[]
+  stories          Story[]
+  storyCollections StoryCollection[]
 }
 
 model ClubMembership {
@@ -207,6 +217,7 @@ model Team {
   club           Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
   captain        User?        @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
   players        TeamPlayer[]
+  stories        Story[]
   homeEncounters Encounter[]  @relation("HomeTeam")
   awayEncounters Encounter[]  @relation("AwayTeam")
 
@@ -384,4 +395,61 @@ model LedgerEntry {
 
   @@index([userId, createdAt])
   @@index([predictionId])
+}
+
+// ─────────────────────────────── Stories ───────────────────────────────
+
+/// Annonce visible 24 h par les membres du club ; l'admin peut aussi la garder sur le « à la une » du club (onWall).
+/// Supprimée = deletedAt posé (trace conservée pour les admins), jamais effacée.
+model Story {
+  id           String    @id @default(cuid())
+  clubId       String
+  authorId     String
+  teamId       String? // story d'équipe publiée par un capitaine : sert d'étiquette ; null = tout le club
+  kind         StoryKind @default(CLUB_POST)
+  body         String // 280 caractères au plus (contrôle applicatif)
+  background   String // clé de fond de couleur (src/lib/stories.ts)
+  collectionId String? // collection de la une (« à la une ») qui garde la story après ses 24 h ; null = pas à la une
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime // createdAt + 24 h
+  deletedAt    DateTime?
+  deletedById  String?
+
+  club       Club             @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  author     User             @relation("StoryAuthor", fields: [authorId], references: [id])
+  team       Team?            @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  collection StoryCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  deletedBy  User?            @relation("StoryDeletedBy", fields: [deletedById], references: [id])
+  views      StoryView[]
+
+  @@index([clubId, expiresAt])
+  @@index([collectionId])
+}
+
+/// Collection à la une du club (comme les « à la une » d'Instagram) : un nom, plusieurs stories gardées après leurs 24 h.
+/// Une seule collection épinglée par club (index unique partiel) ; une collection sans story vivante est supprimée.
+model StoryCollection {
+  id        String    @id @default(cuid())
+  clubId    String
+  name      String // 1 à 40 caractères
+  nameKey   String // nom en minuscules : deux collections d'un club ne portent pas le même nom
+  pinnedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  club    Club    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  stories Story[]
+
+  @@unique([clubId, nameKey])
+}
+
+model StoryView {
+  storyId String
+  userId  String
+  seenAt  DateTime @default(now())
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([storyId, userId])
+  @@index([userId])
 }

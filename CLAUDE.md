@@ -60,8 +60,12 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 23. Marqueur « Nouveau », éclat doré et pastille sur l'onglet Mes rallis | ✅ | voir `git log` |
 | 24. Classement vivant : mouvement de place depuis lundi, leader de la semaine | ✅ | voir `git log` |
 | 25. Animations (solde qui compte, cartes en douceur) et série d'affilée | ✅ | voir `git log` |
+| 26. Création de club réservée aux admins validés (demande « Je suis admin d'un club ») | ✅ | afe9bd8 |
+| 27. Stories de club et « à la une » (24 h, admins et capitaines) | ✅ | voir `git log` |
 
-État des tests (fin de tranche 25) : 593 tests Vitest, 173 scénarios Playwright, tous verts (voir « Tests E2E : pièges » plus bas : un scénario isolé peut échouer sur un raté de timing, à relancer seul avant de soupçonner le code).
+État des tests (fin de tranche 27) : 619 tests Vitest, 183 scénarios Playwright, tous verts (voir « Tests E2E : pièges » plus bas : un scénario isolé peut échouer sur un raté de timing, à relancer seul avant de soupçonner le code).
+
+Tranche 28 prévue : rallis gagnants en story (bouton « Partager ma victoire », carte automatique, commentaire de 140 caractères, partage WhatsApp, réaction 🎾 unique, signalement). Détail des décisions de Benjamin sur les stories : README, section « Stories de club et « à la une » ».
 
 ## Décisions prises (en plus du brief)
 
