@@ -20,7 +20,8 @@ export async function checkPage(page: Page, shot?: string) {
   );
   const text = await page.locator("body").innerText();
   expect(findForbiddenWords(text), `mots interdits sur ${page.url()}`).toEqual([]);
-  await expect(page.getByText("Jeu gratuit, sans argent réel.", { exact: true })).toBeVisible();
+  // Pages du visiteur (carte verte rayée) : sans pied de page ; la mention « sans valeur réelle » est dans la carte.
+  if ((await page.locator("[data-bare]").count()) === 0) await expect(page.getByText("Jeu gratuit, sans argent réel.", { exact: true })).toBeVisible();
   const heights = await page
     // Cases à cocher et boutons radio : la zone tactile est leur <label>, mesuré à la place.
     .locator(

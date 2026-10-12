@@ -87,7 +87,7 @@ async function MyRallis({ searchParams }: Props) {
             <dd className="font-data font-bold" data-testid="results-won-aces">{aces(s.wonAces)}</dd>
           </div>
           <div className="rounded-xl bg-pale p-2">
-            <dt className="text-xs text-ink-muted">Bénéfice net</dt>
+            <dt className="text-xs text-ink-muted">Bénéfice</dt>
             <dd className={`font-data font-bold ${s.netAces > 0 ? "text-success-ink" : s.netAces < 0 ? "text-danger" : ""}`} data-testid="results-net">
               {formatDelta(s.netAces)}
             </dd>

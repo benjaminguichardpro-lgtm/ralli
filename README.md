@@ -113,10 +113,10 @@ Quand un compte Neon existera :
 
 ### Classements (tranche 9, `src/server/leaderboard.ts`, calcul pur dans `src/lib/leaderboard/rank.ts`)
 - **Un classement par club**, réservé à ses membres (page `/clubs/<id>/classement`, aperçu du top 3 sur la page du club). Un pronostic compte dans le club **organisateur** de la rencontre.
-- **Bénéfice net** = Aces gagnés − Aces engagés, sur les pronostics **gagnés ou perdus** de rencontres confirmées et réglées. Les remboursés, les pronostics en attente et les bonus (inscription, lundi) ne comptent pas.
+- **Bénéfice** = Aces gagnés − Aces engagés, sur les pronostics **gagnés ou perdus** de rencontres confirmées et réglées. Les remboursés, les pronostics en attente et les bonus (inscription, lundi) ne comptent pas.
 - **Périodes** : « Saison » (dates dans `src/config/season.ts`, 1er septembre 2026 au 31 août 2027, à revoir) et « Cette semaine » (lundi 00:00 au lundi suivant 00:00, heure de Paris). Un pronostic compte à la **date de règlement** de sa rencontre.
 - **Seuil** : 3 pronostics terminés sur la saison, 1 sur la semaine. Le lecteur voit ce qu'il lui manque.
-- **Égalités** : même rang (1, 2, 2, 4) ; l'affichage départage par pronostics gagnés puis pseudo. 20 lignes affichées, plus la ligne du lecteur s'il est plus bas. Colonnes : rang, pseudo, bénéfice net, pronostics terminés, taux de réussite.
+- **Égalités** : même rang (1, 2, 2, 4) ; l'affichage départage par pronostics gagnés puis pseudo. 20 lignes affichées, plus la ligne du lecteur s'il est plus bas. Colonnes : rang, pseudo, bénéfice, pronostics terminés, taux de réussite.
 - Calculé à la lecture (aucune table de cache) : à jour dès le règlement.
 
 ### Interface (tranche 10, `docs/DESIGN.md`, aperçu `docs/design-preview.html`)
@@ -255,7 +255,7 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 
 - **Tranche 20 (fusion avec le Portefeuille, décisions de Benjamin : tout selon mes recommandations)** : un seul onglet **« Mes rallis »**, à la place 2 de la barre (4 onglets : Matchs, Mes rallis, Classement, Club), page **`/rallis`**. De haut en bas : **En cours** (rallis en attente, avec le total des Aces engagés), puis le bilan, les filtres et la liste des terminés (ci-dessous), puis l'**Historique des Aces** (50 derniers mouvements) dans un bloc **replié par défaut**. Le solde n'est pas répété (il est dans l'en-tête, dont le bouton mène à « Mes rallis »). `/portefeuille` et `/resultats` redirigent vers `/rallis` (`redirects()` dans `next.config.ts`, paramètres conservés : `?statut=gagnes` suit). La visite guidée passe à **6 étapes**. Pas d'évolution de la base.
 - **Quoi** (tranche 19) : tous les rallis (pronostics) **terminés** de l'utilisateur connecté, tous clubs confondus, du plus récent au plus ancien (date de règlement). Les textes de l'onglet disent « ralli » (« 3 rallis justes sur 5 », « Ton ralli : Léa M. »), jamais « pari » ni « mise ».
-- **Résumé** (en haut, sur l'ensemble des rallis terminés, quel que soit le filtre) : « X rallis justes sur Y · Z % de réussite », Aces engagés, Aces gagnés, **bénéfice net**. Même définition que le classement : gagnés et perdus seulement ; les **remboursés** (annulation, match remplacé, non joué) ne comptent ni dans les engagés ni dans le bénéfice, une note le rappelle.
+- **Résumé** (en haut, sur l'ensemble des rallis terminés, quel que soit le filtre) : « X rallis justes sur Y · Z % de réussite », Aces engagés, Aces gagnés, **bénéfice**. Même définition que le classement : gagnés et perdus seulement ; les **remboursés** (annulation, match remplacé, non joué) ne comptent ni dans les engagés ni dans le bénéfice, une note le rappelle.
 - **Liste** : groupée par rencontre (titre « Club · Équipe – Adversaire », jour), une ligne par ralli : le match, « Ton ralli : joueur, N Aces engagés à la cote X » et le résultat en clair, **Gagné +178 Aces** (gain − engagés), **Perdu −100 Aces**, **Remboursé**. Toucher une ligne ouvre la rencontre. Les rallis en attente n'y sont pas (ils restent dans le Portefeuille).
 - **Filtres** : puces « Tous / Gagnés / Perdus / Remboursés » avec leur nombre, un seul à la fois, dans l'adresse (`?statut=gagnes`) ; une valeur inconnue revient à « Tous ».
 - **Longueur** : 20 rallis, puis « Voir plus » (`?limite=40`…, par paliers de 20, 200 au plus ; une valeur invalide vaut 20).

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ClubLogo } from "@/components/club-logo";
 import { StatusBadge } from "@/components/encounter-list";
+import { BigLogo, LawnCard, lawnButton } from "@/components/lawn-card";
 import { StoriesSection } from "@/components/stories-section";
 import { WhatsAppShare } from "@/components/share-link";
 import { ButtonLink } from "@/components/ui";
@@ -163,15 +164,28 @@ function EncounterCard({ e, now, showLogo }: { e: FeedEncounter; now: Date; show
 
 function Welcome() {
   return (
-    <section className="space-y-4">
-      <h1 className="font-serif text-3xl text-primary">Bienvenue sur Ralli</h1>
-      <p>Pronostiquez les rencontres d&apos;interclubs de votre club avec vos Aces, une monnaie fictive sans aucune valeur.</p>
-      <div className="flex flex-wrap gap-3">
-        <ButtonLink href="/inscription">Créer un compte</ButtonLink>
-        <ButtonLink href="/connexion" variant="ghost">
+    <LawnCard>
+      <BigLogo />
+      <h1 className="sr-only">Bienvenue sur Ralli</h1>
+      <p className="font-serif text-3xl font-semibold leading-tight">Les tournois de ton club, les pronostics de tes amis.</p>
+      <p className="text-on-primary">Jeu gratuit, Aces sans valeur réelle.</p>
+      <div className="grid w-full max-w-sm gap-3">
+        <Link href="/inscription" className={lawnButton.solid}>
+          Créer mon compte
+        </Link>
+        <Link href="/connexion" className={lawnButton.outline}>
           Se connecter
-        </ButtonLink>
+        </Link>
       </div>
-    </section>
+      <p className="w-full max-w-sm rounded-lg border border-dashed border-on-primary/60 bg-on-primary/10 px-4 py-3">
+        Tu organises des tournois ?{" "}
+        <Link href="/inscription" className="font-bold underline underline-offset-4">
+          Inscrire mon club
+        </Link>
+      </p>
+      <Link href="/comment-ca-marche" className="inline-flex min-h-11 items-center font-medium underline underline-offset-4">
+        Comment ça marche
+      </Link>
+    </LawnCard>
   );
 }

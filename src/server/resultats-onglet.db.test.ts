@@ -137,7 +137,7 @@ describe("onglet Résultats", () => {
     expect((await getResults(bob)).streak).toBe(0);
   });
 
-  it("le bénéfice net est le même que dans le classement du club", async () => {
+  it("le bénéfice est le même que dans le classement du club", async () => {
     await bet(ana, e1m[0]!, "HOME", 100);
     await bet(ana, e1m[1]!, "AWAY", 50);
     await bet(ana, e1m[2]!, "HOME", 20);

@@ -145,6 +145,6 @@ test("Ines retire la photo de Jules (avec confirmation) : avatar prédéfini, ph
 test("déconnexion depuis Mon profil", async () => {
   await jules.goto("/");
   await signOut(jules);
-  await expect(jules.getByRole("link", { name: "Connexion" })).toBeVisible();
+  await expect(jules.getByRole("link", { name: "Se connecter" })).toBeVisible();
   await expect(jules.getByRole("link", { name: "Mon profil" })).toHaveCount(0);
 });

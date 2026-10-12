@@ -41,7 +41,7 @@ async function Leaderboard({ params, searchParams }: Props) {
     <section className="space-y-6">
       <div className="space-y-1">
         <h1 className="font-serif text-3xl text-primary">Classement</h1>
-        <p className="text-ink-muted">Bénéfice net = Aces gagnés − Aces engagés, sur les pronostics terminés de ce club.</p>
+        <p className="text-ink-muted">Bénéfice = Aces gagnés − Aces engagés, sur les pronostics terminés de ce club.</p>
       </div>
 
       {board.weekLeaders && (

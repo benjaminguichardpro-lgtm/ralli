@@ -284,3 +284,26 @@ dialog.story-viewer {
 dialog.story-viewer::backdrop {
   background: var(--color-primary-dark);
 }
+
+/* Pages d'accueil, de connexion et d'inscription (visiteur non connecté) : grande carte verte rayée comme une pelouse tondue,
+   sans l'en-tête ni le pied de page habituels (ils reviennent dès qu'une session existe : juste après une connexion, avant la redirection). Couleurs : uniquement des mélanges des couleurs du thème. */
+body:has([data-bare]):not(:has([data-signed-in])) > header,
+body:has([data-bare]):not(:has([data-signed-in])) > footer {
+  display: none;
+}
+.lawn {
+  position: relative;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-brand) 0 3.125rem,
+    color-mix(in srgb, var(--color-brand) 90%, var(--color-on-primary)) 3.125rem 6.25rem
+  );
+}
+.lawn::after {
+  content: "";
+  position: absolute;
+  inset: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-on-primary) 40%, transparent);
+  border-radius: 0.75rem;
+  pointer-events: none;
+}

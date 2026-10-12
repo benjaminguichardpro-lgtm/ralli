@@ -25,7 +25,7 @@ export function LeaderboardTable({ rows, viewerId, compact = false, viewerMove =
         <tr className="text-ink-muted">
           <th scope="col" className="py-1 pr-2 font-medium">Rang</th>
           <th scope="col" className="py-1 pr-2 font-medium">Pseudo</th>
-          <th scope="col" className="py-1 pr-2 text-right font-medium">Bénéfice net</th>
+          <th scope="col" className="py-1 pr-2 text-right font-medium">Bénéfice</th>
           {!compact && (
             <>
               <th scope="col" className="py-1 pr-2 text-right font-medium">Pronostics</th>

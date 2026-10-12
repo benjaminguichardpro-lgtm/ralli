@@ -15,7 +15,7 @@ export async function UserNav() {
   }
   const balance = user.mustChangePassword ? null : await getBalance(user.id);
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4" data-signed-in>
       {balance !== null && <BalancePill initial={balance} />}
       {/* Le pseudo n'est plus affiché : il reste dans le DOM (lecteurs d'écran) et sur la page du profil. */}
       <Link

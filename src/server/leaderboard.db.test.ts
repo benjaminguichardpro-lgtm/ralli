@@ -66,7 +66,7 @@ const odds = async (matchId: string, side: "HOME" | "AWAY") => {
 const board = (viewer: string, period: "season" | "week", club = clubId) => getLeaderboard(viewer, club, period, { now: NOW });
 const names = async (viewer: string, period: "season" | "week") => (await board(viewer, period)).top.map((r) => `${r.rank}:${r.displayName}`);
 
-describe("bénéfice net, remboursés et bonus exclus", () => {
+describe("bénéfice, remboursés et bonus exclus", () => {
   it("calcule gagné − engagé, perdu = −engagé, ignore remboursés, en attente et bonus", async () => {
     const wk = new Date("2026-10-13T15:00:00Z");
     const { ids } = await settledEncounter({
