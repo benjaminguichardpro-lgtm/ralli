@@ -169,9 +169,11 @@ export type ScoreMatchView = {
 
 export type ScoreView = {
   matches: ScoreMatchView[];
-  /** Points de chaque camp (un match gagné rapporte ses points : 1 ou 2), seulement quand le score est définitif. */
+  /** Points de chaque camp (un match gagné rapporte ses points : 1 ou 2), pour un score définitif ou provisoire. */
   tally: null | { home: number; away: number };
-  /** Résultats saisis visibles : tout le monde une fois confirmés, sinon admins et capitaines du club (S11). */
+  /** Le score est proposé mais pas encore confirmé : tout le monde le voit, marqué « provisoire ». */
+  provisional: boolean;
+  /** Résultats saisis visibles : tout le monde une fois proposés (provisoires) ou confirmés ; un score contesté reste réservé aux admins et capitaines (S11). */
   resultsVisible: boolean;
   staff: boolean;
   proposedBy: string | null;
@@ -191,7 +193,8 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
   const role = viewerId ? await getClubRole(viewerId, e.organizerClubId) : null;
   const reviewer = role !== null && (role === "ADMIN" || (await isCaptainInClub(viewerId!, e.organizerClubId)));
   const final = status === "CONFIRMED";
-  const resultsVisible = final || (reviewer && (status === "SCORE_PROPOSED" || status === "DISPUTED"));
+  const provisional = status === "SCORE_PROPOSED";
+  const resultsVisible = final || provisional || (reviewer && status === "DISPUTED");
 
   const names = { select: { firstName: true, lastName: true } } as const;
   const rows = numberByKind(
@@ -235,7 +238,7 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
     };
   });
 
-  const tally = final ? tallyPoints(rows) : null;
+  const tally = final || provisional ? tallyPoints(rows) : null;
 
   const staffHere = viewerId ? await isStaff(viewerId, e) : false;
   const mine = e.scoreProposedById === viewerId;
@@ -272,5 +275,5 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
     }
   }
 
-  return { matches, tally, resultsVisible, staff: reviewer, proposedBy, disputeReason, actions, journal };
+  return { matches, tally, provisional, resultsVisible, staff: reviewer, proposedBy, disputeReason, actions, journal };
 }

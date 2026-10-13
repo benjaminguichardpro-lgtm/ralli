@@ -72,7 +72,7 @@ test("parieur1 : les états d'une rencontre, de ouverte à terminée", async ({ 
 
   await open(ids.proposed, "73-demo-score-propose");
   await expect(p.getByText("Score proposé", { exact: true })).toBeVisible();
-  await expect(p.getByTestId("score-pending")).toBeVisible();
+  await expect(p.getByTestId("provisional-note")).toBeVisible();
 
   await open(ids.disputed, "74-demo-contestee");
   await expect(p.getByText("Score contesté", { exact: true })).toBeVisible();

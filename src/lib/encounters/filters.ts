@@ -4,22 +4,26 @@ import type { EffectiveStatus } from "./state";
 
 export type ResultKind = "WIN" | "LOSS" | "DRAW";
 
-/** Résultat vu du club (l'équipe du club dans la rencontre) : ses points d'abord. */
-export type EncounterResult = { kind: ResultKind; club: number; opp: number };
+/**
+ * Résultat vu du club (l'équipe du club dans la rencontre) : ses points d'abord.
+ * `provisional` : le score est proposé mais pas encore confirmé par une seconde personne ; il peut encore changer.
+ */
+export type EncounterResult = { kind: ResultKind; club: number; opp: number; provisional?: boolean };
 
 /**
  * Victoire, défaite ou nul pour le club, au total des points du score final (un match gagné rapporte 1 ou 2 points).
  * `clubIsHome` : l'équipe du club joue à domicile dans la rencontre.
  */
-export function clubResult(tally: { home: number; away: number }, clubIsHome: boolean): EncounterResult {
+export function clubResult(tally: { home: number; away: number }, clubIsHome: boolean, provisional = false): EncounterResult {
   const club = clubIsHome ? tally.home : tally.away;
   const opp = clubIsHome ? tally.away : tally.home;
-  return { kind: club > opp ? "WIN" : club < opp ? "LOSS" : "DRAW", club, opp };
+  return { kind: club > opp ? "WIN" : club < opp ? "LOSS" : "DRAW", club, opp, ...(provisional ? { provisional: true } : {}) };
 }
 
 export const RESULT_LABELS: Record<ResultKind, string> = { WIN: "Victoire", LOSS: "Défaite", DRAW: "Nul" };
 
-export const resultBadgeText = (r: EncounterResult) => `${RESULT_LABELS[r.kind]} ${r.club} – ${r.opp}`;
+/** « Victoire 4 – 2 » ; pour un score provisoire, « Provisoire 4 – 2 » (ni victoire ni défaite tant qu'il n'est pas confirmé). */
+export const resultBadgeText = (r: EncounterResult) => `${r.provisional ? "Provisoire" : RESULT_LABELS[r.kind]} ${r.club} – ${r.opp}`;
 
 type Filterable = { status: EffectiveStatus; result: EncounterResult | null };
 
@@ -32,9 +36,9 @@ export const FILTERS = [
     test: (e: Filterable) => e.status === "LOCKED" || e.status === "SCORE_PROPOSED" || e.status === "DISPUTED",
   },
   { key: "terminees", label: "Terminées", test: (e: Filterable) => e.status === "CONFIRMED" },
-  { key: "victoires", label: "Victoires", test: (e: Filterable) => e.result?.kind === "WIN" },
-  { key: "defaites", label: "Défaites", test: (e: Filterable) => e.result?.kind === "LOSS" },
-  { key: "nuls", label: "Nuls", test: (e: Filterable) => e.result?.kind === "DRAW" },
+  { key: "victoires", label: "Victoires", test: (e: Filterable) => e.result?.kind === "WIN" && !e.result.provisional },
+  { key: "defaites", label: "Défaites", test: (e: Filterable) => e.result?.kind === "LOSS" && !e.result.provisional },
+  { key: "nuls", label: "Nuls", test: (e: Filterable) => e.result?.kind === "DRAW" && !e.result.provisional },
   { key: "annulees", label: "Annulées", test: (e: Filterable) => e.status === "CANCELLED" },
 ] as const;
 

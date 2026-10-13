@@ -229,11 +229,13 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
 
       {score.tally && (
         <p className="text-lg font-semibold" data-testid="tally">
-          Score final : {e.home} {score.tally.home} – {score.tally.away} {e.away}
+          {score.provisional ? "Score provisoire" : "Score final"} : {e.home} {score.tally.home} – {score.tally.away} {e.away}
         </p>
       )}
-      {e.status === "SCORE_PROPOSED" && !score.resultsVisible && (
-        <p data-testid="score-pending">Score proposé, en attente de confirmation.</p>
+      {score.provisional && (
+        <p className="rounded-lg border-l-4 border-accent bg-pale p-3" data-testid="provisional-note">
+          Score provisoire : il sera définitif quand un second admin ou capitaine l&apos;aura confirmé, et peut encore changer d&apos;ici là.
+        </p>
       )}
       {e.status === "DISPUTED" && !score.resultsVisible && <p data-testid="score-pending">Score contesté : un admin du club va trancher.</p>}
 

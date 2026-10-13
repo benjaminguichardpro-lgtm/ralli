@@ -724,9 +724,12 @@ function toListItems(rows: ListRow[], now: Date, viewer?: { userId: string; isAd
   });
 }
 
-/** Ajoute le résultat (victoire, défaite, nul) aux rencontres terminées, au total des points du score final. */
+/**
+ * Ajoute le résultat (victoire, défaite, nul) aux rencontres terminées, au total des points du score final,
+ * et un résultat « provisoire » à celles dont le score est proposé mais pas encore confirmé.
+ */
 async function attachResults(rows: ListRow[], items: EncounterListItem[]): Promise<EncounterListItem[]> {
-  const confirmed = rows.filter((r) => r.status === "CONFIRMED").map((r) => r.id);
+  const confirmed = rows.filter((r) => r.status === "CONFIRMED" || r.status === "SCORE_PROPOSED").map((r) => r.id);
   if (confirmed.length === 0) return items;
   const matches = await db.match.findMany({
     where: { encounterId: { in: confirmed }, voidedAt: null },
@@ -736,8 +739,8 @@ async function attachResults(rows: ListRow[], items: EncounterListItem[]): Promi
   for (const m of matches) byEncounter.set(m.encounterId, [...(byEncounter.get(m.encounterId) ?? []), m]);
   return items.map((it, i) => {
     const row = rows[i]!;
-    if (row.status !== "CONFIRMED") return it;
-    return { ...it, result: clubResult(tallyPoints(byEncounter.get(it.id) ?? []), row.homeTeam.kind === "CLUB") };
+    if (row.status !== "CONFIRMED" && row.status !== "SCORE_PROPOSED") return it;
+    return { ...it, result: clubResult(tallyPoints(byEncounter.get(it.id) ?? []), row.homeTeam.kind === "CLUB", row.status === "SCORE_PROPOSED") };
   });
 }
 

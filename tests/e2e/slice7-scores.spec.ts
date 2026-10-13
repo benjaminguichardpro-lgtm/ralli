@@ -154,14 +154,15 @@ async function waitForFormReset(p: Page) {
   await p.waitForTimeout(500);
 }
 
-test("l'auteur ne peut pas confirmer, il peut retirer ; le public ne voit pas le détail", async () => {
+test("l'auteur ne peut pas confirmer, il peut retirer ; le public voit le score provisoire, mais pas le journal", async () => {
   await expect(tess.getByRole("button", { name: "Confirmer le score" })).toHaveCount(0);
   await expect(tess.getByRole("button", { name: "Contester le score" })).toHaveCount(0);
   await expect(tess.getByRole("button", { name: "Retirer ma proposition" })).toBeVisible();
   for (const p of [vera, anon]) {
     await p.goto(url1);
-    await expect(p.getByTestId("score-pending")).toHaveText("Score proposé, en attente de confirmation.");
-    await expect(p.getByTestId("results")).toHaveCount(0);
+    await expect(p.getByTestId("tally")).toContainText("Score provisoire");
+    await expect(p.getByTestId("provisional-note")).toContainText("Score provisoire : il sera définitif quand un second admin ou capitaine l'aura confirmé");
+    await expect(p.getByTestId("results")).toBeVisible();
     await expect(p.getByTestId("journal")).toHaveCount(0);
     await expect(p.getByRole("button", { name: "Confirmer le score" })).toHaveCount(0);
   }

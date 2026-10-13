@@ -9,6 +9,7 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 - **Tranches verticales**, une à la fois. Avant chaque tranche : présenter les règles à trancher, numérotées, avec une recommandation pour chacune, puis **attendre la réponse**. Ne jamais deviner une règle métier : poser la question.
 - **Fin de tranche** : exécuter réellement `npm test`, `npx tsc --noEmit`, `npm run build` (+ `npm run test:e2e`, `npm run lint`, `npm run db:verify`) et coller la sortie brute. Test Playwright multi-rôles, puis donner à Benjamin une **liste d'étapes de test manuel** très concrète (quel compte, quel bouton, quel résultat attendu).
 - **Contre-vérifier les tests** : casser volontairement une règle (mutation) pour prouver qu'un test échoue, puis restaurer le code.
+- **Migrations en prod** : si la tranche ajoute une migration, la montrer à Benjamin, puis `npm run db:deploy` sur Neon (en chargeant `.env.neon`) AVANT le `git push`, et vérifier avec `prisma migrate status`. Décision du 2026-10-14 : migration manuelle pour le pilote ; à repasser en automatique (`prisma migrate deploy && next build`, `DIRECT_URL` limitée à Production) quand il y aura beaucoup de clubs.
 - **Git** : un commit par tranche **après validation explicite** de Benjamin, message en deux parties « Fait » / « Vérifié », puis `git push` (fonctionne sans mot de passe, identifiant rangé dans le trousseau pour ce dépôt). Jamais de commit fourre-tout.
 - **Schéma Prisma** : montrer toute évolution avant de migrer.
 - **Style de réponse** : français simple, peu de jargon, explications pas à pas. Benjamin apprécie les confirmations avant les actions destructives dans l'UI.
@@ -66,6 +67,7 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 
 | 29. Annuaire des clubs : recherche, page du club pour un non-membre, Rejoindre / Quitter, compteur, onglet « Clubs » | ✅ | voir `git log` |
 | 28. Rallis gagnants en story : « Partager ma victoire », carte automatique, commentaire de 140 caractères, rond « Rallis gagnants », réaction 🎾, signalement | ✅ (en attente de validation) | voir `git log` |
+| 33. Résultats au centre : « Derniers résultats » sur l'accueil, page `/resultats-clubs` (clubs, équipes ; `/resultats` reste l'ancienne adresse, redirigée vers Mes rallis), score provisoire visible de tous | ✅ (en attente de validation) | voir `git log` |
 | 32. Rencontres à proximité : bouton sous la recherche, code postal facultatif (profil ou fenêtre « Où es-tu ? »), rayon de 30 km réglable, résultats sur l'accueil ou page dédiée | ✅ (en attente de validation) | voir `git log` |
 | C (31). Carte des clubs : aperçu sur l'onglet « Clubs », carte agrandie, épingles groupées, filtres région / taille (licenciés) / rencontre à venir en haut de la carte, position et région calculées à l'enregistrement de la fiche | ✅ (en attente de validation du push Neon) | voir `git log` |
 

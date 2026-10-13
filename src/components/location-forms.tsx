@@ -98,7 +98,8 @@ export function RadiusForm({ radiusKm }: { radiusKm: number }) {
         <span>{MAX_RADIUS_KM} km</span>
       </div>
       <p className="text-sm text-ink-muted">À vol d&apos;oiseau, depuis le centre de ta commune.</p>
-      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
+      {/* Pas de « Rayon enregistré » : le titre des résultats suit le curseur. On n'affiche qu'une erreur. */}
+      <FormMessage signal={state} ok={state.ok}>{state.ok ? undefined : state.message}</FormMessage>
     </form>
   );
 }

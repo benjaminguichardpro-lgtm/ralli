@@ -32,6 +32,7 @@ async function login(b: Browser, pseudo: string): Promise<Page> {
 test.beforeAll(async () => {
   test.setTimeout(300_000);
   networkOk = await fetch("https://geo.api.gouv.fr/communes?codePostal=69003&fields=nom&format=json", { signal: AbortSignal.timeout(6000) }).then((r) => r.ok, () => false);
+  await wipeTestDb(); // un fichier lancé juste avant a pu laisser sa démo dans la base de test
   seedDemoOnTestDb();
   upcoming = await queryTestDb<{ club: string; n: number }>(
     `SELECT c.name AS club, count(*)::int AS n FROM "Encounter" e JOIN "Club" c ON c.id = e."organizerClubId"

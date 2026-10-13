@@ -231,12 +231,14 @@ describe("retirer sa proposition", () => {
 });
 
 describe("lecture (getScoreView)", () => {
-  it("avant confirmation : résultats et journal visibles des admins et capitaines seulement", async () => {
+  it("avant confirmation : le score est visible de tous, marqué provisoire ; journal et actions restent réservés aux admins et capitaines", async () => {
     await proposeScore(capA, enc, full(), NOW);
     for (const v of [null, member, outsider]) {
       const s = await getScoreView(v, enc, NOW);
-      expect(s.resultsVisible).toBe(false);
-      expect(s.matches.every((m) => m.result === null)).toBe(true);
+      expect(s.resultsVisible).toBe(true);
+      expect(s.provisional).toBe(true);
+      expect(s.tally).not.toBeNull();
+      expect(s.matches[0]!.result).toMatchObject({ winnerName: "Léa M." });
       expect(s.journal).toEqual([]);
       expect(s.proposedBy).toBeNull();
       expect(s.actions).toEqual({ canPropose: false, canWithdraw: false, canConfirm: false, canDispute: false, canResolve: false });
@@ -260,6 +262,18 @@ describe("lecture (getScoreView)", () => {
     expect((await getScoreView(capA, enc, BEFORE)).actions.canPropose).toBe(false);
   });
 
+  it("un score contesté n'est plus montré qu'aux admins et capitaines (plus de score provisoire)", async () => {
+    await proposeScore(capA, enc, full(), NOW);
+    await disputeScore(capB, enc, "faux", NOW);
+    for (const v of [null, member, outsider]) {
+      const s = await getScoreView(v, enc, NOW);
+      expect(s.resultsVisible).toBe(false);
+      expect(s.provisional).toBe(false);
+      expect(s.tally).toBeNull();
+    }
+    expect((await getScoreView(capA, enc, NOW)).resultsVisible).toBe(true);
+  });
+
   it("litige : motif et bouton de décision réservés aux admins", async () => {
     await proposeScore(capA, enc, full(), NOW);
     await disputeScore(capB, enc, "faux", NOW);
@@ -274,6 +288,7 @@ describe("lecture (getScoreView)", () => {
     await confirmScore(capB, enc, NOW);
     const pub = await getScoreView(null, enc, NOW);
     expect(pub.resultsVisible).toBe(true);
+    expect(pub.provisional).toBe(false);
     expect(pub.tally).toEqual({ home: 1, away: 1 });
     expect(pub.matches[0]!.result?.winnerName).toBe("Léa M.");
     expect(pub.journal).toEqual([]);

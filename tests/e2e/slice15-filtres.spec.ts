@@ -57,7 +57,11 @@ test("les puces et leurs compteurs (admin : brouillon compris)", async () => {
 
 test("badges de résultat sur les rencontres terminées : le club en premier, victoire, défaite, nul", async () => {
   const badges = await admin.getByTestId("encounter-list").first().getByTestId("result-badge").allInnerTexts();
-  expect(badges.sort()).toEqual(["Défaite 1 – 3", "Nul 3 – 3", "Victoire 2 – 1", "Victoire 4 – 1"]);
+  // Le score proposé (pas encore confirmé) porte un badge « Provisoire », ni victoire ni défaite.
+  expect(badges.filter((b) => !b.startsWith("Provisoire")).sort()).toEqual(["Défaite 1 – 3", "Nul 3 – 3", "Victoire 2 – 1", "Victoire 4 – 1"]);
+  const provisional = badges.filter((b) => b.startsWith("Provisoire"));
+  expect(provisional).toHaveLength(1);
+  expect(provisional[0]).toMatch(/^Provisoire \d+ – \d+$/);
   // Les autres statuts gardent leur badge habituel.
   await expect(rows(admin).filter({ hasText: "Annulée" })).toHaveCount(1);
   await expect(rows(admin).filter({ hasText: "Score contesté" })).toHaveCount(1);
@@ -91,7 +95,7 @@ test("« Terminées », « En cours », « À venir », « Annulées »", async 
   await expect(rows(admin)).toHaveCount(4);
   await chip(admin, "en-cours").click();
   await expect(rows(admin)).toHaveCount(3);
-  for (const label of ["Pronostics fermés", "Score proposé", "Score contesté"]) await expect(rows(admin).filter({ hasText: label })).toHaveCount(1);
+  for (const label of ["Pronostics fermés", "Provisoire", "Score contesté"]) await expect(rows(admin).filter({ hasText: label })).toHaveCount(1);
   await chip(admin, "a-venir").click();
   await expect(rows(admin)).toHaveCount(2);
   await expect(rows(admin).filter({ hasText: "Brouillon" })).toHaveCount(1);

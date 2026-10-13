@@ -252,7 +252,7 @@ function StoryViewer({ ring, targets, onClose }: { ring: Playable; targets: Targ
           )}
         </div>
         {del.message && !del.ok && <p role="alert" className="px-4 pb-3 text-sm font-semibold">⚠ {del.message}</p>}
-        {story.winCard && <WinCardActions key={story.id} story={story} />}
+        {story.winCard && <WinCardActions key={`win-${story.id}`} story={story} />}
         {story.canManageWall && <WallControls key={story.id} story={story} collections={targets.find((t) => t.clubId === story.clubId)?.collections ?? []} />}
         {ring.collection?.isAdmin && <CollectionControls key={ring.collection.id} collection={ring.collection} onDeleted={close} />}
       </div>

@@ -19,8 +19,14 @@ export function StatusBadge({ status, label, onDark = false }: { status: Encount
 /** `archives` : la liste montre des rencontres archivées (bouton « Désarchiver » au lieu de la croix rouge). */
 /** Badge de résultat d'une rencontre terminée : victoire (vert), défaite (rouge), nul (neutre). Le texte porte aussi le sens, pas seulement la couleur. */
 export function ResultBadge({ result }: { result: EncounterResult }) {
-  const style =
-    result.kind === "WIN" ? "bg-success text-on-success" : result.kind === "LOSS" ? "bg-danger text-on-danger" : "bg-pale text-ink";
+  // Un score provisoire n'est ni une victoire ni une défaite tant qu'il n'est pas confirmé : badge neutre, bordé.
+  const style = result.provisional
+    ? "border border-accent bg-pale text-ink"
+    : result.kind === "WIN"
+      ? "bg-success text-on-success"
+      : result.kind === "LOSS"
+        ? "bg-danger text-on-danger"
+        : "bg-pale text-ink";
   return (
     <span data-testid="result-badge" className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${style}`}>
       {resultBadgeText(result)}

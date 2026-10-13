@@ -163,7 +163,12 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
       )}
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <h2 className="font-serif text-xl text-primary">Rencontres</h2>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-serif text-xl text-primary">Rencontres</h2>
+          <Link href={`/resultats-clubs?club=${club.id}`} data-testid="club-results-link" className="inline-flex min-h-11 items-center font-semibold text-primary underline">
+            Tous les résultats ›
+          </Link>
+        </div>
         {encounters.length > 0 && <EncounterFilters clubId={club.id} current={filter} counts={countFilters(encounters)} />}
         <EncounterList
           items={applyFilter(encounters, filter)}

@@ -34,6 +34,7 @@ async function login(b: Browser, pseudo: string): Promise<Page> {
 
 test.beforeAll(async () => {
   test.setTimeout(300_000);
+  await wipeTestDb(); // un fichier lancé juste avant a pu laisser sa démo dans la base de test
   seedDemoOnTestDb();
   const win = (
     await queryTestDb<{ id: string; author: string; club: string; clubId: string }>(

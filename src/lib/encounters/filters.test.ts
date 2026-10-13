@@ -20,6 +20,7 @@ describe("résultat pour le club", () => {
     expect(resultBadgeText(clubResult({ home: 2, away: 3 }, false))).toBe("Victoire 3 – 2");
     expect(resultBadgeText(clubResult({ home: 2, away: 3 }, true))).toBe("Défaite 2 – 3");
     expect(resultBadgeText(clubResult({ home: 2, away: 2 }, true))).toBe("Nul 2 – 2");
+    expect(resultBadgeText(clubResult({ home: 2, away: 3 }, false, true))).toBe("Provisoire 3 – 2");
   });
 });
 
@@ -40,6 +41,18 @@ const items = [
   item("CONFIRMED", draw),
   item("CANCELLED"),
 ];
+
+describe("score provisoire", () => {
+  const provisionalWin = clubResult({ home: 3, away: 1 }, true, true);
+  it("garde le sens du score, marqué provisoire", () => {
+    expect(provisionalWin).toEqual({ kind: "WIN", club: 3, opp: 1, provisional: true });
+    expect(clubResult({ home: 3, away: 1 }, true)).not.toHaveProperty("provisional");
+  });
+  it("n'entre ni dans les victoires, ni dans les défaites, ni dans les nuls (il peut encore changer) mais reste « en cours »", () => {
+    const list = [item("SCORE_PROPOSED", provisionalWin), item("SCORE_PROPOSED", clubResult({ home: 1, away: 3 }, true, true)), item("SCORE_PROPOSED", clubResult({ home: 2, away: 2 }, true, true))];
+    expect(countFilters(list)).toMatchObject({ victoires: 0, defaites: 0, nuls: 0, "en-cours": 3, terminees: 0 });
+  });
+});
 
 describe("filtres de la liste", () => {
   it("compte chaque filtre ; terminées = victoires + défaites + nuls", () => {

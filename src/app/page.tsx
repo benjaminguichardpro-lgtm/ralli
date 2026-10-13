@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ClubLogo } from "@/components/club-logo";
+import { ResultCard } from "@/components/result-card";
 import { StatusBadge } from "@/components/encounter-list";
 import { BigLogo, LawnCard, lawnButton } from "@/components/lawn-card";
 import { ClubSearchBar } from "@/components/club-directory";
@@ -14,8 +15,9 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { formatParisDay, formatParisTime, relativeDayLabel } from "@/lib/time";
 import { type FeedEncounter, getHomeFeed } from "@/server/feed";
 import { getMyLocation } from "@/server/nearby";
+import { HOME_RESULTS, listResults } from "@/server/results-feed";
 
-type HomeProps = { searchParams: Promise<{ proximite?: string | string[] }> };
+type HomeProps = { searchParams: Promise<{ proximite?: string | string[]; onglet?: string | string[] }> };
 
 export default function Home({ searchParams }: HomeProps) {
   return (
@@ -25,13 +27,49 @@ export default function Home({ searchParams }: HomeProps) {
   );
 }
 
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+
+/** Les deux onglets de l'accueil : « Résultats » et « Rencontres à venir » (par défaut). Le choix reste dans l'adresse (`?onglet=resultats`). */
+const HOME_TABS = [
+  { key: "resultats", label: "Résultats", href: "/?onglet=resultats" },
+  { key: "a-venir", label: "Rencontres à venir", href: "/" },
+] as const;
+
+function HomeTabs({ active }: { active: "resultats" | "a-venir" }) {
+  return (
+    <nav aria-label="Accueil" data-testid="home-tabs">
+      <ul className="grid grid-cols-2 gap-1 rounded-full bg-pale p-1">
+        {HOME_TABS.map((t) => {
+          const on = t.key === active;
+          return (
+            <li key={t.key}>
+              <Link
+                href={t.href}
+                scroll={false}
+                aria-current={on ? "page" : undefined}
+                data-testid={`home-tab-${t.key}`}
+                className={`flex min-h-11 items-center justify-center rounded-full px-3 text-center text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                  on ? "bg-primary text-on-primary shadow-sm" : "text-primary"
+                }`}
+              >
+                {t.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
 async function HomeContent({ searchParams }: HomeProps) {
   const user = await getCurrentUser();
   if (!user) return <Welcome />;
   if (user.mustChangePassword) redirect("/mot-de-passe");
   const now = new Date();
-  const nearParam = (await searchParams).proximite;
-  const nearby = (Array.isArray(nearParam) ? nearParam[0] : nearParam) === "1";
+  const sp = await searchParams;
+  const nearby = one(sp.proximite) === "1";
+  const tab = one(sp.onglet) === "resultats" ? "resultats" : "a-venir";
   const [feed, location] = await Promise.all([getHomeFeed(user.id, now), getMyLocation(user.id)]);
   const next = feed.encounters.find((e) => e.status === "OPEN");
   const others = feed.encounters.filter((e) => e !== next);
@@ -47,7 +85,7 @@ async function HomeContent({ searchParams }: HomeProps) {
       <NearbyButton located={location.located} href="/?proximite=1" />
 
       {nearby ? (
-        // Sur l'accueil, les rencontres à proximité s'affichent ici même, à la place du fil habituel.
+        // Sur l'accueil, les rencontres à proximité s'affichent ici même, à la place des onglets.
         <div className="space-y-4">
           <Link href="/" className="inline-flex min-h-11 items-center font-semibold text-primary underline" data-testid="nearby-home-back">
             ‹ Retour à mes rencontres
@@ -58,68 +96,107 @@ async function HomeContent({ searchParams }: HomeProps) {
         </div>
       ) : (
         <>
-      {feed.hasClub && (
-        <Suspense fallback={null}>
-          <StoriesSection userId={user.id} />
-        </Suspense>
-      )}
+          {feed.hasClub && (
+            <Suspense fallback={null}>
+              <StoriesSection userId={user.id} />
+            </Suspense>
+          )}
 
-      {!feed.hasClub ? (
-        <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
-          <h2 className="font-serif text-xl text-primary">Trouve ton club</h2>
-          <p className="text-ink-muted">Cherche ton club, consulte ses rencontres, puis rejoins-le d&apos;un bouton pour pronostiquer.</p>
-          <div className="flex flex-wrap gap-3">
-            <ButtonLink href="/clubs/recherche">Rechercher un club</ButtonLink>
-            <ButtonLink href="/clubs/demande" variant="ghost">
-              Je suis admin d&apos;un club
-            </ButtonLink>
-          </div>
-        </div>
-      ) : feed.encounters.length === 0 ? (
-        <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
-          <h2 className="font-serif text-xl text-primary">Pas de rencontre pour l&apos;instant</h2>
-          {feed.stewardClubs.length > 0 ? (
-            <>
-              <p className="text-ink-muted">Publie la prochaine rencontre de ton club : elle apparaît ici avec ses cotes, et tes coéquipiers peuvent pronostiquer.</p>
-              <ButtonLink href={feed.stewardClubs.length === 1 && only ? `/clubs/${only.id}/rencontres/nouvelle` : "/clubs"}>
-                Créer une rencontre
-              </ButtonLink>
-            </>
-          ) : (
-            <>
-              <p className="text-ink-muted" data-testid="empty-member">
-                Ton capitaine publiera bientôt la prochaine rencontre. Elle apparaîtra ici avec ses cotes.
-              </p>
+          {!feed.hasClub ? (
+            <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
+              <h2 className="font-serif text-xl text-primary">Trouve ton club</h2>
+              <p className="text-ink-muted">Cherche ton club, consulte ses rencontres, puis rejoins-le d&apos;un bouton pour pronostiquer.</p>
               <div className="flex flex-wrap gap-3">
-                <WhatsAppShare
-                  label="Inviter des coéquipiers"
-                  text="Rejoins-moi sur Ralli pour pronostiquer les interclubs de tennis (jeu gratuit, sans argent réel) :"
-                  path="/inscription"
-                />
-                <ButtonLink href="/clubs" variant="ghost">
-                  Mes clubs
+                <ButtonLink href="/clubs/recherche">Rechercher un club</ButtonLink>
+                <ButtonLink href="/clubs/demande" variant="ghost">
+                  Je suis admin d&apos;un club
                 </ButtonLink>
               </div>
+            </div>
+          ) : (
+            <>
+              <HomeTabs active={tab} />
+              {tab === "resultats" ? (
+                <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
+                  <HomeResults userId={user.id} multiClub={feed.multiClub} />
+                </Suspense>
+              ) : feed.encounters.length === 0 ? (
+                <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
+                  <h2 className="font-serif text-xl text-primary">Pas de rencontre pour l&apos;instant</h2>
+                  {feed.stewardClubs.length > 0 ? (
+                    <>
+                      <p className="text-ink-muted">Publie la prochaine rencontre de ton club : elle apparaît ici avec ses cotes, et tes coéquipiers peuvent pronostiquer.</p>
+                      <ButtonLink href={feed.stewardClubs.length === 1 && only ? `/clubs/${only.id}/rencontres/nouvelle` : "/clubs"}>
+                        Créer une rencontre
+                      </ButtonLink>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-ink-muted" data-testid="empty-member">
+                        Ton capitaine publiera bientôt la prochaine rencontre. Elle apparaîtra ici avec ses cotes.
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        <WhatsAppShare
+                          label="Inviter des coéquipiers"
+                          text="Rejoins-moi sur Ralli pour pronostiquer les interclubs de tennis (jeu gratuit, sans argent réel) :"
+                          path="/inscription"
+                        />
+                        <ButtonLink href="/clubs" variant="ghost">
+                          Mes clubs
+                        </ButtonLink>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4" data-testid="feed">
+                  {next && <NextEncounter e={next} now={now} showLogo={feed.multiClub} />}
+                  {others.length > 0 && (
+                    <ul className="space-y-4">
+                      {others.map((e) => (
+                        <li key={e.id}>
+                          <EncounterCard e={e} now={now} showLogo={feed.multiClub} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </>
           )}
-        </div>
-      ) : (
-        <div className="space-y-4" data-testid="feed">
-          {next && <NextEncounter e={next} now={now} showLogo={feed.multiClub} />}
-          {others.length > 0 && (
-            <ul className="space-y-4">
-              {others.map((e) => (
-                <li key={e.id}>
-                  <EncounterCard e={e} now={now} showLogo={feed.multiClub} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
         </>
       )}
     </section>
+  );
+}
+
+/** Onglet « Résultats » : les derniers résultats des clubs de l'utilisateur, le détail est à un clic. */
+async function HomeResults({ userId, multiClub }: { userId: string; multiClub: boolean }) {
+  const recent = await listResults(userId, { limit: HOME_RESULTS });
+  if (recent.items.length === 0) {
+    return (
+      <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm" data-testid="home-results-empty">
+        <h2 className="font-serif text-xl text-primary">Pas encore de résultat</h2>
+        <p className="text-ink-muted">Les scores de tes clubs apparaissent ici dès qu&apos;un capitaine propose le score d&apos;une rencontre.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3" data-testid="home-results">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-serif text-xl text-primary">Derniers résultats</h2>
+        <Link href="/resultats-clubs" data-testid="all-results" className="inline-flex min-h-11 items-center font-semibold text-primary underline">
+          Tous les résultats ›
+        </Link>
+      </div>
+      <ul className="space-y-3">
+        {recent.items.map((it) => (
+          <li key={it.id}>
+            <ResultCard item={it} showClub={multiClub} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
