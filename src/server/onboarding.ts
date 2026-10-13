@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { sideName } from "@/lib/matches";
+import { shareState } from "@/lib/win-cards";
 import { sideLabel } from "./encounters";
 import { DomainError } from "./errors";
 
@@ -15,6 +16,8 @@ export type RecapItem = {
   committedAces: number;
   status: "WON" | "LOST" | "REFUNDED";
   payoutAces: number;
+  /** Vrai si la victoire peut être partagée avec le club (bouton « Partager ma victoire »). */
+  canShare: boolean;
 };
 
 export type ResultsRecap = {
@@ -53,6 +56,7 @@ export async function getUnseenResults(userId: string): Promise<ResultsRecap | n
       status: true,
       payoutAces: true,
       settledAt: true,
+      stories: { where: { deletedAt: null, kind: "WIN_CARD" }, select: { id: true }, take: 1 },
       match: {
         select: {
           order: true,
@@ -63,6 +67,8 @@ export async function getUnseenResults(userId: string): Promise<ResultsRecap | n
           awayPlayer2: { select: { firstName: true, lastName: true } },
           encounter: {
             select: {
+              status: true,
+              organizerClubId: true,
               homeTeam: { select: { name: true, kind: true, externalClubName: true, club: { select: { name: true } } } },
               awayTeam: { select: { name: true, kind: true, externalClubName: true, club: { select: { name: true } } } },
             },
@@ -72,6 +78,8 @@ export async function getUnseenResults(userId: string): Promise<ResultsRecap | n
     },
   });
   if (rows.length === 0) return null;
+  const memberOf = new Set((await db.clubMembership.findMany({ where: { userId }, select: { clubId: true } })).map((m) => m.clubId));
+  const now = new Date();
 
   const byEncounter = new Map<string, ResultsRecap["encounters"][number]>();
   let wonAces = 0;
@@ -99,6 +107,8 @@ export async function getUnseenResults(userId: string): Promise<ResultsRecap | n
       committedAces: p.committedAces,
       status,
       payoutAces: status === "WON" ? gain : status === "REFUNDED" ? p.committedAces : 0,
+      canShare:
+        shareState({ status: p.status, settledAt: p.settledAt, encounterConfirmed: m.encounter.status === "CONFIRMED", alreadyShared: p.stories.length > 0, isMember: memberOf.has(m.encounter.organizerClubId) }, now) === "can",
     });
     byEncounter.set(m.encounterId, e);
   }

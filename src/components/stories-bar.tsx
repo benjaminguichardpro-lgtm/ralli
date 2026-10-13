@@ -6,16 +6,27 @@ import { addStoryToWallAction, createStoryAction, deleteCollectionAction, delete
 import { initialFormState } from "@/app/actions/types";
 import { STORY_BACKGROUNDS, STORY_BACKGROUND_KEYS, STORY_BODY_MAX, type StoryBackground, COLLECTION_NAME_MAX } from "@/lib/stories";
 import { clubInitials, logoSrc } from "@/lib/clubs/profile";
+import { WINS_RING_LABEL } from "@/lib/win-cards";
+import type { WinCardData } from "@/server/win-cards";
 import { FormMessage, Select, SubmitButton, confirmOnSubmit } from "./ui";
+import { WinCard } from "./win-card";
+import { WinCardActions } from "./win-card-actions";
 
 // Les dates passent en texte (ISO) du serveur au navigateur.
 export type StoryData = {
   id: string;
   clubId: string;
+  kind: "CLUB_POST" | "WIN_CARD";
   body: string;
   background: string;
   createdAt: string;
   authorName: string;
+  author: { id: string; avatarKey: string; avatarPhotoAt: string | null };
+  isMine: boolean;
+  winCard: WinCardData | null;
+  reactions: { count: number; mine: boolean; names: string[] | null };
+  canReact: boolean;
+  reportedByMe: boolean;
   teamName: string | null;
   seen: boolean;
   viewCount: number | null;
@@ -29,6 +40,7 @@ export type RingData = {
   clubName: string;
   logoUpdatedAt: string | null;
   teamName: string | null;
+  wins: boolean;
   unseen: number;
   stories: StoryData[];
 };
@@ -47,7 +59,7 @@ export type CollectionData = {
 export type TargetData = { clubId: string; clubName: string; isAdmin: boolean; teams: { id: string; name: string }[]; collections: { id: string; name: string }[] };
 
 /** Ce que le lecteur plein écran sait afficher : un rond de stories ou une collection de la une. */
-type Playable = { key: string; clubId: string; clubName: string; teamName: string | null; stories: StoryData[]; collection?: { id: string; name: string; pinned: boolean; isAdmin: boolean } };
+type Playable = { key: string; clubId: string; clubName: string; teamName: string | null; wins?: boolean; stories: StoryData[]; collection?: { id: string; name: string; pinned: boolean; isAdmin: boolean } };
 
 const bg = (key: string) => (STORY_BACKGROUNDS[key as StoryBackground] ?? STORY_BACKGROUNDS.brand).classes;
 const timeLabel = (iso: string) => new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
@@ -89,14 +101,14 @@ export function StoriesBar({ rings, targets, collections = [] }: { rings: RingDa
               <button
                 type="button"
                 onClick={() => setOpen(r.key)}
-                aria-label={`Stories de ${r.clubName}${r.teamName ? ` · ${r.teamName}` : ""}${r.unseen > 0 ? ` (${r.unseen} non vue${r.unseen > 1 ? "s" : ""})` : ""}`}
+                aria-label={`${r.wins ? WINS_RING_LABEL : "Stories"} de ${r.clubName}${r.teamName ? ` · ${r.teamName}` : ""}${r.unseen > 0 ? ` (${r.unseen} non vue${r.unseen > 1 ? "s" : ""})` : ""}`}
                 data-testid="story-ring"
                 data-unseen={r.unseen > 0 ? "true" : "false"}
                 className={`grid size-16 place-items-center rounded-full border-[3px] p-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${r.unseen > 0 ? "border-accent" : "border-line"}`}
               >
-                <ClubFace name={r.clubName} id={r.clubId} logoUpdatedAt={r.logoUpdatedAt} />
+                {r.wins ? <WinsFace /> : <ClubFace name={r.clubName} id={r.clubId} logoUpdatedAt={r.logoUpdatedAt} />}
               </button>
-              <span className="w-full truncate text-center text-xs text-ink-muted">{r.teamName ?? r.clubName}</span>
+              <span className="w-full truncate text-center text-xs text-ink-muted">{r.wins ? WINS_RING_LABEL : (r.teamName ?? r.clubName)}</span>
             </li>
           ))}
         </ul>
@@ -135,6 +147,19 @@ export function StoriesBar({ rings, targets, collections = [] }: { rings: RingDa
       {playable && <StoryViewer key={playable.key} ring={playable} targets={targets} onClose={() => setOpen(null)} />}
       {composing && <Composer targets={targets} onClose={() => setComposing(false)} />}
     </div>
+  );
+}
+
+/** Rond « Rallis gagnants » : un trophée doré. */
+function WinsFace() {
+  return (
+    <span aria-hidden="true" className="grid size-[3.25rem] place-items-center rounded-full bg-gold text-on-gold">
+      <svg viewBox="0 0 24 24" className="size-7 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 4h8v5a4 4 0 0 1-8 0V4z" />
+        <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" />
+        <path d="M12 13v4M9 20h6M10 17h4" />
+      </svg>
+    </span>
   );
 }
 
@@ -183,7 +208,7 @@ function StoryViewer({ ring, targets, onClose }: { ring: Playable; targets: Targ
   if (!story) return null;
   const last = at === ring.stories.length - 1;
   return (
-    <dialog ref={dialog} className="story-viewer" aria-label={ring.collection ? `Collection ${ring.collection.name}` : `Stories de ${ring.clubName}`} data-testid="story-viewer" onClose={() => { onClose(); router.refresh(); }}>
+    <dialog ref={dialog} className="story-viewer" aria-label={ring.collection ? `Collection ${ring.collection.name}` : `${ring.wins ? WINS_RING_LABEL : "Stories"} de ${ring.clubName}`} data-testid="story-viewer" onClose={() => { onClose(); router.refresh(); }}>
       <div className="mx-auto flex h-full w-full max-w-xl flex-col overflow-y-auto">
         <div className="flex gap-1 px-3 pt-3" aria-hidden="true">
           {ring.stories.map((s, i) => (
@@ -193,7 +218,7 @@ function StoryViewer({ ring, targets, onClose }: { ring: Playable; targets: Targ
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <p className="min-w-0 truncate text-sm">
             <strong className="font-semibold" data-testid="story-title">
-              {ring.collection ? ring.collection.name : ring.clubName}
+              {ring.collection ? ring.collection.name : ring.wins ? WINS_RING_LABEL : ring.clubName}
             </strong>
             {ring.collection ? ` · ${ring.clubName}` : story.teamName ? ` · ${story.teamName}` : ""}
             <span className="text-on-primary-soft"> · {story.authorName} · {timeLabel(story.createdAt)}</span>
@@ -203,9 +228,13 @@ function StoryViewer({ ring, targets, onClose }: { ring: Playable; targets: Targ
           </button>
         </div>
         <div className={`relative mx-3 grid min-h-64 flex-1 place-items-center rounded-2xl p-6 ${bg(story.background)}`} data-testid="story-card">
-          <p className="whitespace-pre-wrap break-words text-center font-serif text-3xl font-semibold leading-snug" data-testid="story-text">
-            {story.body}
-          </p>
+          {story.winCard ? (
+            <WinCard card={story.winCard} author={{ name: story.authorName, avatar: { ...story.author, avatarPhotoAt: story.author.avatarPhotoAt ? new Date(story.author.avatarPhotoAt) : null } }} comment={story.body} className="w-full" />
+          ) : (
+            <p className="whitespace-pre-wrap break-words text-center font-serif text-3xl font-semibold leading-snug" data-testid="story-text">
+              {story.body}
+            </p>
+          )}
           <button type="button" onClick={() => setIndex(Math.max(0, at - 1))} disabled={at === 0} aria-label="Story précédente" className="absolute inset-y-0 left-0 w-1/3 rounded-l-2xl focus-visible:outline-2 focus-visible:outline-gold" />
           <button type="button" onClick={() => (last ? close() : setIndex(at + 1))} aria-label={last ? "Terminer les stories" : "Story suivante"} className="absolute inset-y-0 right-0 w-2/3 rounded-r-2xl focus-visible:outline-2 focus-visible:outline-gold" />
         </div>
@@ -223,6 +252,7 @@ function StoryViewer({ ring, targets, onClose }: { ring: Playable; targets: Targ
           )}
         </div>
         {del.message && !del.ok && <p role="alert" className="px-4 pb-3 text-sm font-semibold">⚠ {del.message}</p>}
+        {story.winCard && <WinCardActions key={story.id} story={story} />}
         {story.canManageWall && <WallControls key={story.id} story={story} collections={targets.find((t) => t.clubId === story.clubId)?.collections ?? []} />}
         {ring.collection?.isAdmin && <CollectionControls key={ring.collection.id} collection={ring.collection} onDeleted={close} />}
       </div>

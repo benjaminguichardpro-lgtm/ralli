@@ -13,7 +13,9 @@ import {
   groupByEncounter,
   summarize,
 } from "@/lib/predictions/results";
+import { type ShareState, shareState } from "@/lib/win-cards";
 import { sideLabel } from "./encounters";
+import type { WinCardData } from "./win-cards";
 
 export type ResultItem = {
   id: string;
@@ -25,6 +27,11 @@ export type ResultItem = {
   status: ResultStatus;
   payoutAces: number | null;
   settledAt: Date;
+  /** Partage de la victoire : « can » = bouton « Partager ma victoire », « shared » = déjà partagé, « closed » = délai passé, « no » = pas gagné. */
+  share: ShareState;
+  /** Club à qui la victoire est montrée, et les chiffres de la carte (seulement si on peut la partager). */
+  shareClubName: string;
+  card: WinCardData | null;
 };
 
 /** `title` nomme déjà le club (« TC Lyon · Messieurs 1 – TC Voisin 1 ») : il suffit à distinguer les clubs d'un utilisateur qui en a plusieurs. */
@@ -48,9 +55,9 @@ const side = (a: Person, b: Person | null) => sideName(b ? [a, b] : [a]);
  * Rallis terminés (gagnés, perdus, remboursés) de l'utilisateur seul, tous clubs confondus, du plus récent au plus ancien.
  * Le résumé et les compteurs portent sur l'ensemble ; la liste est limitée à `limit` rallis (« Voir plus » pour en afficher davantage).
  */
-export async function getResults(userId: string, filter: ResultFilterKey = "tous", limit = PAGE_SIZE): Promise<ResultsView> {
+export async function getResults(userId: string, filter: ResultFilterKey = "tous", limit = PAGE_SIZE, now = new Date()): Promise<ResultsView> {
   const status = RESULT_FILTERS.find((f) => f.key === filter)!.status;
-  const [totalsRows, rows, recent] = await Promise.all([
+  const [totalsRows, rows, recent, memberships] = await Promise.all([
     db.prediction.groupBy({
       by: ["status"],
       where: { userId, status: { in: ["WON", "LOST", "REFUNDED"] } },
@@ -69,6 +76,7 @@ export async function getResults(userId: string, filter: ResultFilterKey = "tous
         status: true,
         payoutAces: true,
         settledAt: true,
+        stories: { where: { deletedAt: null, kind: "WIN_CARD" }, select: { id: true }, take: 1 },
         match: {
           select: {
             encounterId: true,
@@ -79,6 +87,9 @@ export async function getResults(userId: string, filter: ResultFilterKey = "tous
             encounter: {
               select: {
                 startsAt: true,
+                status: true,
+                organizerClubId: true,
+                organizerClub: { select: { name: true } },
                 homeTeam: { select: { name: true, kind: true, externalClubName: true, club: { select: { name: true } } } },
                 awayTeam: { select: { name: true, kind: true, externalClubName: true, club: { select: { name: true } } } },
               },
@@ -94,7 +105,9 @@ export async function getResults(userId: string, filter: ResultFilterKey = "tous
       take: 50,
       select: { status: true },
     }),
+    db.clubMembership.findMany({ where: { userId }, select: { clubId: true } }),
   ]);
+  const memberOf = new Set(memberships.map((m) => m.clubId));
 
   const pick = (s: "WON" | "LOST" | "REFUNDED") => totalsRows.find((r) => r.status === s);
   const totals: StatusTotals = {
@@ -113,16 +126,29 @@ export async function getResults(userId: string, filter: ResultFilterKey = "tous
       title: `${sideLabel(m.encounter.homeTeam)} – ${sideLabel(m.encounter.awayTeam)}`,
       startsAt: m.encounter.startsAt,
     });
+    const matchLabel = `${side(m.homePlayer, m.homePlayer2)} contre ${side(m.awayPlayer, m.awayPlayer2)}`;
+    const pickedName = p.pickedSide === "HOME" ? side(m.homePlayer, m.homePlayer2) : side(m.awayPlayer, m.awayPlayer2);
+    const odds = formatOdds(p.oddsX100);
+    const share = shareState(
+      { status: p.status, settledAt: p.settledAt, encounterConfirmed: m.encounter.status === "CONFIRMED", alreadyShared: p.stories.length > 0, isMember: memberOf.has(m.encounter.organizerClubId) },
+      now,
+    );
     return {
       id: p.id,
       encounterId: m.encounterId,
-      matchLabel: `${side(m.homePlayer, m.homePlayer2)} contre ${side(m.awayPlayer, m.awayPlayer2)}`,
-      pickedName: p.pickedSide === "HOME" ? side(m.homePlayer, m.homePlayer2) : side(m.awayPlayer, m.awayPlayer2),
+      matchLabel,
+      pickedName,
       committedAces: p.committedAces,
-      odds: formatOdds(p.oddsX100),
+      odds,
       status: p.status as ResultStatus,
       payoutAces: p.payoutAces,
       settledAt: p.settledAt!,
+      share,
+      shareClubName: m.encounter.organizerClub.name,
+      card:
+        share === "can"
+          ? { predictionId: p.id, encounterId: m.encounterId, encounterTitle: `${sideLabel(m.encounter.homeTeam)} – ${sideLabel(m.encounter.awayTeam)}`, matchLabel, pickedName, committedAces: p.committedAces, odds, payoutAces: p.payoutAces ?? 0 }
+          : null,
     };
   });
 

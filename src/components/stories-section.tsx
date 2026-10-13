@@ -1,7 +1,7 @@
 import { type CollectionData, type RingData, StoriesBar, type StoryData, type TargetData } from "./stories-bar";
 import { listClubWall, listPublishTargets, listStoryRings } from "@/server/stories";
 
-const toStoryData = (s: Awaited<ReturnType<typeof listStoryRings>>[number]["stories"][number]): StoryData => ({ ...s, createdAt: s.createdAt.toISOString() });
+const toStoryData = (s: Awaited<ReturnType<typeof listStoryRings>>[number]["stories"][number]): StoryData => ({ ...s, createdAt: s.createdAt.toISOString(), author: { ...s.author, avatarPhotoAt: s.author.avatarPhotoAt?.toISOString() ?? null } });
 
 /**
  * Bandeau de stories d'un compte (tous ses clubs, ou un seul avec `clubId`). Rien du tout s'il n'y a ni story ni droit de publier.

@@ -124,21 +124,24 @@ model User {
   resultsSeenAt      DateTime? // les pronostics réglés avant cette date ont déjà été montrés dans le récapitulatif
   createdAt          DateTime  @default(now())
 
-  memberships        ClubMembership[]
-  clubsCreated       Club[]                @relation("ClubCreatedBy")
-  captainOf          Team[]                @relation("TeamCaptain")
-  player             Player?
-  predictions        Prediction[]
-  ledgerEntries      LedgerEntry[]
-  encountersCreated  Encounter[]           @relation("EncounterCreatedBy")
-  encountersArchived Encounter[]           @relation("EncounterArchivedBy")
-  encounterEvents    EncounterEvent[]
-  clubRequests       ClubCreationRequest[]
-  stories            Story[]               @relation("StoryAuthor")
-  storiesDeleted     Story[]               @relation("StoryDeletedBy")
-  storyViews         StoryView[]
-  removedFrom        ClubRemoval[]         @relation("RemovedUser")
-  removalsMade       ClubRemoval[]         @relation("RemovedBy")
+  memberships         ClubMembership[]
+  clubsCreated        Club[]                @relation("ClubCreatedBy")
+  captainOf           Team[]                @relation("TeamCaptain")
+  player              Player?
+  predictions         Prediction[]
+  ledgerEntries       LedgerEntry[]
+  encountersCreated   Encounter[]           @relation("EncounterCreatedBy")
+  encountersArchived  Encounter[]           @relation("EncounterArchivedBy")
+  encounterEvents     EncounterEvent[]
+  clubRequests        ClubCreationRequest[]
+  stories             Story[]               @relation("StoryAuthor")
+  storiesDeleted      Story[]               @relation("StoryDeletedBy")
+  storyViews          StoryView[]
+  storyReactions      StoryReaction[]       @relation("StoryReactor")
+  storyReports        StoryReport[]         @relation("StoryReporter")
+  storyReportsHandled StoryReport[]         @relation("StoryReportHandler")
+  removedFrom         ClubRemoval[]         @relation("RemovedUser")
+  removalsMade        ClubRemoval[]         @relation("RemovedBy")
 }
 
 /// Demande d'un utilisateur pour devenir admin d'un club (et donc pouvoir en créer un). Examinée par l'équipe Ralli.
@@ -395,6 +398,7 @@ model Prediction {
   user          User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   match         Match         @relation(fields: [matchId], references: [id], onDelete: Restrict)
   ledgerEntries LedgerEntry[]
+  stories       Story[]
 
   @@unique([userId, matchId]) // un pronostic par match et par utilisateur
   @@index([matchId])
@@ -435,6 +439,9 @@ model Story {
   body         String // 280 caractères au plus (contrôle applicatif)
   background   String // clé de fond de couleur (src/lib/stories.ts)
   collectionId String? // collection de la une (« à la une ») qui garde la story après ses 24 h ; null = pas à la une
+  // Ralli gagnant partagé (kind = WIN_CARD) : le pronostic réglé « gagné » dont la carte est tirée ; null pour une annonce.
+  // body = le commentaire (0 à 140 caractères). Une seule carte non supprimée par pronostic : index unique partiel dans la migration.
+  predictionId String?
   createdAt    DateTime  @default(now())
   expiresAt    DateTime // createdAt + 24 h
   deletedAt    DateTime?
@@ -445,10 +452,14 @@ model Story {
   team       Team?            @relation(fields: [teamId], references: [id], onDelete: SetNull)
   collection StoryCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
   deletedBy  User?            @relation("StoryDeletedBy", fields: [deletedById], references: [id])
+  prediction Prediction?      @relation(fields: [predictionId], references: [id], onDelete: SetNull)
   views      StoryView[]
+  reactions  StoryReaction[]
+  reports    StoryReport[]
 
   @@index([clubId, expiresAt])
   @@index([collectionId])
+  @@index([predictionId])
 }
 
 /// Collection à la une du club (comme les « à la une » d'Instagram) : un nom, plusieurs stories gardées après leurs 24 h.
@@ -465,6 +476,37 @@ model StoryCollection {
   stories Story[]
 
   @@unique([clubId, nameKey])
+}
+
+/// Réaction 🎾 à une carte de ralli gagnant : une par membre et par carte, retirable.
+model StoryReaction {
+  storyId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user  User  @relation("StoryReactor", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([storyId, userId])
+  @@index([userId])
+}
+
+/// Signalement d'une carte par un membre du club (un par membre et par carte). Traité (handledAt) par un admin du club :
+/// carte supprimée ou signalement écarté. L'auteur de la carte ne voit jamais qui a signalé.
+model StoryReport {
+  storyId     String
+  reporterId  String
+  reason      String? // 200 caractères au plus
+  createdAt   DateTime  @default(now())
+  handledAt   DateTime?
+  handledById String?
+
+  story     Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  reporter  User  @relation("StoryReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  handledBy User? @relation("StoryReportHandler", fields: [handledById], references: [id], onDelete: SetNull)
+
+  @@id([storyId, reporterId])
+  @@index([storyId, handledAt])
 }
 
 model StoryView {

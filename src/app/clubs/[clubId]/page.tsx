@@ -21,6 +21,8 @@ import { formatCount, isProfileEmpty, websiteLabel } from "@/lib/clubs/profile";
 import { applyFilter, countFilters, parseFilter } from "@/lib/encounters/filters";
 import { type ClubView, getClubView } from "@/server/clubs";
 import { countFollowers, listReturnRequests } from "@/server/club-directory";
+import { listPendingReports } from "@/server/win-cards";
+import { ReportReview } from "@/components/win-card-reports";
 import { followersLabel } from "@/components/club-card-list";
 import { LeaveClubForm } from "@/components/club-directory";
 import { VisitorClub } from "./visitor-club";
@@ -67,13 +69,14 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
   }
   const followers = await countFollowers(club.id);
   const isAdmin = club.myRole === "ADMIN";
-  const [teams, isCaptain, encounters, archived, board, returnRequests] = await Promise.all([
+  const [teams, isCaptain, encounters, archived, board, returnRequests, pendingReports] = await Promise.all([
     listClubTeams(user.id, club.id),
     isCaptainInClub(user.id, club.id),
     listClubEncounters(user.id, club.id),
     listArchivedEncounters(user.id, club.id),
     getLeaderboard(user.id, club.id, "season", { limit: 3 }),
     isAdmin ? listReturnRequests(user.id, club.id) : Promise.resolve([]),
+    isAdmin ? listPendingReports(user.id, club.id) : Promise.resolve([]),
   ]);
   const clubTeams = teams.filter((t) => t.kind === "CLUB");
   const externalTeams = teams.filter((t) => t.kind === "EXTERNAL");
@@ -117,6 +120,30 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
       <Suspense fallback={null}>
         <StoriesSection userId={user.id} clubId={club.id} clubName={club.name} />
       </Suspense>
+
+      {pendingReports.length > 0 && (
+        <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="story-reports">
+          <h2 className="font-serif text-xl text-primary">Cartes signalées ({pendingReports.length})</h2>
+          <ul className="divide-y divide-line">
+            {pendingReports.map((r) => (
+              <li key={r.storyId} className="space-y-2 py-3" data-testid="story-report">
+                <p className="font-medium">
+                  Carte de {r.authorName} : {r.matchLabel}
+                </p>
+                {r.comment && <p className="text-sm text-ink-muted">« {r.comment} »</p>}
+                <ul className="text-sm text-ink-muted">
+                  {r.reports.map((x, i) => (
+                    <li key={i}>
+                      {x.reason ? `Motif : ${x.reason}` : "Signalée sans motif"}
+                    </li>
+                  ))}
+                </ul>
+                <ReportReview storyId={r.storyId} authorName={r.authorName} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {returnRequests.length > 0 && (
         <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="return-requests">

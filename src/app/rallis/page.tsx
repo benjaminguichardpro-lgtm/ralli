@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ResultFilters } from "@/components/result-filters";
+import { ShareWinButton } from "@/components/share-win";
 import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
 import { PAGE_SIZE, formatDelta, hitsSentence, isRecentResult, parseLimit, parseResultFilter, resultLine, streakLabel } from "@/lib/predictions/results";
@@ -11,7 +12,7 @@ import { getResults } from "@/server/results";
 
 export const metadata: Metadata = { title: "Mes rallis · Ralli" };
 
-type Props = { searchParams: Promise<{ statut?: string | string[]; limite?: string | string[] }> };
+type Props = { searchParams: Promise<{ statut?: string | string[]; limite?: string | string[]; partage?: string | string[] }> };
 
 export default function MyRallisPage(props: Props) {
   return (
@@ -30,6 +31,7 @@ async function MyRallis({ searchParams }: Props) {
   const sp = await searchParams;
   const filter = parseResultFilter(sp.statut);
   const limit = parseLimit(sp.limite);
+  const shareId = (Array.isArray(sp.partage) ? sp.partage[0] : sp.partage) ?? ""; // lien « Partager ma victoire » de la fenêtre de résultats
   const [r, w] = await Promise.all([getResults(user.id, filter, limit), getWallet(user.id)]);
   const s = r.summary;
   const now = new Date();
@@ -141,6 +143,16 @@ async function MyRallis({ searchParams }: Props) {
                               {line.delta && <span className="block font-data">{line.delta}</span>}
                             </span>
                           </Link>
+                          {p.share === "can" && p.card && (
+                            <div className="pb-3">
+                              <ShareWinButton card={p.card} clubName={p.shareClubName} author={{ name: user.displayName, avatar: { id: user.id, avatarKey: user.avatarKey, avatarPhotoAt: user.avatarPhotoAt } }} autoOpen={shareId === p.id} />
+                            </div>
+                          )}
+                          {p.share === "shared" && (
+                            <p className="pb-3 text-sm font-semibold text-success-ink" data-testid="win-shared">
+                              ✓ Victoire partagée avec le club
+                            </p>
+                          )}
                         </li>
                       );
                     })}

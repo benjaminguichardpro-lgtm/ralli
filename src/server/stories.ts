@@ -1,7 +1,9 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { type CreateStoryInput, collectionNameKey, collectionNameSchema, createStorySchema, isStoryLive, storyExpiry } from "@/lib/stories";
+import { type AvatarRef } from "@/lib/avatars";
 import { DomainError, isUniqueViolation } from "./errors";
+import { type WinCardData, predictionCardSelect, toWinCardData } from "./win-cards";
 import { CLUB_NOT_FOUND, getClubRole, requireClubAdmin, requireClubMember } from "./permissions";
 
 // Stories de club : visibles 24 h par les membres du club. Les droits sont relus en base à chaque appel.
@@ -10,10 +12,22 @@ import { CLUB_NOT_FOUND, getClubRole, requireClubAdmin, requireClubMember } from
 export type StoryView = {
   id: string;
   clubId: string;
+  /** Annonce d'un admin ou d'un capitaine, ou carte de ralli gagnant partagée par un membre. */
+  kind: "CLUB_POST" | "WIN_CARD";
   body: string;
   background: string;
   createdAt: Date;
   authorName: string;
+  author: AvatarRef;
+  /** C'est ma story : je ne peux ni y réagir ni la signaler. */
+  isMine: boolean;
+  /** Les chiffres de la carte (kind = WIN_CARD), lus en direct sur le ralli. */
+  winCard: WinCardData | null;
+  /** Réactions 🎾 : le nombre pour tous, les noms pour l'auteur et les admins seulement. */
+  reactions: { count: number; mine: boolean; names: string[] | null };
+  /** Membre du club, pas l'auteur, sur une carte : peut réagir et signaler. */
+  canReact: boolean;
+  reportedByMe: boolean;
   teamName: string | null;
   seen: boolean;
   /** Nombre de membres qui l'ont vue : seulement pour l'auteur et les admins, sinon null. */
@@ -32,6 +46,8 @@ export type StoryRing = {
   clubName: string;
   logoUpdatedAt: Date | null;
   teamName: string | null;
+  /** Rond « Rallis gagnants » du club : regroupe ses cartes de ralli gagnant. */
+  wins: boolean;
   stories: StoryView[];
   unseen: number;
 };
@@ -138,11 +154,15 @@ const storySelect = (userId: string) =>
     id: true,
     clubId: true,
     teamId: true,
+    kind: true,
     body: true,
     background: true,
     createdAt: true,
     authorId: true,
-    author: { select: { displayName: true } },
+    author: { select: { id: true, displayName: true, avatarKey: true, avatarPhotoAt: true } },
+    prediction: { select: predictionCardSelect },
+    reactions: { select: { userId: true, user: { select: { displayName: true } } }, orderBy: { createdAt: "asc" as const } },
+    reports: { where: { reporterId: userId }, select: { reporterId: true } },
     team: { select: { name: true } },
     collection: { select: { id: true, name: true } },
     club: { select: { name: true, logoUpdatedAt: true, memberships: { where: { userId }, select: { role: true } } } },
@@ -157,10 +177,17 @@ function toView(r: StoryRow, userId: string): StoryView {
   return {
     id: r.id,
     clubId: r.clubId,
+    kind: r.kind,
     body: r.body,
     background: r.background,
     createdAt: r.createdAt,
     authorName: r.author.displayName,
+    author: { id: r.author.id, avatarKey: r.author.avatarKey, avatarPhotoAt: r.author.avatarPhotoAt },
+    isMine: r.authorId === userId,
+    winCard: r.kind === "WIN_CARD" && r.prediction ? toWinCardData(r.prediction) : null,
+    reactions: { count: r.reactions.length, mine: r.reactions.some((x) => x.userId === userId), names: canSeeCount ? r.reactions.map((x) => x.user.displayName) : null },
+    canReact: r.kind === "WIN_CARD" && r.club.memberships.length > 0 && r.authorId !== userId,
+    reportedByMe: r.reports.length > 0,
     teamName: r.team?.name ?? null,
     seen: r.views.some((v) => v.userId === userId),
     viewCount: canSeeCount ? r.views.filter((v) => v.userId !== r.authorId).length : null,
@@ -181,10 +208,11 @@ export async function listStoryRings(userId: string, opts: { clubId?: string; no
   const rings = new Map<string, StoryRing & { latest: number }>();
   for (const r of rows) {
     const story = toView(r, userId);
-    const key = r.teamId ? `${r.clubId}:${r.teamId}` : r.clubId;
+    const wins = r.kind === "WIN_CARD";
+    const key = wins ? `${r.clubId}:wins` : r.teamId ? `${r.clubId}:${r.teamId}` : r.clubId;
     let ring = rings.get(key);
     if (!ring) {
-      ring = { key, clubId: r.clubId, clubName: r.club.name, logoUpdatedAt: r.club.logoUpdatedAt, teamName: r.team?.name ?? null, stories: [], unseen: 0, latest: 0 };
+      ring = { key, clubId: r.clubId, clubName: r.club.name, logoUpdatedAt: r.club.logoUpdatedAt, teamName: wins ? null : (r.team?.name ?? null), wins, stories: [], unseen: 0, latest: 0 };
       rings.set(key, ring);
     }
     ring.stories.push(story);
@@ -219,7 +247,11 @@ export async function deleteStory(actorId: string, storyId: string, now = new Da
   const role = await requireClubMember(actorId, story.clubId);
   if (role !== "ADMIN" && story.authorId !== actorId) throw new DomainError("FORBIDDEN", "Tu ne peux supprimer que tes propres stories");
   if (story.deletedAt) return;
-  await db.story.update({ where: { id: storyId }, data: { deletedAt: now, deletedById: actorId, collectionId: null } });
+  await db.$transaction([
+    db.story.update({ where: { id: storyId }, data: { deletedAt: now, deletedById: actorId, collectionId: null } }),
+    // Une carte supprimée n'a plus de signalement à traiter.
+    db.storyReport.updateMany({ where: { storyId, handledAt: null }, data: { handledAt: now, handledById: actorId } }),
+  ]);
   await dropIfEmpty(story.collectionId);
 }
 

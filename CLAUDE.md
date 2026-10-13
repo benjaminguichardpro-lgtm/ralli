@@ -65,11 +65,12 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 30. Retrait d'un membre par un admin, demande de retour, suppression du code d'invitation | ✅ (en attente de validation) | voir `git log` |
 
 | 29. Annuaire des clubs : recherche, page du club pour un non-membre, Rejoindre / Quitter, compteur, onglet « Clubs » | ✅ | voir `git log` |
+| 28. Rallis gagnants en story : « Partager ma victoire », carte automatique, commentaire de 140 caractères, rond « Rallis gagnants », réaction 🎾, signalement | ✅ (en attente de validation) | voir `git log` |
 | C (31). Carte des clubs : aperçu sur l'onglet « Clubs », carte agrandie, épingles groupées, filtres région / taille (licenciés) / rencontre à venir en haut de la carte, position et région calculées à l'enregistrement de la fiche | ✅ (en attente de validation du push Neon) | voir `git log` |
 
 État des tests (fin de tranche 27) : 632 tests Vitest, ~195 scénarios Playwright, tous verts (voir « Tests E2E : pièges » plus bas : un scénario isolé peut échouer sur un raté de timing, à relancer seul avant de soupçonner le code).
 
-**Tranche B faite (30)** : retrait d'un membre, demande de retour, plus de code d'invitation (voir README « Retrait d'un membre »). **Tranche C faite** (carte des clubs, voir README « Carte des clubs » ; migration `20261013150000_club_map` à passer sur Neon avec `db:deploy`, puis `npm run geocode-clubs` pour les clubs existants). Tranche 28 (rallis gagnants en story) reste à faire : rallis gagnants en story (bouton « Partager ma victoire », carte automatique, commentaire de 140 caractères, partage WhatsApp, réaction 🎾 unique, signalement). Détail des décisions de Benjamin sur les stories : README, section « Stories de club et « à la une » ».
+**Tranche B faite (30)** : retrait d'un membre, demande de retour, plus de code d'invitation (voir README « Retrait d'un membre »). **Tranche C faite** (carte des clubs, voir README « Carte des clubs » ; migration `20261013150000_club_map` à passer sur Neon avec `db:deploy`, puis `npm run geocode-clubs` pour les clubs existants). **Tranche 28 faite** (rallis gagnants en story, voir README « Rallis gagnants en story » ; migration `20261014100000_win_cards` à passer sur Neon). Détail des décisions de Benjamin sur les stories : README, section « Stories de club et « à la une » ».
 
 ## Décisions prises (en plus du brief)
 

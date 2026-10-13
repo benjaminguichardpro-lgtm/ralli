@@ -80,6 +80,11 @@ export function ResultsRecapDialog({ recap }: { recap: ResultsRecap }) {
                     <span className={`block font-semibold ${p.status === "WON" ? "text-gold" : "text-on-primary"}`}>
                       {STATUS_TEXT[p.status](p.payoutAces)}
                     </span>
+                    {p.canShare && (
+                      <Link href={`/rallis?partage=${p.id}`} data-testid="recap-share" className="mt-1 inline-flex min-h-11 items-center font-semibold text-gold underline" onClick={() => dialog.current?.close()}>
+                        Partager ma victoire
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
