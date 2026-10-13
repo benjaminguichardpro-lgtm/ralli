@@ -15,6 +15,8 @@ export type ClubCard = {
   /** Nombre de personnes qui suivent le club (ses membres). */
   followers: number;
   isMember: boolean;
+  /** Le lecteur administre ce club (le badge dit « Admin de ce club » au lieu de « Membre »). */
+  isAdmin: boolean;
   /** Position sur la carte ; null si l'adresse n'a pas été localisée. */
   latitude: number | null;
   longitude: number | null;
@@ -30,6 +32,7 @@ const NO_FILTERS: ClubFilters = { region: null, size: null, upcomingOnly: false 
 export async function searchClubs(userId: string, query = "", limit = 50, filters: ClubFilters = NO_FILTERS): Promise<ClubCard[]> {
   const now = new Date();
   const rows = await db.club.findMany({
+    where: { deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -41,7 +44,7 @@ export async function searchClubs(userId: string, query = "", limit = 50, filter
       region: true,
       licenseeCount: true,
       _count: { select: { memberships: true } },
-      memberships: { where: { userId }, select: { userId: true } },
+      memberships: { where: { userId }, select: { userId: true, role: true } },
       encounters: { where: { status: "OPEN", archivedAt: null, startsAt: { gt: now } }, select: { id: true }, take: 1 },
     },
   });
@@ -55,6 +58,7 @@ export async function searchClubs(userId: string, query = "", limit = 50, filter
       logoUpdatedAt: c.logoUpdatedAt,
       followers: c._count.memberships,
       isMember: c.memberships.length > 0,
+      isAdmin: c.memberships[0]?.role === "ADMIN",
       latitude: c.latitude,
       longitude: c.longitude,
     }))
@@ -68,7 +72,7 @@ export async function countFollowers(clubId: string): Promise<number> {
 
 /** Un compte connecté rejoint un club d'un bouton (aucun code). */
 export async function joinClub(actorId: string, clubId: string): Promise<void> {
-  const club = await db.club.findUnique({ where: { id: clubId }, select: { id: true } });
+  const club = await db.club.findFirst({ where: { id: clubId, deletedAt: null }, select: { id: true } });
   if (!club) throw CLUB_NOT_FOUND;
   // Un membre retiré par un admin ne revient pas d'un clic : il doit demander à revenir.
   const removal = await db.clubRemoval.findUnique({ where: { userId_clubId: { userId: actorId, clubId } }, select: { userId: true } });

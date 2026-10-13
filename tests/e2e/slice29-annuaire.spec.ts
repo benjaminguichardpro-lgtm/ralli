@@ -54,8 +54,8 @@ test("aucun résultat : message clair ; sans recherche : tous les clubs, les plu
   await page.goto("/clubs/recherche");
   const names = page.getByTestId("club-result").locator("span.truncate.font-serif");
   await expect(names).toHaveText(["TC Démo-Lyon", "TC Démo-Nantes", "TC Démo-Bordeaux"]);
-  await expect(page.getByTestId("club-result").filter({ hasText: "TC Démo-Bordeaux" })).toContainText("Membre");
-  await expect(page.getByTestId("club-result").filter({ hasText: "TC Démo-Lyon" })).not.toContainText("Membre");
+  await expect(page.getByTestId("club-result").filter({ hasText: "TC Démo-Bordeaux" })).toContainText("Admin de ce club");
+  await expect(page.getByTestId("club-result").filter({ hasText: "TC Démo-Lyon" })).not.toContainText(/Membre|Admin de ce club/);
 });
 
 test("l'onglet « Clubs » ouvre la recherche", async () => {

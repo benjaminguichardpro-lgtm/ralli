@@ -585,6 +585,8 @@ export async function getEncounterPage(viewerId: string | null, encounterId: str
   });
   const s = effectiveStatus(e, now);
   if (s === "DRAFT" && !(await canSeeDraft(viewerId, e.organizerClubId))) throw ENCOUNTER_NOT_FOUND;
+  // Club supprimé : ses rencontres ne sont plus lisibles (les pronostics réglés restent dans le portefeuille).
+  if ((await db.club.count({ where: { id: e.organizerClubId, deletedAt: null } })) === 0) throw ENCOUNTER_NOT_FOUND;
 
   const playerSel = { select: { id: true, firstName: true, lastName: true, fftRank: true } } as const;
   const rawMatches = await db.match.findMany({

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { ClubLogo } from "@/components/club-logo";
 import { MemberRoleForm, RemoveMemberForm, ReturnRequestForm } from "@/components/club-forms";
-import { WhatsAppShare } from "@/components/share-link";
+import { CopyLinkButton, WhatsAppShare } from "@/components/share-link";
 import { ResetAvatarForm } from "@/components/profile-forms";
 import { LeaderboardTable, RankMoveBadge } from "@/components/leaderboard";
 import { rankLabel } from "@/lib/leaderboard/rank";
@@ -19,6 +19,8 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { clubPath, parseClubParam } from "@/lib/clubs/invite-link";
 import { formatCount, isProfileEmpty, websiteLabel } from "@/lib/clubs/profile";
 import { applyFilter, countFilters, parseFilter } from "@/lib/encounters/filters";
+import { publicPath } from "@/lib/clubs/slug";
+import { getPublicPageSettings } from "@/server/club-public";
 import { type ClubView, getClubView } from "@/server/clubs";
 import { countFollowers, listReturnRequests } from "@/server/club-directory";
 import { listPendingReports } from "@/server/win-cards";
@@ -69,7 +71,7 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
   }
   const followers = await countFollowers(club.id);
   const isAdmin = club.myRole === "ADMIN";
-  const [teams, isCaptain, encounters, archived, board, returnRequests, pendingReports] = await Promise.all([
+  const [teams, isCaptain, encounters, archived, board, returnRequests, pendingReports, publicSettings] = await Promise.all([
     listClubTeams(user.id, club.id),
     isCaptainInClub(user.id, club.id),
     listClubEncounters(user.id, club.id),
@@ -77,6 +79,7 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
     getLeaderboard(user.id, club.id, "season", { limit: 3 }),
     isAdmin ? listReturnRequests(user.id, club.id) : Promise.resolve([]),
     isAdmin ? listPendingReports(user.id, club.id) : Promise.resolve([]),
+    isAdmin ? getPublicPageSettings(user.id, club.id) : Promise.resolve(null),
   ]);
   const clubTeams = teams.filter((t) => t.kind === "CLUB");
   const externalTeams = teams.filter((t) => t.kind === "EXTERNAL");
@@ -110,11 +113,14 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
             )}
           </ul>
         )}
-        {(isAdmin || !isProfileEmpty(club.profile)) && (
-          <ButtonLink href={`/clubs/${club.id}/fiche`} variant="ghost">
-            {isAdmin && isProfileEmpty(club.profile) ? "Compléter la fiche du club" : "Voir la fiche du club"}
-          </ButtonLink>
-        )}
+        <div className="flex flex-wrap gap-3">
+          {(isAdmin || !isProfileEmpty(club.profile)) && (
+            <ButtonLink href={`/clubs/${club.id}/fiche`} variant="ghost">
+              {isAdmin && isProfileEmpty(club.profile) ? "Compléter la fiche du club" : "Voir la fiche du club"}
+            </ButtonLink>
+          )}
+          {publicSettings?.publicPage && publicSettings.slug && <CopyLinkButton path={publicPath(publicSettings.slug)} />}
+        </div>
       </div>
 
       <Suspense fallback={null}>

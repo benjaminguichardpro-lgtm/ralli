@@ -198,6 +198,16 @@ model Club {
   longitude Float?
   region    String?
 
+  // Page publique (tranche 34) : /c/<slug>, visible sans compte quand un admin l'active. Le slug est créé à la première activation.
+  publicPage Boolean @default(false)
+  slug       String? @unique
+
+  // Suppression « douce » (tranche 34) : le club disparaît partout, les données restent. deletedMembership garde qui était membre
+  // (et son rôle) pour pouvoir le rétablir à la main ; les adhésions elles-mêmes sont retirées.
+  deletedAt         DateTime?
+  deletedById       String?
+  deletedMembership Json?
+
   createdBy        User              @relation("ClubCreatedBy", fields: [createdById], references: [id])
   memberships      ClubMembership[]
   teams            Team[]

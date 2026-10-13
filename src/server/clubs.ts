@@ -61,8 +61,8 @@ export type ClubView = {
 /** Page club : réservée aux membres. Les emails ne sont jamais exposés. */
 export async function getClubView(actorId: string, clubId: string): Promise<ClubView> {
   const myRole = await requireClubMember(actorId, clubId);
-  const club = await db.club.findUnique({
-    where: { id: clubId },
+  const club = await db.club.findFirst({
+    where: { id: clubId, deletedAt: null },
     select: {
       id: true,
       name: true,

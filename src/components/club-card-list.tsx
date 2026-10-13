@@ -23,7 +23,7 @@ export function ClubCardList({ clubs, empty }: { clubs: ClubCard[]; empty: strin
                 {followersLabel(c.followers)}
               </span>
             </span>
-            {c.isMember && <span className="shrink-0 rounded-full bg-pale px-2.5 py-1 text-xs font-bold text-primary">Membre</span>}
+            {c.isMember && <span className="shrink-0 rounded-full bg-pale px-2.5 py-1 text-xs font-bold text-primary">{c.isAdmin ? "Admin de ce club" : "Membre"}</span>}
           </Link>
         </li>
       ))}

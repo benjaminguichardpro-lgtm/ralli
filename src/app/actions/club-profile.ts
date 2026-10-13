@@ -7,6 +7,8 @@ import { PHOTO_MAX_BYTES } from "@/lib/avatars";
 import { clubProfileSchema } from "@/lib/clubs/profile";
 import { fieldErrors } from "@/lib/validation/account";
 import { removeClubLogo, updateClubProfile, uploadClubLogo } from "@/server/club-profile";
+import { deleteClub } from "@/server/club-delete";
+import { setPublicPage } from "@/server/club-public";
 import { DomainError } from "@/server/errors";
 import type { FormState } from "./types";
 
@@ -65,4 +67,35 @@ export async function removeClubLogoAction(_: FormState, fd: FormData): Promise<
   }
   refresh();
   return { ok: true, message: "Logo retiré." };
+}
+
+export async function setPublicPageAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const clubId = idSchema.safeParse(fd.get("clubId"));
+  if (!clubId.success) return { message: "Requête invalide" };
+  const choice = fd.get("enabled"); // « keep » : l'adresse change, la page reste active
+  const enabled = choice === "1" || choice === "keep";
+  const slug = fd.get("slug");
+  try {
+    await setPublicPage(user.id, clubId.data, enabled, typeof slug === "string" && slug !== "" ? slug : undefined);
+  } catch (e) {
+    if (e instanceof DomainError) return { message: e.message, values: { slug: String(slug ?? "") } };
+    throw e;
+  }
+  // Pas de refresh() ici : le formulaire garde son message, le client rafraîchit la page.
+  return { ok: true, message: choice === "keep" ? "Adresse enregistrée." : enabled ? "Page publique activée." : "Page publique désactivée." };
+}
+
+/** Supprime le club (admins). Pas de refresh() : le club n'existe plus, le client quitte la page. */
+export async function deleteClubAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const clubId = idSchema.safeParse(fd.get("clubId"));
+  if (!clubId.success) return { message: "Requête invalide" };
+  try {
+    await deleteClub(user.id, clubId.data, String(fd.get("confirmation") ?? ""));
+  } catch (e) {
+    if (e instanceof DomainError) return { message: e.message };
+    throw e;
+  }
+  return { ok: true, message: "Club supprimé." };
 }

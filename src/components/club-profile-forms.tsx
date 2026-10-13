@@ -1,10 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { type ReactNode, useActionState, useEffect, useRef, useState } from "react";
-import { removeClubLogoAction, updateClubProfileAction, uploadClubLogoAction } from "@/app/actions/club-profile";
+import { deleteClubAction, removeClubLogoAction, setPublicPageAction, updateClubProfileAction, uploadClubLogoAction } from "@/app/actions/club-profile";
 import { initialFormState } from "@/app/actions/types";
 import { PHOTO_MAX_BYTES } from "@/lib/avatars";
 import { ADDRESS_MAX, CITY_MAX, COURTS_MAX, DESCRIPTION_MAX, LICENSEES_MAX, POSTAL_CODE_MAX, WEBSITE_MAX } from "@/lib/clubs/profile";
+import { publicPath } from "@/lib/clubs/slug";
+import { CopyLinkButton, WhatsAppShare } from "./share-link";
 import { Field, FieldError, FormMessage, SubmitButton, confirmOnSubmit } from "./ui";
 
 export type ProfileFormValues = {
@@ -161,6 +164,124 @@ export function EditProfilePanel({ children }: { children: ReactNode }) {
         </button>
       </div>
       {children}
+    </div>
+  );
+}
+
+/**
+ * Page publique du club (admins) : activer / désactiver, adresse modifiable, lien et partage. Désactivée au départ.
+ * Une confirmation précède chaque changement de visibilité (la page devient lisible de tous, sans compte).
+ */
+export function PublicPageForm({ clubId, publicPage, slug }: { clubId: string; publicPage: boolean; slug: string | null }) {
+  const router = useRouter();
+  const [state, action] = useActionState(setPublicPageAction, initialFormState);
+  useEffect(() => {
+    if (state.ok) router.refresh();
+  }, [state, router]);
+  const path = slug ? publicPath(slug) : null;
+  return (
+    <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="public-page-panel">
+      <h2 className="font-serif text-xl text-primary">Page publique</h2>
+      <p className="text-sm text-ink-muted">
+        {publicPage
+          ? "Tout le monde peut voir les résultats et les prochaines rencontres du club avec ce lien, sans compte. Les membres et leurs pronostics ne sont jamais montrés."
+          : "Désactivée : seuls les comptes Ralli voient le club. Active-la pour partager un lien avec les résultats du club (site, WhatsApp, Instagram)."}
+      </p>
+      <form
+        action={action}
+        onSubmit={(e) => {
+          const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+          const message = submitter?.value === "0" ? "Désactiver la page publique ? Le lien ne marchera plus." : submitter?.value === "1" ? "Rendre la page du club visible de tous, sans compte ?" : null;
+          if (message && !window.confirm(message)) e.preventDefault();
+        }}
+        className="space-y-3"
+      >
+        <input type="hidden" name="clubId" value={clubId} />
+        {publicPage && (
+          <>
+            <Field label="Adresse de la page" name="slug" defaultValue={state.values?.slug ?? slug ?? ""} maxLength={50} hint="Lettres minuscules, chiffres et tirets" error={state.errors?.slug} />
+            {path && (
+              <p className="break-all text-sm" data-testid="public-page-link">
+                Lien : <a href={path} className="font-semibold text-primary underline">{path}</a>
+              </p>
+            )}
+          </>
+        )}
+        <div className="flex flex-wrap gap-3">
+          {publicPage ? (
+            <>
+              <SubmitButton name="enabled" value="keep" pendingLabel="…">Enregistrer l&apos;adresse</SubmitButton>
+              <SubmitButton name="enabled" value="0" variant="ghost" pendingLabel="…">Désactiver</SubmitButton>
+            </>
+          ) : (
+            <SubmitButton name="enabled" value="1" pendingLabel="…">Activer la page publique</SubmitButton>
+          )}
+        </div>
+        <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
+      </form>
+      {publicPage && path && (
+        <div className="flex flex-wrap gap-3">
+          <CopyLinkButton path={path} />
+          <WhatsAppShare text={`Les résultats de notre club sur Ralli :`} path={path} label="Partager la page" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+const DELETE_WORD = "SUPPRIMER";
+
+/**
+ * Bas de la fiche (admins) : petit lien « Supprimer le club ». L'encart de confirmation demande de saisir « SUPPRIMER » en
+ * toutes lettres (majuscules) ; « Oui » reste grisé tant que le mot n'est pas exact. Le serveur revérifie le mot.
+ */
+export function DeleteClubSection({ clubId, clubName }: { clubId: string; clubName: string }) {
+  const router = useRouter();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [typed, setTyped] = useState("");
+  const [state, action] = useActionState(deleteClubAction, initialFormState);
+  useEffect(() => {
+    if (state.ok) router.push("/clubs");
+  }, [state, router]);
+  const close = () => {
+    dialog.current?.close();
+    setTyped("");
+  };
+  return (
+    <div className="pt-4 text-center">
+      <button
+        type="button"
+        onClick={() => dialog.current?.showModal()}
+        data-testid="delete-club-open"
+        className="inline-flex min-h-11 items-center px-3 text-sm text-danger underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        Supprimer le club
+      </button>
+      <dialog ref={dialog} className="sheet" aria-label="Supprimer le club" data-testid="delete-club-dialog" onClose={() => setTyped("")}>
+        <form action={action} className="mx-auto grid w-full max-w-xl gap-4 rounded-t-3xl bg-surface px-5 pb-6 pt-5 text-left">
+          <input type="hidden" name="clubId" value={clubId} />
+          <h2 className="font-serif text-2xl text-primary">Supprimer {clubName} ?</h2>
+          <p>
+            Le club, ses équipes et ses rencontres disparaissent pour tout le monde, et le lien de sa page publique ne marche plus. Les rencontres pas
+            terminées sont annulées et les pronostics en cours remboursés. Cette action est définitive pour les membres.
+          </p>
+          <Field label={`Pour confirmer, saisis ${DELETE_WORD} en toutes lettres`} name="confirmation" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoCapitalize="off" data-testid="delete-club-input" />
+          <div className="flex gap-3">
+            <SubmitButton disabled={typed !== DELETE_WORD} pendingLabel="Suppression…" data-testid="delete-club-yes">
+              Oui
+            </SubmitButton>
+            <button
+              type="button"
+              onClick={close}
+              data-testid="delete-club-no"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-primary bg-surface px-5 font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              Non
+            </button>
+          </div>
+          {state.message && !state.ok && <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>}
+        </form>
+      </dialog>
     </div>
   );
 }

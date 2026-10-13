@@ -3,10 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ClubLogo } from "@/components/club-logo";
-import { ClubLogoUploadButton, ClubProfileForm, EditProfilePanel, RemoveClubLogoForm } from "@/components/club-profile-forms";
+import { ClubLogoUploadButton, ClubProfileForm, DeleteClubSection, EditProfilePanel, PublicPageForm, RemoveClubLogoForm } from "@/components/club-profile-forms";
 import { requireUser } from "@/lib/auth/current-user";
 import { NOT_SPECIFIED, formatAddress, formatCount, isProfileEmpty, websiteLabel } from "@/lib/clubs/profile";
 import { type ClubProfile, getClubProfile } from "@/server/club-profile";
+import { getPublicPageSettings } from "@/server/club-public";
 import { DomainError } from "@/server/errors";
 
 export const metadata: Metadata = { title: "Fiche du club · Ralli" };
@@ -42,6 +43,7 @@ async function ClubProfileView({ params }: { params: Promise<{ clubId: string }>
     throw e;
   }
   const isAdmin = club.myRole === "ADMIN";
+  const publicSettings = isAdmin ? await getPublicPageSettings(user.id, club.id) : null;
   const address = formatAddress(club);
   const num = (n: number | null) => (n === null ? unspecified : formatCount(n));
 
@@ -101,6 +103,8 @@ async function ClubProfileView({ params }: { params: Promise<{ clubId: string }>
         {club.description ? <p className="whitespace-pre-line" data-testid="profile-description">{club.description}</p> : <p className="text-ink-muted" data-testid="profile-description">{NOT_SPECIFIED}</p>}
       </div>
 
+      {publicSettings && <PublicPageForm clubId={club.id} publicPage={publicSettings.publicPage} slug={publicSettings.slug} />}
+
       {isAdmin && (
         <EditProfilePanel>
           <div className="space-y-3">
@@ -124,6 +128,8 @@ async function ClubProfileView({ params }: { params: Promise<{ clubId: string }>
           />
         </EditProfilePanel>
       )}
+
+      {isAdmin && <DeleteClubSection clubId={club.id} clubName={club.name} />}
     </section>
   );
 }

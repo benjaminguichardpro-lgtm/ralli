@@ -328,6 +328,21 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 - **Base** : migration `20261014100000_win_cards` (colonne `Story.predictionId`, tables `StoryReaction` et `StoryReport`, nouveau CHECK sur le texte : annonce 1 à 280 caractères sans ralli, carte 0 à 140 avec ralli).
 - **Tests** : `win-cards.test.ts` (règles pures), `win-cards.db.test.ts` (partage, délai, réaction, signalement, garde-fous de la base), E2E `slice32-rallis-gagnants.spec.ts`.
 
+## Page publique d'un club (tranche 34, `src/server/club-public.ts`, `src/lib/clubs/slug.ts`, page `/c/<adresse>`)
+
+Un lien comme `/c/tc-lyon`, lisible **sans compte** : logo, ville, fiche (sans la description libre), résultats (provisoires compris), rencontres à venir, équipes du club. Jamais de membres ni de pronostics ; les joueurs restent « Prénom N. ». Un visiteur voit « Rejoindre Ralli pour pronostiquer », un compte connecté « Voir le club dans Ralli ».
+- **Désactivée par défaut.** Les admins l'activent dans la fiche du club (bloc « Page publique », avec confirmation). L'adresse est créée à la première activation à partir du nom (accents et signes retirés, `-2` si elle est prise), les admins peuvent la changer (3 à 50 caractères, minuscules, chiffres, tirets ; quelques mots réservés). Désactiver garde l'adresse mais la page répond « Page introuvable » (même réponse qu'une adresse inconnue). Un bouton « Partager la page » (WhatsApp) est proposé.
+- Base : `Club.publicPage` (faux par défaut) et `Club.slug` (unique), garde-fous en base (format, et pas de page publique sans adresse). Migration `20261015100000_club_public_page`.
+- Le logo d'un club public est servi sans compte par `/api/club-logo/<id>` ; sinon la route exige toujours un compte.
+- La page est indexable par les moteurs (le titre porte le nom du club) ; les pages de rencontres, elles, restent `noindex`.
+- Le statut HTTP d'une adresse inconnue est 200 (la page est diffusée en flux, comme les autres « Page introuvable » de l'appli) : seul le contenu dit « introuvable ».
+
+### Supprimer un club (tranche 34, `src/server/club-delete.ts`)
+Lien discret « Supprimer le club » tout en bas de la fiche (admins). Un encart demande de saisir **SUPPRIMER** en majuscules (le serveur revérifie), puis « Oui » (grisé tant que le mot n'est pas exact) ou « Non ».
+- Suppression **douce** : `Club.deletedAt`, `deletedById`, `deletedMembership` (liste des membres et rôles, pour un rétablissement à la main). Le club disparaît de la recherche, de la carte, de la proximité, des pages `/clubs/<id>`, `/c/<adresse>` et de ses rencontres (« Page introuvable »). Les données restent en base. Migration `20261015120000_club_delete`.
+- Dans une seule transaction : rencontres non terminées annulées (événement « Club supprimé »), **tous les pronostics en cours remboursés** (ledger), adhésions retirées, page publique coupée et adresse libérée. Les pronostics déjà réglés et le portefeuille ne bougent pas (leur lien vers la rencontre affiche « Page introuvable »).
+- Pas de notification aux membres. « Désactiver » la page publique reste un bouton séparé, dans le bloc « Page publique ».
+
 ## Résultats au centre (tranche 33, `src/server/results-feed.ts`, `src/components/result-card.tsx`, page `/resultats-clubs`)
 
 - **Accueil à deux onglets** (sous les stories, pastille à deux boutons) : **« Résultats »** et **« Rencontres à venir »** (par défaut : le fil habituel, prochaine rencontre en grand puis les suivantes). Le choix reste dans l'adresse (`/?onglet=resultats`, toute autre valeur donne l'onglet par défaut) ; la barre du bas « Matchs » mène à l'onglet par défaut. Seuls les membres d'un club voient les onglets ; les rencontres à proximité (`?proximite=1`) les remplacent. L'onglet **Résultats** montre les **5 derniers résultats** des clubs de l'utilisateur (logo du club s'il en a plusieurs) et le lien « Tous les résultats ›. **Un clic** ouvre le détail match par match. Avec plusieurs clubs, tout est mélangé, le plus récent d'abord ; sans résultat : « Pas encore de résultat ».

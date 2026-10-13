@@ -80,7 +80,7 @@ export async function listNearbyEncounters(userId: string, now = new Date()): Pr
   const origin = { latitude: me.latitude, longitude: me.longitude };
   const box = boundingBox(origin, me.nearbyRadiusKm);
   const clubs = await db.club.findMany({
-    where: { latitude: { gte: box.minLat, lte: box.maxLat }, longitude: { gte: box.minLon, lte: box.maxLon } },
+    where: { deletedAt: null, latitude: { gte: box.minLat, lte: box.maxLat }, longitude: { gte: box.minLon, lte: box.maxLon } },
     select: { id: true, name: true, logoUpdatedAt: true, latitude: true, longitude: true, memberships: { where: { userId }, select: { userId: true } } },
   });
   const inRange = clubs

@@ -23,8 +23,8 @@ export type ClubProfile = ClubProfileFields & {
 
 export async function getClubProfile(actorId: string, clubId: string): Promise<ClubProfile> {
   const myRole = await getClubRole(actorId, clubId);
-  const club = await db.club.findUnique({
-    where: { id: clubId },
+  const club = await db.club.findFirst({
+    where: { id: clubId, deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -109,7 +109,7 @@ export async function removeClubLogo(actorId: string, clubId: string): Promise<v
 
 /** Logo d'un club, pour tout compte connecté (les clubs sont publics : recherche, page du club). Sans logo : null. */
 export async function getClubLogoFor(_viewerId: string, clubId: string): Promise<Buffer | null> {
-  const club = await db.club.findUnique({ where: { id: clubId }, select: { logoUpdatedAt: true } });
+  const club = await db.club.findFirst({ where: { id: clubId, deletedAt: null }, select: { logoUpdatedAt: true } });
   if (!club?.logoUpdatedAt) return null;
   return readPhoto(clubId, "club-logo");
 }
