@@ -122,6 +122,13 @@ model User {
   avatarPhotoAt      DateTime? // date de la photo importée (fichier dans le dossier avatar/) ; null = pas de photo
   onboardingSeenAt   DateTime? // guide du premier lancement vu ou passé ; null = à montrer (comptes existants : marqués vus par la migration)
   resultsSeenAt      DateTime? // les pronostics réglés avant cette date ont déjà été montrés dans le récapitulatif
+  // « Rencontres à proximité » (tranche 32) : privé, jamais montré aux autres. postalCode saisi par la personne (facultatif),
+  // commune + position = centre de la commune, calculés à l'enregistrement (geo.api.gouv.fr). Aucune adresse précise.
+  postalCode         String?
+  commune            String?
+  latitude           Float?
+  longitude          Float?
+  nearbyRadiusKm     Int       @default(30) // rayon de la recherche à proximité, réglable par la personne (1 à 200 km)
   createdAt          DateTime  @default(now())
 
   memberships         ClubMembership[]

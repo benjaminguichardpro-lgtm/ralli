@@ -5,27 +5,34 @@ import { ClubLogo } from "@/components/club-logo";
 import { StatusBadge } from "@/components/encounter-list";
 import { BigLogo, LawnCard, lawnButton } from "@/components/lawn-card";
 import { ClubSearchBar } from "@/components/club-directory";
+import { NearbyButton } from "@/components/nearby-button";
+import { NearbySection } from "@/components/nearby-section";
 import { StoriesSection } from "@/components/stories-section";
 import { WhatsAppShare } from "@/components/share-link";
 import { ButtonLink } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { formatParisDay, formatParisTime, relativeDayLabel } from "@/lib/time";
 import { type FeedEncounter, getHomeFeed } from "@/server/feed";
+import { getMyLocation } from "@/server/nearby";
 
-export default function Home() {
+type HomeProps = { searchParams: Promise<{ proximite?: string | string[] }> };
+
+export default function Home({ searchParams }: HomeProps) {
   return (
     <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
-      <HomeContent />
+      <HomeContent searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function HomeContent() {
+async function HomeContent({ searchParams }: HomeProps) {
   const user = await getCurrentUser();
   if (!user) return <Welcome />;
   if (user.mustChangePassword) redirect("/mot-de-passe");
   const now = new Date();
-  const feed = await getHomeFeed(user.id, now);
+  const nearParam = (await searchParams).proximite;
+  const nearby = (Array.isArray(nearParam) ? nearParam[0] : nearParam) === "1";
+  const [feed, location] = await Promise.all([getHomeFeed(user.id, now), getMyLocation(user.id)]);
   const next = feed.encounters.find((e) => e.status === "OPEN");
   const others = feed.encounters.filter((e) => e !== next);
   const only = feed.stewardClubs[0];
@@ -37,7 +44,20 @@ async function HomeContent() {
       </h1>
 
       <ClubSearchBar />
+      <NearbyButton located={location.located} href="/?proximite=1" />
 
+      {nearby ? (
+        // Sur l'accueil, les rencontres à proximité s'affichent ici même, à la place du fil habituel.
+        <div className="space-y-4">
+          <Link href="/" className="inline-flex min-h-11 items-center font-semibold text-primary underline" data-testid="nearby-home-back">
+            ‹ Retour à mes rencontres
+          </Link>
+          <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
+            <NearbySection userId={user.id} now={now} />
+          </Suspense>
+        </div>
+      ) : (
+        <>
       {feed.hasClub && (
         <Suspense fallback={null}>
           <StoriesSection userId={user.id} />
@@ -96,6 +116,8 @@ async function HomeContent() {
             </ul>
           )}
         </div>
+      )}
+        </>
       )}
     </section>
   );

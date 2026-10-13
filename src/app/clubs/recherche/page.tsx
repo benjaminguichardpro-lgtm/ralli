@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ClubCardList } from "@/components/club-card-list";
 import { ClubSearchBar } from "@/components/club-directory";
+import { NearbyButton } from "@/components/nearby-button";
+import { getMyLocation } from "@/server/nearby";
 import { ClubMap } from "@/components/club-map";
 import { toMapClubs } from "@/lib/clubs/map";
 import { directoryHref, parseClubFilters } from "@/lib/clubs/search";
@@ -33,9 +35,11 @@ async function Results({ searchParams }: { searchParams: Promise<SearchParams> }
   const filtered = Boolean(q.trim() || filters.region || filters.size || filters.upcomingOnly);
   const clubs = await searchClubs(user.id, q, 50, filters);
   const onMap = toMapClubs(await searchClubs(user.id, q, 500, filters));
+  const location = await getMyLocation(user.id);
   return (
     <>
       <ClubSearchBar defaultValue={q} />
+      <NearbyButton located={location.located} href="/rencontres/proximite" />
       <Link href={directoryHref("/clubs/carte", q, filters)} className="relative block overflow-hidden rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" data-testid="map-preview-link" aria-label="Agrandir la carte des clubs">
         <ClubMap clubs={onMap} interactive={false} className="pointer-events-none h-44" />
         <span className="absolute inset-x-3 bottom-3 z-[500] flex min-h-11 items-center justify-center rounded-lg bg-primary-dark px-3 text-center font-semibold text-gold">
