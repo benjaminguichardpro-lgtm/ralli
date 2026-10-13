@@ -1,12 +1,17 @@
 import { rm } from "node:fs/promises";
 import sharp from "sharp";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { geocodeAddress } from "@/lib/clubs/geocode";
 import { clubProfileSchema } from "@/lib/clubs/profile";
 import { db } from "@/lib/db";
 import { makeUser } from "../../tests/db/factories";
 import { joinClub } from "./club-directory";
 import { createClub, getClubView, listMyClubs, setMemberRole } from "./clubs";
 import { getClubLogoFor, getClubProfile, removeClubLogo, updateClubProfile, uploadClubLogo } from "./club-profile";
+
+// Aucun appel réseau dans les tests : la localisation est simulée.
+vi.mock("@/lib/clubs/geocode", () => ({ geocodeAddress: vi.fn(async () => null) }));
+const locate = vi.mocked(geocodeAddress);
 
 const png = (w: number, h: number) => sharp({ create: { width: w, height: h, channels: 4, background: "#b4502b" } }).png().toBuffer();
 const input = (over: Record<string, string> = {}) => {
@@ -18,6 +23,8 @@ const input = (over: Record<string, string> = {}) => {
 let admin: string, admin2: string, member: string, outsider: string, clubId: string;
 
 beforeEach(async () => {
+  locate.mockReset();
+  locate.mockResolvedValue(null);
   [admin, admin2, member, outsider] = (await Promise.all(["Admin", "Admin2", "Membre", "Dehors"].map(makeUser))) as [string, string, string, string];
   const club = await createClub(admin, "TC Fiche");
   clubId = club.id;
@@ -63,7 +70,7 @@ describe("fiche du club", () => {
   it("un admin d'un autre club ne peut pas modifier celui-ci", async () => {
     const other = await createClub(outsider, "Autre club");
     await expect(updateClubProfile(outsider, clubId, input())).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(updateClubProfile(outsider, other.id, input({ name: "Autre club" }))).resolves.toBeUndefined();
+    await expect(updateClubProfile(outsider, other.id, input({ name: "Autre club" }))).resolves.toEqual({ located: null });
   });
 
   it("la page du club et la liste des clubs portent la fiche et la date du logo", async () => {
@@ -71,6 +78,53 @@ describe("fiche du club", () => {
     const view = await getClubView(member, clubId);
     expect(view.profile).toMatchObject({ city: "Lyon", licenseeCount: 80, logoUpdatedAt: null });
     expect((await listMyClubs(member))[0]).toMatchObject({ id: clubId, logoUpdatedAt: null });
+  });
+
+  it("la région est déduite du code postal et mise à jour avec lui", async () => {
+    await updateClubProfile(admin, clubId, input({ postalCode: "69003", city: "Lyon" }));
+    expect((await db.club.findUniqueOrThrow({ where: { id: clubId } })).region).toBe("Auvergne-Rhône-Alpes");
+    await updateClubProfile(admin, clubId, input({ postalCode: "20000", city: "Ajaccio" }));
+    expect((await db.club.findUniqueOrThrow({ where: { id: clubId } })).region).toBe("Corse");
+    await updateClubProfile(admin, clubId, input({ city: "Lyon" })); // plus de code postal
+    expect((await db.club.findUniqueOrThrow({ where: { id: clubId } })).region).toBeNull();
+  });
+
+  it("l'adresse est localisée à l'enregistrement et seulement quand elle change", async () => {
+    locate.mockResolvedValue({ latitude: 45.75, longitude: 4.85 });
+    await expect(updateClubProfile(admin, clubId, input({ address: "1 rue Neuve", postalCode: "69003", city: "Lyon" }))).resolves.toEqual({ located: true });
+    expect(await db.club.findUniqueOrThrow({ where: { id: clubId }, select: { latitude: true, longitude: true } })).toEqual({ latitude: 45.75, longitude: 4.85 });
+    expect(locate).toHaveBeenCalledTimes(1);
+    // Même adresse, autre champ modifié : pas de nouvel appel, la position est gardée.
+    await expect(updateClubProfile(admin, clubId, input({ address: "1 rue Neuve", postalCode: "69003", city: "Lyon", description: "Nouveau" }))).resolves.toEqual({ located: true });
+    expect(locate).toHaveBeenCalledTimes(1);
+    expect((await db.club.findUniqueOrThrow({ where: { id: clubId } })).latitude).toBe(45.75);
+    // Adresse modifiée : nouvel appel.
+    locate.mockResolvedValue({ latitude: 43.3, longitude: 5.37 });
+    await updateClubProfile(admin, clubId, input({ address: "2 quai du Port", postalCode: "13002", city: "Marseille" }));
+    expect(locate).toHaveBeenCalledTimes(2);
+    expect(await db.club.findUniqueOrThrow({ where: { id: clubId }, select: { latitude: true, longitude: true } })).toEqual({ latitude: 43.3, longitude: 5.37 });
+  });
+
+  it("adresse introuvable : la fiche est enregistrée sans épingle, et on réessaie à l'enregistrement suivant", async () => {
+    await expect(updateClubProfile(admin, clubId, input({ city: "Nullepart", description: "Fiche" }))).resolves.toEqual({ located: false });
+    const club = await db.club.findUniqueOrThrow({ where: { id: clubId } });
+    expect(club).toMatchObject({ description: "Fiche", latitude: null, longitude: null });
+    locate.mockResolvedValue({ latitude: 48.85, longitude: 2.35 });
+    await expect(updateClubProfile(admin, clubId, input({ city: "Nullepart", description: "Fiche" }))).resolves.toEqual({ located: true });
+    expect((await db.club.findUniqueOrThrow({ where: { id: clubId } })).latitude).toBe(48.85);
+  });
+
+  it("vider l'adresse retire l'épingle", async () => {
+    locate.mockResolvedValue({ latitude: 45.75, longitude: 4.85 });
+    await updateClubProfile(admin, clubId, input({ city: "Lyon" }));
+    await expect(updateClubProfile(admin, clubId, input())).resolves.toEqual({ located: null });
+    expect(await db.club.findUniqueOrThrow({ where: { id: clubId }, select: { latitude: true, longitude: true, region: true } })).toEqual({ latitude: null, longitude: null, region: null });
+  });
+
+  it("la base refuse une latitude sans longitude ou hors limites", async () => {
+    await expect(db.club.update({ where: { id: clubId }, data: { latitude: 45 } })).rejects.toThrow();
+    await expect(db.club.update({ where: { id: clubId }, data: { latitude: 95, longitude: 2 } })).rejects.toThrow();
+    await expect(db.club.update({ where: { id: clubId }, data: { latitude: 45, longitude: 2 } })).resolves.toBeDefined();
   });
 
   it("la base refuse des valeurs absurdes même sans passer par l'application", async () => {

@@ -23,6 +23,13 @@ const DAY = 24 * HOUR;
 const TABLES = ["StoryView", "Story", "LedgerEntry", "Prediction", "Match", "EncounterEvent", "Encounter", "TeamPlayer", "Player", "Team", "ClubMembership", "Club", "User"];
 
 /** Vide toute la base (le ledger est append-only : seul TRUNCATE peut l'effacer). */
+/** Fiche des clubs de démo : adresse fictive, position, région déduite du code postal, licenciés (un club de chaque taille). */
+const DEMO_CLUB_PROFILES = {
+  "TC Démo-Lyon": { address: "12 avenue Jean Jaurès", postalCode: "69007", city: "Lyon", latitude: 45.7455, longitude: 4.842, region: "Auvergne-Rhône-Alpes", licenseeCount: 250 },
+  "TC Démo-Nantes": { address: "8 boulevard de la Beaujoire", postalCode: "44300", city: "Nantes", latitude: 47.256, longitude: -1.523, region: "Pays de la Loire", licenseeCount: 80 },
+  "TC Démo-Bordeaux": { address: "5 cours du Médoc", postalCode: "33300", city: "Bordeaux", latitude: 44.862, longitude: -0.565, region: "Nouvelle-Aquitaine", licenseeCount: 400 },
+} as const;
+
 export async function wipeAll(): Promise<void> {
   await db.$executeRawUnsafe(`TRUNCATE ${TABLES.map((t) => `"${t}"`).join(", ")} CASCADE`);
 }
@@ -172,6 +179,14 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
   const lyon = await createClub(users.admin_lyon!, "TC Démo-Lyon");
   const nantes = await createClub(users.admin_nantes!, "TC Démo-Nantes");
   const bordeaux = await createClub(users.admin_bordeaux!, "TC Démo-Bordeaux");
+  // Adresses fictives avec position posée directement (la démo n'appelle pas l'API adresse), pour remplir la carte et les filtres.
+  for (const [club, profile] of [
+    [lyon, DEMO_CLUB_PROFILES["TC Démo-Lyon"]],
+    [nantes, DEMO_CLUB_PROFILES["TC Démo-Nantes"]],
+    [bordeaux, DEMO_CLUB_PROFILES["TC Démo-Bordeaux"]],
+  ] as const) {
+    await db.club.update({ where: { id: club.id }, data: profile });
+  }
   for (const p of ["capitaine_lyon", "capitaine_dames_lyon", "joueur_lyon", ...parieurs]) await joinClub(users[p]!, lyon.id);
   for (const p of ["capitaine_nantes", "joueur_nantes", "parieur1", "parieur2", "parieur3"]) await joinClub(users[p]!, nantes.id);
 

@@ -1,12 +1,7 @@
 import Link from "next/link";
+import { followersLabel } from "@/lib/clubs/map";
 import { type ClubCard } from "@/server/club-directory";
 import { ClubLogo } from "./club-logo";
-
-/** « 12 personnes suivent ce club » : le compteur affiché partout où un club apparaît. */
-export function followersLabel(n: number): string {
-  if (n === 0) return "Sois le premier à suivre ce club";
-  return n === 1 ? "1 personne suit ce club" : `${n.toLocaleString("fr-FR")} personnes suivent ce club`;
-}
 
 /** Résultats de recherche : une carte par club (logo, nom, ville, compteur), qui mène à la page du club. */
 export function ClubCardList({ clubs, empty }: { clubs: ClubCard[]; empty: string }) {
@@ -35,3 +30,5 @@ export function ClubCardList({ clubs, empty }: { clubs: ClubCard[]; empty: strin
     </ul>
   );
 }
+
+export { followersLabel };

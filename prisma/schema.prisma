@@ -182,6 +182,12 @@ model Club {
   outdoorCourts Int?
   logoUpdatedAt DateTime?
 
+  // Carte des clubs (tranche C) : calculés à l'enregistrement de la fiche (API adresse de l'État pour la position,
+  // code postal pour la région). Null = club pas localisé / région inconnue.
+  latitude  Float?
+  longitude Float?
+  region    String?
+
   createdBy        User              @relation("ClubCreatedBy", fields: [createdById], references: [id])
   memberships      ClubMembership[]
   teams            Team[]

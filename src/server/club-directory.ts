@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { clubMatchesQuery } from "@/lib/clubs/search";
+import { type ClubFilters, clubMatchesFilters, clubMatchesQuery } from "@/lib/clubs/search";
 import { DomainError, isUniqueViolation } from "./errors";
 import { CLUB_NOT_FOUND, getClubRole, requireClubAdmin } from "./permissions";
 
@@ -15,16 +15,49 @@ export type ClubCard = {
   /** Nombre de personnes qui suivent le club (ses membres). */
   followers: number;
   isMember: boolean;
+  /** Position sur la carte ; null si l'adresse n'a pas été localisée. */
+  latitude: number | null;
+  longitude: number | null;
 };
 
-/** Clubs de Ralli correspondant à la recherche (nom, ville ou code postal, sans accents ni casse), les plus suivis d'abord. */
-export async function searchClubs(userId: string, query = "", limit = 50): Promise<ClubCard[]> {
+const NO_FILTERS: ClubFilters = { region: null, size: null, upcomingOnly: false };
+
+/**
+ * Clubs de Ralli correspondant à la recherche (nom, ville ou code postal, sans accents ni casse) et aux filtres
+ * (région, taille, rencontre à venir), les plus suivis d'abord. « Rencontre à venir » = une rencontre publiée
+ * (ouverte), non archivée, qui n'a pas encore commencé.
+ */
+export async function searchClubs(userId: string, query = "", limit = 50, filters: ClubFilters = NO_FILTERS): Promise<ClubCard[]> {
+  const now = new Date();
   const rows = await db.club.findMany({
-    select: { id: true, name: true, city: true, postalCode: true, logoUpdatedAt: true, _count: { select: { memberships: true } }, memberships: { where: { userId }, select: { userId: true } } },
+    select: {
+      id: true,
+      name: true,
+      city: true,
+      postalCode: true,
+      logoUpdatedAt: true,
+      latitude: true,
+      longitude: true,
+      region: true,
+      licenseeCount: true,
+      _count: { select: { memberships: true } },
+      memberships: { where: { userId }, select: { userId: true } },
+      encounters: { where: { status: "OPEN", archivedAt: null, startsAt: { gt: now } }, select: { id: true }, take: 1 },
+    },
   });
   return rows
-    .filter((c) => clubMatchesQuery(c, query))
-    .map((c) => ({ id: c.id, name: c.name, city: c.city, postalCode: c.postalCode, logoUpdatedAt: c.logoUpdatedAt, followers: c._count.memberships, isMember: c.memberships.length > 0 }))
+    .filter((c) => clubMatchesQuery(c, query) && clubMatchesFilters({ region: c.region, licenseeCount: c.licenseeCount, hasUpcoming: c.encounters.length > 0 }, filters))
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      city: c.city,
+      postalCode: c.postalCode,
+      logoUpdatedAt: c.logoUpdatedAt,
+      followers: c._count.memberships,
+      isMember: c.memberships.length > 0,
+      latitude: c.latitude,
+      longitude: c.longitude,
+    }))
     .sort((a, b) => b.followers - a.followers || a.name.localeCompare(b.name, "fr"))
     .slice(0, limit);
 }

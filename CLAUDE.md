@@ -65,10 +65,11 @@ Web app mobile-first de pronostics sur les interclubs de tennis amateur, en Aces
 | 30. Retrait d'un membre par un admin, demande de retour, suppression du code d'invitation | ✅ (en attente de validation) | voir `git log` |
 
 | 29. Annuaire des clubs : recherche, page du club pour un non-membre, Rejoindre / Quitter, compteur, onglet « Clubs » | ✅ | voir `git log` |
+| C (31). Carte des clubs : aperçu sur l'onglet « Clubs », carte agrandie, épingles groupées, filtres région / taille (licenciés) / rencontre à venir en haut de la carte, position et région calculées à l'enregistrement de la fiche | ✅ (en attente de validation du push Neon) | voir `git log` |
 
 État des tests (fin de tranche 27) : 632 tests Vitest, ~195 scénarios Playwright, tous verts (voir « Tests E2E : pièges » plus bas : un scénario isolé peut échouer sur un raté de timing, à relancer seul avant de soupçonner le code).
 
-**Tranche B faite (30)** : retrait d'un membre, demande de retour, plus de code d'invitation (voir README « Retrait d'un membre »). **Tranche prévue** (décision de Benjamin) : C = page carte (`/clubs/recherche` avec carte OpenStreetMap, épingles groupées, filtres région / taille / rencontre à venir, latitude et longitude calculées à l'enregistrement de la fiche avec l'API adresse de l'État, région déduite du code postal). Tranche 28 (rallis gagnants en story) reste à faire : rallis gagnants en story (bouton « Partager ma victoire », carte automatique, commentaire de 140 caractères, partage WhatsApp, réaction 🎾 unique, signalement). Détail des décisions de Benjamin sur les stories : README, section « Stories de club et « à la une » ».
+**Tranche B faite (30)** : retrait d'un membre, demande de retour, plus de code d'invitation (voir README « Retrait d'un membre »). **Tranche C faite** (carte des clubs, voir README « Carte des clubs » ; migration `20261013150000_club_map` à passer sur Neon avec `db:deploy`, puis `npm run geocode-clubs` pour les clubs existants). Tranche 28 (rallis gagnants en story) reste à faire : rallis gagnants en story (bouton « Partager ma victoire », carte automatique, commentaire de 140 caractères, partage WhatsApp, réaction 🎾 unique, signalement). Détail des décisions de Benjamin sur les stories : README, section « Stories de club et « à la une » ».
 
 ## Décisions prises (en plus du brief)
 

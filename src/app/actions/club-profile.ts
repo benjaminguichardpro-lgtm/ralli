@@ -22,7 +22,12 @@ export async function updateClubProfileAction(_: FormState, fd: FormData): Promi
   const parsed = clubProfileSchema(new Date().getFullYear()).safeParse(values);
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values };
   try {
-    await updateClubProfile(user.id, clubId.data, parsed.data);
+    const { located } = await updateClubProfile(user.id, clubId.data, parsed.data);
+    if (located === false) {
+      refresh();
+      // Sans « ok » : le message reste affiché (l'admin doit corriger l'adresse), la fiche, elle, est bien enregistrée.
+      return { message: "Fiche enregistrée, mais adresse non localisée sur la carte : vérifie l'adresse.", values };
+    }
   } catch (e) {
     if (e instanceof DomainError) return { message: e.message, values };
     throw e;

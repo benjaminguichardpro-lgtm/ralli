@@ -24,6 +24,7 @@
     "settle": "tsx scripts/settle.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "weekly-bonus": "tsx scripts/weekly-bonus.ts",
+    "geocode-clubs": "tsx scripts/geocode-clubs.ts",
     "reset-password": "tsx scripts/reset-password.ts",
     "test:e2e": "playwright test",
     "odds:table": "tsx scripts/odds-table.ts"
@@ -33,6 +34,8 @@
     "@prisma/client": "^7.10.0",
     "@vercel/blob": "^2.8.1",
     "bcryptjs": "^3.0.3",
+    "leaflet": "^1.9.4",
+    "leaflet.markercluster": "^1.5.3",
     "next": "16.4.0",
     "next-auth": "^5.0.0-beta.32",
     "pg": "^8.23.1",
@@ -44,6 +47,8 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@tailwindcss/turbopack": "^4",
+    "@types/leaflet": "^1.9.22",
+    "@types/leaflet.markercluster": "^1.5.6",
     "@types/node": "^22.20.5",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",

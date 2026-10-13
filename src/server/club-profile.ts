@@ -1,6 +1,8 @@
 import sharp from "sharp";
 import { PHOTO_FORMATS, PHOTO_MAX_BYTES } from "@/lib/avatars";
+import { geocodeAddress, type Position } from "@/lib/clubs/geocode";
 import { type ClubProfileFields, type ClubProfileInput, LOGO_SIZE_PX } from "@/lib/clubs/profile";
+import { regionFromPostalCode } from "@/lib/clubs/region";
 import { db } from "@/lib/db";
 import { deletePhoto, readPhoto, savePhoto } from "./avatar-storage";
 import { DomainError } from "./errors";
@@ -43,10 +45,31 @@ export async function getClubProfile(actorId: string, clubId: string): Promise<C
   return { ...club, myRole };
 }
 
-/** Enregistre le nom et la fiche (admins). Un champ vide efface la valeur. */
-export async function updateClubProfile(actorId: string, clubId: string, input: ClubProfileInput): Promise<void> {
+export type LocateAddress = (a: { address: string | null; postalCode: string | null; city: string | null }) => Promise<Position | null>;
+
+/**
+ * Enregistre le nom et la fiche (admins). Un champ vide efface la valeur. Calcule aussi la région (code postal) et, quand
+ * l'adresse, le code postal ou la ville change (ou que le club n'était pas encore localisé), la position sur la carte.
+ * L'enregistrement n'échoue jamais à cause de la carte. Renvoie `located` : true (épingle posée), false (adresse non
+ * trouvée ou service indisponible), null (la fiche n'a pas d'adresse, rien à localiser).
+ */
+export async function updateClubProfile(actorId: string, clubId: string, input: ClubProfileInput, locate: LocateAddress = geocodeAddress): Promise<{ located: boolean | null }> {
   await requireClubAdmin(actorId, clubId);
-  await db.club.update({ where: { id: clubId }, data: input });
+  const before = await db.club.findUnique({ where: { id: clubId }, select: { address: true, postalCode: true, city: true, latitude: true } });
+  if (!before) throw CLUB_NOT_FOUND;
+  const region = regionFromPostalCode(input.postalCode);
+  const hasAddress = Boolean(input.address || input.postalCode || input.city);
+  const addressChanged = before.address !== input.address || before.postalCode !== input.postalCode || before.city !== input.city;
+  let position: Position | null | undefined; // undefined : on garde la position actuelle
+  if (!hasAddress) position = null;
+  else if (addressChanged || before.latitude === null) position = await locate({ address: input.address, postalCode: input.postalCode, city: input.city });
+  await db.club.update({
+    where: { id: clubId },
+    data: { ...input, region, ...(position === undefined ? {} : { latitude: position?.latitude ?? null, longitude: position?.longitude ?? null }) },
+  });
+  if (!hasAddress) return { located: null };
+  if (position === undefined) return { located: true };
+  return { located: position !== null };
 }
 
 /**
