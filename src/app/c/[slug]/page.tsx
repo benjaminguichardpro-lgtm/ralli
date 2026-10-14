@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ClubLogo } from "@/components/club-logo";
 import { EncounterList } from "@/components/encounter-list";
+import { TournamentList } from "@/components/tournament-list";
 import { WhatsAppShare } from "@/components/share-link";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { formatAddress, formatCount, websiteLabel } from "@/lib/clubs/profile";
 import { publicPath } from "@/lib/clubs/slug";
 import { getPublicClub, getPublicClubEncounters } from "@/server/club-public";
+import { listClubTournaments } from "@/server/tournaments";
 
 // Page publique d'un club, sans compte. Indexable (l'admin l'a activée) ; le titre porte le nom du club (balise <title> dans la page).
 export const metadata: Metadata = { title: "Club de tennis · Ralli", description: "Résultats et prochaines rencontres du club sur Ralli." };
@@ -25,7 +27,7 @@ async function PublicClub({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const club = await getPublicClub(slug);
   if (!club) notFound();
-  const [{ upcoming, recent }, viewer] = await Promise.all([getPublicClubEncounters(club.id), getCurrentUser()]);
+  const [{ upcoming, recent }, viewer, tournaments] = await Promise.all([getPublicClubEncounters(club.id), getCurrentUser(), listClubTournaments(club.id)]);
   const address = formatAddress(club);
   const facts = [
     club.foundedYear !== null && `Fondé en ${club.foundedYear}`,
@@ -71,6 +73,13 @@ async function PublicClub({ params }: { params: Promise<{ slug: string }> }) {
           <WhatsAppShare text={`${club.name} sur Ralli :`} path={publicPath(club.slug)} label="Partager" />
         </div>
       </div>
+
+      {tournaments.length > 0 && (
+        <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="public-tournaments">
+          <h2 className="font-serif text-xl text-primary">Tournois</h2>
+          <TournamentList items={tournaments} empty="" />
+        </div>
+      )}
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="public-results">
         <h2 className="font-serif text-xl text-primary">Résultats</h2>

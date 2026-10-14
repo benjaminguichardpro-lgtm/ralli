@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { tournamentMatchTitle } from "@/lib/tournaments/labels";
 import { sideName } from "@/lib/matches";
 import { shareState } from "@/lib/win-cards";
 import { sideLabel } from "./encounters";
@@ -57,6 +58,14 @@ export async function getUnseenResults(userId: string): Promise<ResultsRecap | n
       payoutAces: true,
       settledAt: true,
       stories: { where: { deletedAt: null, kind: "WIN_CARD" }, select: { id: true }, take: 1 },
+      tournamentMatch: {
+        select: {
+          round: true,
+          homePlayer: { select: { firstName: true, lastName: true } },
+          awayPlayer: { select: { firstName: true, lastName: true } },
+          tournament: { select: { id: true, name: true, drawSize: true } },
+        },
+      },
       match: {
         select: {
           order: true,
@@ -94,7 +103,24 @@ export async function getUnseenResults(userId: string): Promise<ResultsRecap | n
       wonAces += gain;
     } else if (status === "LOST") lost++;
     else refunded++;
-    const m = p.match;
+    const tm = p.tournamentMatch;
+    if (tm) {
+      // Pronostic de tournoi : regroupé par tournoi, lien vers sa page (/rencontres/<id> y redirige), jamais partageable.
+      const t = tm.tournament;
+      const g = byEncounter.get(t.id) ?? { encounterId: t.id, title: t.name, items: [] };
+      g.items.push({
+        id: p.id,
+        matchLabel: `${tournamentMatchTitle(t, tm.round)} : ${sideName([tm.homePlayer!])} contre ${sideName([tm.awayPlayer!])}`,
+        pickedName: sideName([p.pickedSide === "HOME" ? tm.homePlayer! : tm.awayPlayer!]),
+        committedAces: p.committedAces,
+        status,
+        payoutAces: status === "WON" ? gain : status === "REFUNDED" ? p.committedAces : 0,
+        canShare: false,
+      });
+      byEncounter.set(t.id, g);
+      continue;
+    }
+    const m = p.match!;
     const e = byEncounter.get(m.encounterId) ?? {
       encounterId: m.encounterId,
       title: `${sideLabel(m.encounter.homeTeam)} – ${sideLabel(m.encounter.awayTeam)}`,

@@ -7,6 +7,8 @@ import { joinClub } from "./club-directory";
 import { createClub } from "./clubs";
 import { addMatch, cancelEncounter, createEncounter, publishEncounter } from "./encounters";
 import { placePrediction } from "./predictions";
+import { placeTournamentPrediction } from "./tournament-predictions";
+import { addEntry, createTournament, publishTournament, recordTournamentResult, setFirstRound, setMatchTime } from "./tournaments";
 import { createStory, markStoryViewed, setCollectionPinned } from "./stories";
 import { addNewPlayerToTeam, createExternalTeam, createTeam, setPlayerAccount } from "./teams";
 
@@ -20,7 +22,7 @@ export const DEMO_PASSWORD = "demo-ralli-2026";
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-const TABLES = ["StoryView", "Story", "LedgerEntry", "Prediction", "Match", "EncounterEvent", "Encounter", "TeamPlayer", "Player", "Team", "ClubMembership", "Club", "User"];
+const TABLES = ["StoryView", "Story", "LedgerEntry", "Prediction", "TournamentMatch", "TournamentEntry", "Tournament", "Match", "EncounterEvent", "Encounter", "TeamPlayer", "Player", "Team", "ClubMembership", "Club", "User"];
 
 /** Vide toute la base (le ledger est append-only : seul TRUNCATE peut l'effacer). */
 /** Fiche des clubs de démo : adresse fictive, position, région déduite du code postal, licenciés (un club de chaque taille). */
@@ -412,6 +414,34 @@ export async function seedDemo(now: Date = new Date()): Promise<DemoSummary> {
 
   // 7. Brouillon : visible des admins et capitaines seulement, pas publié.
   await build({ ...lyonBase, ...D, opponent: opp.bron, oppPlayers: oppPlayers.bron, home: true, startsInMs: 10 * DAY, matches: 3 });
+
+  // 8. Tournoi de Lyon (8 joueurs) : deux quarts joués, deux quarts ouverts aux pronostics, une demi-finale déjà connue.
+  {
+    const t = await createTournament(users.admin_lyon!, lyon.id, { name: "Tournoi d'automne", drawSize: 8, startsAt: at(-1 * DAY) });
+    const field = [...lyonMp, oppPlayers.villeurbanne[0]!, oppPlayers.villeurbanne[1]!];
+    for (const id of field) await addEntry(users.admin_lyon!, t.id, id);
+    await setFirstRound(users.admin_lyon!, t.id, [
+      { position: 0, homePlayerId: field[0]!, awayPlayerId: field[7]!, startsAt: at(-1 * DAY) },
+      { position: 1, homePlayerId: field[3]!, awayPlayerId: field[4]!, startsAt: at(-1 * DAY + 1 * HOUR) },
+      { position: 2, homePlayerId: field[1]!, awayPlayerId: field[6]!, startsAt: at(3 * HOUR) },
+      { position: 3, homePlayerId: field[2]!, awayPlayerId: field[5]!, startsAt: at(1 * DAY) },
+    ]);
+    await publishTournament(users.admin_lyon!, t.id, at(-3 * DAY));
+    const ms = await db.tournamentMatch.findMany({ where: { tournamentId: t.id }, orderBy: [{ round: "asc" }, { position: "asc" }] });
+    const [qf1, qf2, qf3, qf4, sf1] = ms.map((m) => m.id) as [string, string, string, string, string];
+    // Pronostics des deux quarts joués (posés avant leur début), puis leurs résultats.
+    await placeTournamentPrediction(users.parieur1!, { matchId: qf1, side: "HOME", committedAces: 100 }, at(-2 * DAY));
+    await placeTournamentPrediction(users.parieur2!, { matchId: qf1, side: "AWAY", committedAces: 50 }, at(-2 * DAY));
+    await placeTournamentPrediction(users.parieur3!, { matchId: qf2, side: "AWAY", committedAces: 80 }, at(-2 * DAY));
+    await db.tournamentMatch.updateMany({ where: { id: { in: [qf1, qf2] } }, data: { startsAt: at(-5 * HOUR) } }); // ils ont déjà eu lieu
+    await recordTournamentResult(users.admin_lyon!, qf1, { outcome: "COMPLETED", winnerSide: "HOME", sets: sets([6, 3], [6, 4]) }, at(-3 * HOUR));
+    await recordTournamentResult(users.admin_lyon!, qf2, { outcome: "COMPLETED", winnerSide: "AWAY", sets: sets([3, 6], [4, 6]) }, at(-2 * HOUR));
+    // Les deux autres quarts sont ouverts ; la première demi-finale est connue (ses deux joueurs ont gagné) et reçoit son heure.
+    await setMatchTime(users.admin_lyon!, sf1, at(2 * DAY), now);
+    await placeTournamentPrediction(users.parieur1!, { matchId: qf3, side: "AWAY", committedAces: 60 }, now);
+    await placeTournamentPrediction(users.parieur2!, { matchId: qf4, side: "HOME", committedAces: 40 }, now);
+    await placeTournamentPrediction(users.parieur4!, { matchId: sf1, side: "HOME", committedAces: 70 }, now);
+  }
 
   // ── Stories : une annonce épinglée à la une de Lyon, une story d'équipe, une annonce à Nantes (déjà vue par parieur1) ──
   const lyonNews = await createStory(users.admin_lyon!, { clubId: lyon.id, teamId: null, body: "Interclubs samedi : rendez-vous à 13 h au club, tenue du club obligatoire.", background: "brand", onWall: true, collectionName: "Interclubs de la saison" }, now);

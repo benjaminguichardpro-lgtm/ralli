@@ -8,6 +8,36 @@ type Check = { label: string; sql: string; params?: unknown[]; expect: "ok" | "e
 
 const checks: Check[] = [
   {
+    label: "Tournoi de 6 joueurs (refusé : 4, 8, 16 ou 32)",
+    sql: `INSERT INTO "Tournament"(id,"clubId",name,"drawSize","startsAt","createdById") VALUES ('verif_t6','verif_c','Tournoi',6,now(),'verif_u')`,
+    expect: "error",
+  },
+  {
+    label: "Tournoi valide de 8 joueurs",
+    sql: `INSERT INTO "Tournament"(id,"clubId",name,"drawSize","startsAt","createdById") VALUES ('verif_t','verif_c','Tournoi',8,now(),'verif_u')`,
+    expect: "ok",
+  },
+  {
+    label: "Match de tournoi avec une issue « non joué » (refusé : un match de tournoi a toujours un vainqueur)",
+    sql: `INSERT INTO "TournamentMatch"(id,"tournamentId",round,position,outcome) VALUES ('verif_tm0','verif_t',1,0,'NOT_PLAYED')`,
+    expect: "error",
+  },
+  {
+    label: "Match de tournoi valide",
+    sql: `INSERT INTO "TournamentMatch"(id,"tournamentId",round,position) VALUES ('verif_tm','verif_t',1,0)`,
+    expect: "ok",
+  },
+  {
+    label: "Pronostic sans cible (ni match d'interclubs, ni match de tournoi)",
+    sql: `INSERT INTO "Prediction"(id,"userId","pickedSide","committedAces","oddsX100") VALUES ('verif_p0','verif_u','HOME',100,150)`,
+    expect: "error",
+  },
+  {
+    label: "Pronostic de tournoi valide",
+    sql: `INSERT INTO "Prediction"(id,"userId","tournamentMatchId","pickedSide","committedAces","oddsX100") VALUES ('verif_pt','verif_u','verif_tm','HOME',100,150)`,
+    expect: "ok",
+  },
+  {
     label: "INSERT écriture de ledger valide (SIGNUP_BONUS +1000)",
     sql: `INSERT INTO "LedgerEntry"(id,"userId",type,amount,"idempotencyKey") VALUES ('verif_le2','verif_u','SIGNUP_BONUS',1000,'verif:signup2')`,
     expect: "ok",

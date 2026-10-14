@@ -38,6 +38,7 @@ export async function settleEncounter(tx: Tx, encounterId: string, now: Date): P
   const result: SettlementResult = { ...NOTHING };
   const toRefund: string[] = [];
   for (const p of pending) {
+    if (!p.match || !p.matchId) continue; // pronostic de tournoi : réglé par settleTournamentMatch
     const { outcome, winnerSide, voidedAt } = p.match;
     if (voidedAt || outcome === "NOT_PLAYED") {
       toRefund.push(p.matchId);
@@ -73,4 +74,31 @@ export async function settleConfirmedEncounter(encounterId: string, now = new Da
     if (e.status !== "CONFIRMED") throw new DomainError("INVALID_TRANSITION", "Seule une rencontre au score confirmé peut être réglée");
     return settleEncounter(tx, encounterId, now);
   });
+}
+
+/**
+ * Règle les pronostics d'UN match de tournoi, dans la transaction qui enregistre son résultat. Même règle que les interclubs :
+ * gagné = computePayout (écriture `payout:<id>`), perdu = rien. Idempotent : le match n'est réglé qu'une fois (`settledAt`), un pronostic
+ * seulement s'il est encore PENDING, et la clé unique du ledger refuse tout doublon.
+ */
+export async function settleTournamentMatch(tx: Tx, tournamentMatchId: string, now: Date): Promise<SettlementResult> {
+  const claim = await tx.tournamentMatch.updateMany({ where: { id: tournamentMatchId, outcome: { not: null }, settledAt: null }, data: { settledAt: now } });
+  if (claim.count === 0) return { ...NOTHING };
+  const m = await tx.tournamentMatch.findUniqueOrThrow({ where: { id: tournamentMatchId }, select: { winnerSide: true } });
+  if (!m.winnerSide) throw new Error(`Règlement impossible : le match ${tournamentMatchId} n'a pas de vainqueur`);
+  const pending = await tx.prediction.findMany({ where: { status: "PENDING", tournamentMatchId }, select: { id: true, userId: true, pickedSide: true, committedAces: true, oddsX100: true } });
+  const result: SettlementResult = { ...NOTHING };
+  for (const p of pending) {
+    if (p.pickedSide === m.winnerSide) {
+      const payout = computePayout(p.committedAces, p.oddsX100);
+      const r = await tx.prediction.updateMany({ where: { id: p.id, status: "PENDING" }, data: { status: "WON", payoutAces: payout, settledAt: now } });
+      if (r.count === 0) continue;
+      await tx.ledgerEntry.create({ data: { userId: p.userId, type: "PREDICTION_PAYOUT", amount: payout, predictionId: p.id, idempotencyKey: `payout:${p.id}` } });
+      result.won++;
+    } else {
+      const r = await tx.prediction.updateMany({ where: { id: p.id, status: "PENDING" }, data: { status: "LOST", payoutAces: 0, settledAt: now } });
+      if (r.count > 0) result.lost++;
+    }
+  }
+  return result;
 }

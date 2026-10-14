@@ -13,6 +13,7 @@ import {
   groupByEncounter,
   summarize,
 } from "@/lib/predictions/results";
+import { tournamentMatchTitle } from "@/lib/tournaments/labels";
 import { type ShareState, shareState } from "@/lib/win-cards";
 import { sideLabel } from "./encounters";
 import type { WinCardData } from "./win-cards";
@@ -77,6 +78,14 @@ export async function getResults(userId: string, filter: ResultFilterKey = "tous
         payoutAces: true,
         settledAt: true,
         stories: { where: { deletedAt: null, kind: "WIN_CARD" }, select: { id: true }, take: 1 },
+        tournamentMatch: {
+          select: {
+            round: true,
+            homePlayer: { select: { firstName: true, lastName: true } },
+            awayPlayer: { select: { firstName: true, lastName: true } },
+            tournament: { select: { id: true, name: true, drawSize: true, startsAt: true } },
+          },
+        },
         match: {
           select: {
             encounterId: true,
@@ -120,7 +129,28 @@ export async function getResults(userId: string, filter: ResultFilterKey = "tous
   const page = rows.slice(0, limit);
   const meta = new Map<string, Omit<ResultGroup, "items">>();
   const items: ResultItem[] = page.map((p) => {
-    const m = p.match;
+    const tm = p.tournamentMatch;
+    if (tm) {
+      // Pronostic de tournoi : la page est celle du tournoi (l'identifiant « encounterId » sert de lien, /rencontres/<id> y redirige) ; pas de carte à partager.
+      const t = tm.tournament;
+      meta.set(t.id, { encounterId: t.id, title: t.name, startsAt: t.startsAt });
+      const matchLabel = `${sideName([tm.homePlayer!])} contre ${sideName([tm.awayPlayer!])}`;
+      return {
+        id: p.id,
+        encounterId: t.id,
+        matchLabel: `${tournamentMatchTitle(t, tm.round)} : ${matchLabel}`,
+        pickedName: sideName([p.pickedSide === "HOME" ? tm.homePlayer! : tm.awayPlayer!]),
+        committedAces: p.committedAces,
+        odds: formatOdds(p.oddsX100),
+        status: p.status as ResultStatus,
+        payoutAces: p.payoutAces,
+        settledAt: p.settledAt!,
+        share: "no" as ShareState,
+        shareClubName: "",
+        card: null,
+      };
+    }
+    const m = p.match!;
     meta.set(m.encounterId, {
       encounterId: m.encounterId,
       title: `${sideLabel(m.encounter.homeTeam)} – ${sideLabel(m.encounter.awayTeam)}`,

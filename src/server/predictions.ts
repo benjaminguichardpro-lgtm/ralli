@@ -4,6 +4,7 @@ import { effectiveStatus } from "@/lib/encounters/state";
 import { sideName } from "@/lib/matches";
 import { formatOdds } from "@/lib/odds/model";
 import { MIN_COMMITTED_ACES } from "@/lib/predictions/payout";
+import { tournamentMatchTitle } from "@/lib/tournaments/labels";
 import { DomainError, isUniqueViolation } from "./errors";
 import { getClubRole } from "./permissions";
 
@@ -207,7 +208,7 @@ export async function getWallet(userId: string): Promise<WalletView> {
       where: { userId },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 50,
-      select: { id: true, type: true, amount: true, createdAt: true, prediction: { select: { match: { select: { encounterId: true } } } } },
+      select: { id: true, type: true, amount: true, createdAt: true, prediction: { select: { match: { select: { encounterId: true } }, tournamentMatch: { select: { tournamentId: true } } } } },
     }),
     db.prediction.findMany({
       where: { userId, status: "PENDING" },
@@ -217,6 +218,14 @@ export async function getWallet(userId: string): Promise<WalletView> {
         pickedSide: true,
         committedAces: true,
         oddsX100: true,
+        tournamentMatch: {
+          select: {
+            round: true,
+            homePlayer: { select: { firstName: true, lastName: true } },
+            awayPlayer: { select: { firstName: true, lastName: true } },
+            tournament: { select: { id: true, name: true, drawSize: true } },
+          },
+        },
         match: {
           select: {
             order: true,
@@ -241,15 +250,29 @@ export async function getWallet(userId: string): Promise<WalletView> {
       label: LEDGER_LABELS[x.type],
       amount: x.amount,
       createdAt: x.createdAt,
-      encounterId: x.prediction?.match.encounterId ?? null,
+      encounterId: x.prediction?.match?.encounterId ?? x.prediction?.tournamentMatch?.tournamentId ?? null,
     })),
-    pending: pending.map((p) => ({
-      id: p.id,
-      encounterId: p.match.encounterId,
-      matchLabel: `${home(p.match)} contre ${away(p.match)}`,
-      pickedName: p.pickedSide === "HOME" ? home(p.match) : away(p.match),
-      committedAces: p.committedAces,
-      odds: formatOdds(p.oddsX100),
-    })),
+    pending: pending.map((p) => {
+      const tm = p.tournamentMatch;
+      if (tm) {
+        return {
+          id: p.id,
+          encounterId: tm.tournament.id, // la page du tournoi (/rencontres/<id> y redirige)
+          matchLabel: `${tournamentMatchTitle(tm.tournament, tm.round)} : ${sideName([tm.homePlayer!])} contre ${sideName([tm.awayPlayer!])}`,
+          pickedName: sideName([p.pickedSide === "HOME" ? tm.homePlayer! : tm.awayPlayer!]),
+          committedAces: p.committedAces,
+          odds: formatOdds(p.oddsX100),
+        };
+      }
+      const m = p.match!;
+      return {
+        id: p.id,
+        encounterId: m.encounterId,
+        matchLabel: `${home(m)} contre ${away(m)}`,
+        pickedName: p.pickedSide === "HOME" ? home(m) : away(m),
+        committedAces: p.committedAces,
+        odds: formatOdds(p.oddsX100),
+      };
+    }),
   };
 }

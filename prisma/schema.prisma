@@ -91,6 +91,13 @@ enum MatchOutcome {
   NOT_PLAYED // non joué : pronostics remboursés
 }
 
+enum TournamentStatus {
+  DRAFT // en préparation : visible des admins seulement
+  OPEN // publié : tableau et cotes visibles, pronostics ouverts match par match
+  FINISHED // finale jouée
+  CANCELLED // annulé : pronostics remboursés
+}
+
 enum PredictionStatus {
   PENDING
   WON
@@ -147,6 +154,7 @@ model User {
   storyReactions      StoryReaction[]       @relation("StoryReactor")
   storyReports        StoryReport[]         @relation("StoryReporter")
   storyReportsHandled StoryReport[]         @relation("StoryReportHandler")
+  tournamentsCreated  Tournament[]          @relation("TournamentCreatedBy")
   removedFrom         ClubRemoval[]         @relation("RemovedUser")
   removalsMade        ClubRemoval[]         @relation("RemovedBy")
 }
@@ -216,6 +224,7 @@ model Club {
   stories          Story[]
   storyCollections StoryCollection[]
   removals         ClubRemoval[]
+  tournaments      Tournament[]
 }
 
 model ClubMembership {
@@ -280,13 +289,16 @@ model Player {
   userId    String?  @unique // lien optionnel ; refusé tant que le joueur est dans une rencontre non réglée
   createdAt DateTime @default(now())
 
-  club         Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  teams        TeamPlayer[]
-  homeMatches  Match[]      @relation("HomePlayer")
-  awayMatches  Match[]      @relation("AwayPlayer")
-  homeMatches2 Match[]      @relation("HomePlayer2")
-  awayMatches2 Match[]      @relation("AwayPlayer2")
+  club              Club              @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user              User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  teams             TeamPlayer[]
+  homeMatches       Match[]           @relation("HomePlayer")
+  awayMatches       Match[]           @relation("AwayPlayer")
+  homeMatches2      Match[]           @relation("HomePlayer2")
+  awayMatches2      Match[]           @relation("AwayPlayer2")
+  tournamentEntries TournamentEntry[]
+  tournamentHome    TournamentMatch[] @relation("TournamentHomePlayer")
+  tournamentAway    TournamentMatch[] @relation("TournamentAwayPlayer")
 
   @@index([clubId])
 }
@@ -401,24 +413,29 @@ model Match {
 // ─────────────────────────────── Pronostics et portefeuille ───────────────────────────────
 
 model Prediction {
-  id            String           @id @default(cuid())
-  userId        String
-  matchId       String
-  pickedSide    Side
-  committedAces Int // entier, ≥ 10
-  oddsX100      Int // cote figée au moment de la validation
-  status        PredictionStatus @default(PENDING)
-  payoutAces    Int? // computePayout(committedAces, oddsX100) si WON (src/lib/predictions/payout.ts) ; 0 si LOST ; committedAces si REFUNDED
-  createdAt     DateTime         @default(now())
-  settledAt     DateTime?
+  id                String           @id @default(cuid())
+  userId            String
+  // Un pronostic porte sur UN match d'interclubs OU sur UN match de tournoi (CHECK en base : exactement l'un des deux).
+  matchId           String?
+  tournamentMatchId String?
+  pickedSide        Side
+  committedAces     Int // entier, ≥ 10
+  oddsX100          Int // cote figée au moment de la validation
+  status            PredictionStatus @default(PENDING)
+  payoutAces        Int? // computePayout(committedAces, oddsX100) si WON (src/lib/predictions/payout.ts) ; 0 si LOST ; committedAces si REFUNDED
+  createdAt         DateTime         @default(now())
+  settledAt         DateTime?
 
-  user          User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  match         Match         @relation(fields: [matchId], references: [id], onDelete: Restrict)
-  ledgerEntries LedgerEntry[]
-  stories       Story[]
+  user            User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  match           Match?           @relation(fields: [matchId], references: [id], onDelete: Restrict)
+  tournamentMatch TournamentMatch? @relation(fields: [tournamentMatchId], references: [id], onDelete: Restrict)
+  ledgerEntries   LedgerEntry[]
+  stories         Story[]
 
   @@unique([userId, matchId]) // un pronostic par match et par utilisateur
+  @@unique([userId, tournamentMatchId])
   @@index([matchId])
+  @@index([tournamentMatchId])
   @@index([userId, settledAt])
 }
 
@@ -536,4 +553,68 @@ model StoryView {
 
   @@id([storyId, userId])
   @@index([userId])
+}
+
+// ─────────────────────────────── Tournois (tranche 36) ───────────────────────────────
+// Tableau à élimination directe (4, 8, 16 ou 32 joueurs) saisi par les admins du club. Chaque match a son heure de début, ses cotes
+// (figées quand ses deux joueurs sont connus) et ses pronostics ; l'admin saisit le résultat, qui règle les pronostics du match
+// et fait avancer le vainqueur. Tous les matchs du tableau existent dès la création ; ceux des tours suivants sont « vides » jusqu'à l'arrivée des joueurs.
+model Tournament {
+  id          String           @id @default(cuid())
+  clubId      String
+  name        String
+  drawSize    Int // 4, 8, 16 ou 32 (CHECK en base)
+  startsAt    DateTime // début du tournoi (affichage)
+  status      TournamentStatus @default(DRAFT)
+  createdById String
+  createdAt   DateTime         @default(now())
+  publishedAt DateTime?
+  finishedAt  DateTime?
+  winnerId    String? // joueur vainqueur (fiche), posé à la finale
+
+  club      Club              @relation(fields: [clubId], references: [id], onDelete: Restrict)
+  createdBy User              @relation("TournamentCreatedBy", fields: [createdById], references: [id])
+  entries   TournamentEntry[]
+  matches   TournamentMatch[]
+
+  @@index([clubId, status])
+}
+
+model TournamentEntry {
+  tournamentId String
+  playerId     String
+  addedAt      DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id], onDelete: Restrict)
+
+  @@id([tournamentId, playerId])
+  @@index([playerId])
+}
+
+model TournamentMatch {
+  id             String        @id @default(cuid())
+  tournamentId   String
+  round          Int // 1 = premier tour … dernier = finale
+  position       Int // 0, 1, 2… dans le tour (de haut en bas du tableau)
+  homePlayerId   String?
+  awayPlayerId   String?
+  startsAt       DateTime? // heure de début, saisie par l'admin ; les pronostics ferment à cette heure
+  oddsHomeX100   Int?
+  oddsAwayX100   Int?
+  oddsComputedAt DateTime?
+  oddsInputs     Json?
+  outcome        MatchOutcome?
+  winnerSide     Side?
+  sets           Json?
+  settledAt      DateTime? // posé une seule fois, au règlement des pronostics
+
+  tournament  Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  homePlayer  Player?      @relation("TournamentHomePlayer", fields: [homePlayerId], references: [id], onDelete: Restrict)
+  awayPlayer  Player?      @relation("TournamentAwayPlayer", fields: [awayPlayerId], references: [id], onDelete: Restrict)
+  predictions Prediction[]
+
+  @@unique([tournamentId, round, position])
+  @@index([homePlayerId])
+  @@index([awayPlayerId])
 }

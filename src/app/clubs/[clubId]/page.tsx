@@ -13,6 +13,7 @@ import { EncounterFilters } from "@/components/encounter-filters";
 import { EncounterList } from "@/components/encounter-list";
 import { CreateExternalTeamForm, CreateTeamForm } from "@/components/team-forms";
 import { StoriesSection } from "@/components/stories-section";
+import { TournamentList } from "@/components/tournament-list";
 import { ButtonLink } from "@/components/ui";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -29,6 +30,7 @@ import { followersLabel } from "@/components/club-card-list";
 import { LeaveClubForm } from "@/components/club-directory";
 import { VisitorClub } from "./visitor-club";
 import { listArchivedEncounters, listClubEncounters } from "@/server/encounters";
+import { listClubTournaments } from "@/server/tournaments";
 import { DomainError } from "@/server/errors";
 import { getLeaderboard } from "@/server/leaderboard";
 import { getClubRole, isCaptainInClub } from "@/server/permissions";
@@ -71,7 +73,7 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
   }
   const followers = await countFollowers(club.id);
   const isAdmin = club.myRole === "ADMIN";
-  const [teams, isCaptain, encounters, archived, board, returnRequests, pendingReports, publicSettings] = await Promise.all([
+  const [teams, isCaptain, encounters, archived, board, returnRequests, pendingReports, publicSettings, tournaments] = await Promise.all([
     listClubTeams(user.id, club.id),
     isCaptainInClub(user.id, club.id),
     listClubEncounters(user.id, club.id),
@@ -80,6 +82,7 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
     isAdmin ? listReturnRequests(user.id, club.id) : Promise.resolve([]),
     isAdmin ? listPendingReports(user.id, club.id) : Promise.resolve([]),
     isAdmin ? getPublicPageSettings(user.id, club.id) : Promise.resolve(null),
+    listClubTournaments(club.id, { withDrafts: isAdmin }),
   ]);
   const clubTeams = teams.filter((t) => t.kind === "CLUB");
   const externalTeams = teams.filter((t) => t.kind === "EXTERNAL");
@@ -196,6 +199,14 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
           </details>
         )}
       </div>
+
+      {(tournaments.length > 0 || isAdmin) && (
+        <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="club-tournaments">
+          <h2 className="font-serif text-xl text-primary">Tournois</h2>
+          <TournamentList items={tournaments} empty="Aucun tournoi pour l'instant." />
+          {isAdmin && <ButtonLink href={`/clubs/${club.id}/tournois/nouveau`}>Nouveau tournoi</ButtonLink>}
+        </div>
+      )}
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="club-top3">
         <h2 className="font-serif text-xl text-primary">Classement</h2>

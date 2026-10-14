@@ -29,7 +29,11 @@ export async function deleteClub(actorId: string, clubId: string, confirmation: 
       await tx.encounter.update({ where: { id: e.id }, data: { status: "CANCELLED" } });
       await tx.encounterEvent.create({ data: { encounterId: e.id, fromStatus: e.status, toStatus: "CANCELLED", actorId, note: "Club supprimé" } });
     }
-    const refunded = await refundPendingPredictions(tx, { match: { encounter: { organizerClubId: clubId } } }, now);
+    // Tournois non terminés : annulés ; tous les pronostics en cours (interclubs et tournois) remboursés.
+    await tx.tournament.updateMany({ where: { clubId, status: { in: ["DRAFT", "OPEN"] } }, data: { status: "CANCELLED" } });
+    const refunded =
+      (await refundPendingPredictions(tx, { match: { encounter: { organizerClubId: clubId } } }, now)) +
+      (await refundPendingPredictions(tx, { tournamentMatch: { tournament: { clubId } } }, now));
 
     const members = await tx.clubMembership.findMany({ where: { clubId }, select: { userId: true, role: true } });
     await tx.clubMembership.deleteMany({ where: { clubId } });

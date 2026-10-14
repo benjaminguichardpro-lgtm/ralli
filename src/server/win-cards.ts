@@ -51,7 +51,7 @@ export type WinCardData = {
 };
 
 export function toWinCardData(p: CardRow): WinCardData {
-  const m = p.match;
+  const m = p.match!; // les rallis de tournoi n'ont pas de carte à partager
   return {
     predictionId: p.id,
     encounterId: m.encounterId,
@@ -78,6 +78,7 @@ export async function getWinShare(userId: string, predictionId: string, now = ne
     },
   });
   if (!p || p.userId !== userId) throw new DomainError("NOT_FOUND", "Ralli introuvable");
+  if (!p.match) throw new DomainError("FORBIDDEN", "Seul un ralli d'interclubs gagné peut être partagé");
   const clubId = p.match.encounter.organizerClubId;
   const member = await db.clubMembership.findUnique({ where: { userId_clubId: { userId, clubId } }, select: { userId: true } });
   const state = shareState({ status: p.status, settledAt: p.settledAt, encounterConfirmed: p.match.encounter.status === "CONFIRMED", alreadyShared: p.stories.length > 0, isMember: member !== null }, now);

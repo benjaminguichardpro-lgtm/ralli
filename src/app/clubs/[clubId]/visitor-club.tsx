@@ -4,12 +4,14 @@ import { followersLabel } from "@/components/club-card-list";
 import { ClubLogo } from "@/components/club-logo";
 import { JoinClubButton, ReturnRequestButton } from "@/components/club-directory";
 import { EncounterList } from "@/components/encounter-list";
+import { TournamentList } from "@/components/tournament-list";
 import { StoriesSection } from "@/components/stories-section";
 import { formatCount, isProfileEmpty, websiteLabel } from "@/lib/clubs/profile";
 import { db } from "@/lib/db";
 import { countFollowers, getMyRemoval } from "@/server/club-directory";
 import { listPublicClubEncounters } from "@/server/encounters";
 import { getClubProfile } from "@/server/club-profile";
+import { listClubTournaments } from "@/server/tournaments";
 
 
 /**
@@ -18,12 +20,13 @@ import { getClubProfile } from "@/server/club-profile";
  * Rien d'autre : ni membres, ni classement, ni stories (réservées aux membres).
  */
 export async function VisitorClub({ userId, clubId }: { userId: string; clubId: string }) {
-  const [club, followers, { upcoming, recent }, teams, removal] = await Promise.all([
+  const [club, followers, { upcoming, recent }, teams, removal, tournaments] = await Promise.all([
     getClubProfile(userId, clubId).catch(() => null),
     countFollowers(clubId),
     listPublicClubEncounters(clubId),
     db.team.findMany({ where: { clubId, kind: "CLUB" }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     getMyRemoval(userId, clubId),
+    listClubTournaments(clubId),
   ]);
   if (!club) notFound();
   return (
@@ -67,6 +70,13 @@ export async function VisitorClub({ userId, clubId }: { userId: string; clubId: 
       </div>
 
       <StoriesSection userId={userId} clubId={clubId} clubName={club.name} />
+
+      {tournaments.length > 0 && (
+        <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="visitor-tournaments">
+          <h2 className="font-serif text-xl text-primary">Tournois</h2>
+          <TournamentList items={tournaments} empty="" />
+        </div>
+      )}
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="visitor-upcoming">
         <h2 className="font-serif text-xl text-primary">Rencontres à venir</h2>

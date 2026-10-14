@@ -39,19 +39,32 @@ export function periodWindow(period: Period, now: Date): { from: Date; to: Date 
 
 /**
  * Totaux par joueur pour un club et une fenêtre de dates de règlement.
- * Seuls comptent les pronostics gagnés ou perdus des rencontres CONFIRMED et réglées du club organisateur (décisions C1, C2, C8) :
+ * Seuls comptent les pronostics gagnés ou perdus des rencontres CONFIRMED et réglées du club organisateur, et des matchs réglés de ses tournois (décisions C1, C2, C8) :
  * ni remboursés, ni en attente, ni bonus.
  */
 export async function clubTotals(clubId: string, from: Date, to: Date): Promise<PlayerTotals[]> {
-  const groups = await db.prediction.groupBy({
-    by: ["userId", "status"],
-    where: {
-      status: { in: ["WON", "LOST"] },
-      match: { encounter: { organizerClubId: clubId, status: "CONFIRMED", settledAt: { gte: from, lt: to } } },
-    },
-    _sum: { committedAces: true, payoutAces: true },
-    _count: { _all: true },
-  });
+  // Interclubs (rencontres confirmées et réglées) et tournois du club (matchs réglés) comptent de la même façon.
+  const [interclubs, tournaments] = await Promise.all([
+    db.prediction.groupBy({
+      by: ["userId", "status"],
+      where: {
+        status: { in: ["WON", "LOST"] },
+        match: { encounter: { organizerClubId: clubId, status: "CONFIRMED", settledAt: { gte: from, lt: to } } },
+      },
+      _sum: { committedAces: true, payoutAces: true },
+      _count: { _all: true },
+    }),
+    db.prediction.groupBy({
+      by: ["userId", "status"],
+      where: {
+        status: { in: ["WON", "LOST"] },
+        tournamentMatch: { tournament: { clubId }, settledAt: { gte: from, lt: to } },
+      },
+      _sum: { committedAces: true, payoutAces: true },
+      _count: { _all: true },
+    }),
+  ]);
+  const groups = [...interclubs, ...tournaments];
   const byUser = new Map<string, { net: number; settled: number; wins: number }>();
   for (const g of groups) {
     const t = byUser.get(g.userId) ?? { net: 0, settled: 0, wins: 0 };

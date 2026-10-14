@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import {
   AddDoubleForm,
@@ -24,6 +24,7 @@ import { type EncounterPageView, getEncounterPage } from "@/server/encounters";
 import { DomainError } from "@/server/errors";
 import { getPredictionPanel } from "@/server/predictions";
 import { type ScoreView, getScoreView } from "@/server/scores";
+import { tournamentExists } from "@/server/tournaments";
 
 // Page publique (lien partageable) : jamais indexée par les moteurs de recherche (décision 23).
 export const metadata: Metadata = { title: "Rencontre · Ralli", robots: { index: false, follow: false } };
@@ -43,7 +44,11 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
   try {
     e = await getEncounterPage(viewer?.id ?? null, encounterId);
   } catch (err) {
-    if (err instanceof DomainError && err.code === "NOT_FOUND") notFound();
+    if (err instanceof DomainError && err.code === "NOT_FOUND") {
+      // Les pronostics de tournoi (Mes rallis, portefeuille, récapitulatif) pointent ici avec l'identifiant du tournoi.
+      if (await tournamentExists(encounterId)) redirect(`/tournois/${encounterId}`);
+      notFound();
+    }
     throw err;
   }
   const [panel, score] = await Promise.all([getPredictionPanel(viewer?.id ?? null, encounterId), getScoreView(viewer?.id ?? null, encounterId)]);

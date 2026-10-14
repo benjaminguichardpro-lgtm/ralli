@@ -121,7 +121,7 @@ export async function logEvent(
 // ─────────────────────────────── Cotes ───────────────────────────────
 
 /** Matchs confirmés antérieurs impliquant ces joueurs (WO / non joués filtrés par history.ts). */
-async function loadHistory(tx: Tx, playerIds: string[], before: Date): Promise<HistoricalMatch[]> {
+export async function loadHistory(tx: Tx, playerIds: string[], before: Date): Promise<HistoricalMatch[]> {
   const rows = await tx.match.findMany({
     where: {
       voidedAt: null,

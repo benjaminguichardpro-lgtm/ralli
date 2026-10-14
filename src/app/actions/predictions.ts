@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth/current-user";
 import { idSchema } from "@/lib/validation/team";
 import { DomainError } from "@/server/errors";
 import { placePrediction } from "@/server/predictions";
+import { isTournamentMatch, placeTournamentPrediction } from "@/server/tournament-predictions";
 import type { FormState } from "./types";
 
 const schema = z.object({
@@ -32,7 +33,9 @@ export async function placePredictionAction(_: FormState, fd: FormData): Promise
     return { errors, values };
   }
   try {
-    await placePrediction(user.id, parsed.data);
+    // Le même formulaire sert aux matchs d'interclubs et aux matchs de tournoi.
+    if (await isTournamentMatch(parsed.data.matchId)) await placeTournamentPrediction(user.id, parsed.data);
+    else await placePrediction(user.id, parsed.data);
   } catch (e) {
     if (e instanceof DomainError) return { message: e.message, values };
     throw e;

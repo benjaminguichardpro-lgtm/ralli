@@ -16,6 +16,8 @@ import { formatParisDay, formatParisTime, relativeDayLabel } from "@/lib/time";
 import { type FeedEncounter, getHomeFeed } from "@/server/feed";
 import { getMyLocation } from "@/server/nearby";
 import { HOME_RESULTS, listResults } from "@/server/results-feed";
+import { listTournamentsForUser } from "@/server/tournaments";
+import { TournamentList } from "@/components/tournament-list";
 
 type HomeProps = { searchParams: Promise<{ proximite?: string | string[]; onglet?: string | string[] }> };
 
@@ -117,9 +119,14 @@ async function HomeContent({ searchParams }: HomeProps) {
             <>
               <HomeTabs active={tab} />
               {tab === "resultats" ? (
-                <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
-                  <HomeResults userId={user.id} multiClub={feed.multiClub} />
-                </Suspense>
+                <>
+                  <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
+                    <HomeResults userId={user.id} multiClub={feed.multiClub} />
+                  </Suspense>
+                  <Suspense fallback={null}>
+                    <HomeTournaments userId={user.id} which="finished" now={now} />
+                  </Suspense>
+                </>
               ) : feed.encounters.length === 0 ? (
                 <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
                   <h2 className="font-serif text-xl text-primary">Pas de rencontre pour l&apos;instant</h2>
@@ -162,11 +169,29 @@ async function HomeContent({ searchParams }: HomeProps) {
                   )}
                 </div>
               )}
+              {tab !== "resultats" && (
+                <Suspense fallback={null}>
+                  <HomeTournaments userId={user.id} which="current" now={now} />
+                </Suspense>
+              )}
             </>
           )}
         </>
       )}
     </section>
+  );
+}
+
+/** Tournois des clubs de l'utilisateur : en cours (onglet « Rencontres à venir ») ou terminés (onglet « Résultats »). Rien s'il n'y en a pas. */
+async function HomeTournaments({ userId, which, now }: { userId: string; which: "current" | "finished"; now: Date }) {
+  const { current, finished } = await listTournamentsForUser(userId, now);
+  const items = which === "current" ? current : finished;
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid={`home-tournaments-${which}`}>
+      <h2 className="font-serif text-xl text-primary">{which === "current" ? "Tournois en cours" : "Tournois terminés"}</h2>
+      <TournamentList items={items} empty="" showClub />
+    </div>
   );
 }
 
