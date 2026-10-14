@@ -44,6 +44,20 @@ test.beforeAll(async () => {
 });
 test.afterAll(wipeTestDb);
 
+test("rencontre reportée (pronostics restés fermés) : pas de saisie avant la nouvelle heure de début", async ({ browser }) => {
+  // Pronostics fermés depuis une heure, mais début dans deux heures : c'est l'état d'une rencontre reportée après la fermeture.
+  await queryTestDb(`UPDATE "Encounter" SET "startsAt" = now() + interval '2 hours', "predictionsCloseAt" = now() - interval '1 hour' WHERE id = '${encId}'`);
+  const p = await login(browser, "admin_lyon");
+  await p.goto(`/rencontres/${encId}`);
+  await expect(p.getByText("Rencontre reportée : les pronostics sont restés fermés.")).toBeVisible();
+  await expect(p.getByTestId("live-not-started")).toBeVisible();
+  await expect(p.getByTestId("live-open")).toHaveCount(0);
+  await expect(p.getByTestId("propose-score")).toHaveCount(0);
+  await p.context().close();
+  // Retour à une rencontre commencée pour les scénarios suivants.
+  await queryTestDb(`UPDATE "Encounter" SET "startsAt" = now() - interval '1 hour', "predictionsCloseAt" = now() - interval '1 hour' WHERE id = '${encId}'`);
+});
+
 test("l'admin saisit les matchs un par un : le score s'affiche « en direct » et se corrige", async ({ browser }) => {
   test.setTimeout(300_000); // plusieurs enregistrements à la suite
   const p = await login(browser, "admin_lyon");

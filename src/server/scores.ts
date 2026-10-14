@@ -86,6 +86,7 @@ export async function proposeScore(actorId: string, encounterId: string, results
       const e = await loadEncounter(tx, encounterId);
       await requireStaff(tx, actorId, e);
       const to = nextStatus("proposeScore", effectiveStatus(e, now));
+      if (now.getTime() < e.startsAt.getTime()) throw new DomainError("INVALID_TRANSITION", "La rencontre n'a pas encore commencé : le score ne peut pas être proposé avant l'heure de début");
       const clean = await writeResults(tx, e.id, results);
       await guardedStatusUpdate(tx, e.id, e.status, { status: to, scoreProposedById: actorId });
       await logEvent(tx, e, to, actorId, "Score proposé", payloadOf(clean));
@@ -133,6 +134,8 @@ async function loadLiveMatchEncounter(tx: Tx, actorId: string, matchId: string, 
   const e = await loadEncounter(tx, m.encounterId);
   await requireStaff(tx, actorId, e);
   if (effectiveStatus(e, now) !== "LOCKED") throw new DomainError("INVALID_TRANSITION", "La saisie en direct est possible une fois la rencontre commencée, tant que le score final n'est pas proposé");
+  // Rencontre reportée après la fermeture des pronostics : elle reste « verrouillée » mais n'a pas encore commencé.
+  if (now.getTime() < e.startsAt.getTime()) throw new DomainError("INVALID_TRANSITION", "La rencontre n'a pas encore commencé : la saisie en direct s'ouvre à l'heure de début");
   return e;
 }
 
@@ -218,6 +221,8 @@ export type ScoreView = {
   provisional: boolean;
   /** Rencontre en cours avec au moins un résultat de match saisi : le score se met à jour match par match (visible de tous, pas encore proposé). */
   live: boolean;
+  /** Rencontre reportée, verrouillée mais pas encore commencée : la saisie des résultats s'ouvre à l'heure de début (montré au staff). */
+  waitingStart: boolean;
   /** Résultats saisis visibles : tout le monde une fois proposés (provisoires) ou confirmés ; un score contesté reste réservé aux admins et capitaines (S11). */
   resultsVisible: boolean;
   staff: boolean;
@@ -240,6 +245,7 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
   const final = status === "CONFIRMED";
   const provisional = status === "SCORE_PROPOSED";
   const liveStatus = status === "LOCKED";
+  const started = now.getTime() >= e.startsAt.getTime();
   const resultsVisible = final || provisional || liveStatus || (reviewer && status === "DISPUTED");
 
   const names = { select: { firstName: true, lastName: true } } as const;
@@ -291,8 +297,8 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
   const mine = e.scoreProposedById === viewerId;
   const actions = viewerId
     ? {
-        canRecordLive: staffHere && liveStatus,
-        canPropose: staffHere && liveStatus,
+        canRecordLive: staffHere && liveStatus && started,
+        canPropose: staffHere && liveStatus && started,
         canWithdraw: status === "SCORE_PROPOSED" && mine && role !== null,
         canConfirm: status === "SCORE_PROPOSED" && reviewer && !mine,
         canDispute: status === "SCORE_PROPOSED" && reviewer && !mine,
@@ -323,5 +329,5 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
     }
   }
 
-  return { matches, tally, provisional, live, resultsVisible, staff: reviewer, proposedBy, disputeReason, actions, journal };
+  return { matches, tally, provisional, live, waitingStart: staffHere && liveStatus && !started, resultsVisible, staff: reviewer, proposedBy, disputeReason, actions, journal };
 }

@@ -449,6 +449,10 @@ export async function rescheduleEncounter(actorId: string, encounterId: string, 
       throw new DomainError("INVALID_TRANSITION", `Report impossible : la rencontre est « ${STATUS_LABELS[s]} »`);
     }
     requireFuture(startsAt, now);
+    // Des résultats saisis en direct ne suivent pas un report : il faut d'abord les effacer.
+    if ((await tx.match.count({ where: { encounterId, voidedAt: null, outcome: { not: null } } })) > 0) {
+      throw new DomainError("INVALID_TRANSITION", "Report impossible : des résultats sont déjà saisis. Efface-les d'abord.");
+    }
     const predictionsCloseAt = predictionsCloseAfterReschedule(e, startsAt, now);
     await guardedStatusUpdate(tx, e.id, e.status, { startsAt, predictionsCloseAt });
     await logEvent(tx, e, e.status, actorId, "Report", {

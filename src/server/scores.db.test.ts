@@ -4,7 +4,7 @@ import { effectiveStatus } from "@/lib/encounters/state";
 import { makeUser } from "../../tests/db/factories";
 import { joinClub } from "./club-directory";
 import { createClub } from "./clubs";
-import { addMatch, cancelEncounter, createEncounter, listClubEncounters, publishEncounter } from "./encounters";
+import { addMatch, cancelEncounter, createEncounter, listClubEncounters, publishEncounter, rescheduleEncounter } from "./encounters";
 import { getBalance } from "./ledger";
 import { placePrediction } from "./predictions";
 import { type MatchResultInput, clearLiveResult, confirmScore, disputeScore, getScoreView, proposeScore, recordLiveResult, resolveDispute, withdrawScore } from "./scores";
@@ -366,6 +366,24 @@ describe("saisie en direct", () => {
     expect(await db.match.findUniqueOrThrow({ where: { id: mA } })).toMatchObject({ outcome: null, winnerSide: null });
     expect((await getScoreView(null, enc, NOW)).live).toBe(false);
     expect(await db.encounterEvent.count({ where: { encounterId: enc, note: { in: ["Match saisi en direct", "Résultat de match effacé"] } } })).toBe(3);
+  });
+
+  it("rencontre reportée après la fermeture des pronostics : ni saisie ni proposition avant la nouvelle heure de début", async () => {
+    const later = new Date(NOW.getTime() + 3_600_000);
+    await db.encounter.update({ where: { id: enc }, data: { startsAt: later } }); // pronostics restés fermés (predictionsCloseAt inchangé)
+    expect(await status()).toBe("LOCKED");
+    await expect(recordLiveResult(capA, mA, live(mA), NOW)).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+    await expect(proposeScore(capA, enc, full(), NOW)).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+    const v = await getScoreView(capA, enc, NOW);
+    expect(v.actions).toMatchObject({ canRecordLive: false, canPropose: false });
+    await recordLiveResult(capA, mA, live(mA), later); // à l'heure de début : possible
+  });
+
+  it("un report est refusé tant que des résultats sont saisis", async () => {
+    await recordLiveResult(capA, mA, live(mA), NOW);
+    await expect(rescheduleEncounter(capA, enc, new Date(NOW.getTime() + 86_400_000), NOW)).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+    await clearLiveResult(capA, mA, NOW);
+    await expect(rescheduleEncounter(capA, enc, new Date(NOW.getTime() + 86_400_000), NOW)).resolves.toBeUndefined();
   });
 
   it("refuse un résultat invalide (vainqueur manquant) et ne touche pas le match", async () => {

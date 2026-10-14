@@ -234,7 +234,7 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
     result: x.result ? { outcome: x.result.outcome, winnerSide: x.result.winnerSide, sets: x.result.sets } : null,
   }));
   const hasForm = a.canPropose || a.canWithdraw || a.canConfirm || a.canDispute || a.canResolve;
-  const show = e.status === "SCORE_PROPOSED" || e.status === "DISPUTED" || e.status === "CONFIRMED" || score.live || hasForm;
+  const show = e.status === "SCORE_PROPOSED" || e.status === "DISPUTED" || e.status === "CONFIRMED" || score.live || score.waitingStart || hasForm;
   if (!show) return null;
   return (
     <div className="space-y-4 rounded-2xl bg-surface p-4 shadow-sm" data-testid="score-section">
@@ -254,6 +254,11 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
         <p className="rounded-lg border-l-4 border-accent bg-pale p-3" data-testid="live-note">
           Score en direct : il se met à jour match par match. Il ne sera définitif qu&apos;après la proposition du score final et sa confirmation par une
           seconde personne ; les pronostics sont réglés à ce moment-là.
+        </p>
+      )}
+      {score.waitingStart && (
+        <p className="text-sm text-ink-muted" data-testid="live-not-started">
+          La rencontre n&apos;a pas encore commencé : la saisie des résultats s&apos;ouvrira à {formatParisTime(e.startsAt)}.
         </p>
       )}
       {a.canRecordLive && !score.live && (
