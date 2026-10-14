@@ -221,6 +221,16 @@ test("plusieurs clubs : « Voir mes clubs » du profil ouvre la liste, « Classe
   await yanis.getByTestId("see-my-clubs").click();
   await expect(yanis.getByTestId("my-clubs")).toContainText("TC Ecrans");
   await expect(yanis.getByTestId("my-clubs")).toContainText("Club de Yanis");
+  // Le club qu'il administre est en haut, séparé de celui dont il est simple membre.
+  const adminBlock = yanis.getByTestId("my-admin-clubs");
+  const memberBlock = yanis.getByTestId("my-member-clubs");
+  await expect(adminBlock).toContainText("Club de Yanis");
+  await expect(adminBlock).toContainText("Admin de ce club");
+  await expect(adminBlock).not.toContainText("TC Ecrans");
+  await expect(memberBlock).toContainText("TC Ecrans");
+  await expect(memberBlock).not.toContainText("Club de Yanis");
+  const [a, m] = [await adminBlock.boundingBox(), await memberBlock.boundingBox()];
+  expect(a!.y).toBeLessThan(m!.y);
   await checkPage(yanis, "51-mes-clubs");
   await nav.getByRole("link", { name: "Classement" }).click();
   await expect(yanis).toHaveURL(/\/classement$/);
