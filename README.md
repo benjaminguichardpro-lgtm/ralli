@@ -328,6 +328,14 @@ Prisma ne sait pas les exprimer : ils sont ajoutés à la main à la fin de `pri
 - **Base** : migration `20261014100000_win_cards` (colonne `Story.predictionId`, tables `StoryReaction` et `StoryReport`, nouveau CHECK sur le texte : annonce 1 à 280 caractères sans ralli, carte 0 à 140 avec ralli).
 - **Tests** : `win-cards.test.ts` (règles pures), `win-cards.db.test.ts` (partage, délai, réaction, signalement, garde-fous de la base), E2E `slice32-rallis-gagnants.spec.ts`.
 
+## Saisie en direct (tranche 35, `recordLiveResult` dans `src/server/scores.ts`, `LiveResultForm` dans `src/components/score-forms.tsx`)
+
+Une fois la rencontre commencée (pronostics fermés) et tant que le score final n'est pas proposé, un capitaine de l'équipe ou un admin saisit le résultat de **chaque match** dès qu'il est terminé (vainqueur, issue, sets facultatifs), depuis la section « Score » de la rencontre.
+- Le score est **visible de tous, sans compte** : « Score en direct : A 2 – 1 B » sur la page de la rencontre, badge « En direct 2 – 1 » sur l'accueil, la page du club et la page publique. Un match se corrige (on saisit à nouveau) ou s'efface, avec une trace au journal.
+- **Aucun pronostic n'est réglé en direct** : le règlement reste celui de la confirmation du score final par une seconde personne. Le score final se propose comme avant ; le formulaire est prérempli avec les résultats déjà saisis.
+- Pas de notification aux membres. Les filtres Victoires / Défaites / Nuls ignorent un score en direct ; « En cours » le garde.
+- Pas de nouvelle colonne : les résultats sont écrits sur le match (`outcome`, `winnerSide`, `sets`). Retirer la proposition du score efface toujours tous les résultats.
+
 ## Page publique d'un club (tranche 34, `src/server/club-public.ts`, `src/lib/clubs/slug.ts`, page `/c/<adresse>`)
 
 Un lien comme `/c/tc-lyon`, lisible **sans compte** : logo, ville, fiche (sans la description libre), résultats (provisoires compris), rencontres à venir, équipes du club. Jamais de membres ni de pronostics ; les joueurs restent « Prénom N. ». Un visiteur voit « Rejoindre Ralli pour pronostiquer », un compte connecté « Voir le club dans Ralli ».

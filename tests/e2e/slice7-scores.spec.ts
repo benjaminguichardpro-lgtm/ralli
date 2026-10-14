@@ -234,7 +234,9 @@ test("seconde rencontre : retrait puis nouvelle proposition, confirmée par une 
   tess.once("dialog", (d) => void d.accept());
   await tess.getByRole("button", { name: "Retirer ma proposition" }).click();
   await expect(tess.getByText("Pronostics fermés", { exact: true })).toBeVisible();
-  await expect(tess.getByTestId("results")).toHaveCount(0);
+  // Les résultats sont effacés : plus de score, et la saisie en direct est de nouveau proposée match par match.
+  await expect(tess.getByTestId("tally")).toHaveCount(0);
+  await expect(tess.getByTestId("results").getByText("Pas de résultat saisi.")).toHaveCount(2);
 
   box = tess.getByTestId("propose-score");
   await box.locator("summary").click();

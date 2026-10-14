@@ -93,6 +93,49 @@ export async function proposeScore(actorId: string, encounterId: string, results
     .catch(asDomain);
 }
 
+/**
+ * Saisie en direct : le résultat d'UN match, dès qu'il est terminé, pendant que la rencontre est en cours (commencée, score pas
+ * encore proposé). Même droits que la proposition du score (capitaine de l'équipe ou admin). Le résultat est visible de tous,
+ * « en direct » ; il reste corrigeable (on saisit à nouveau) jusqu'à la proposition du score final. Aucun pronostic n'est réglé ici :
+ * le règlement n'arrive qu'à la confirmation du score final par une seconde personne.
+ */
+export async function recordLiveResult(actorId: string, matchId: string, result: MatchResult, now = new Date()): Promise<void> {
+  let clean: MatchResult;
+  try {
+    clean = validateResult(result);
+  } catch (err) {
+    throw new DomainError("INVALID", err instanceof Error ? err.message : "Résultat invalide");
+  }
+  await db
+    .$transaction(async (tx) => {
+      const e = await loadLiveMatchEncounter(tx, actorId, matchId, now);
+      await tx.match.update({ where: { id: matchId }, data: { outcome: clean.outcome, winnerSide: clean.winnerSide, sets: setsJson(clean.sets) } });
+      await logEvent(tx, e, e.status, actorId, "Match saisi en direct", { matchId, result: clean } as unknown as Prisma.InputJsonValue);
+    })
+    .catch(asDomain);
+}
+
+/** Efface le résultat saisi en direct d'un match (erreur de saisie), tant que le score final n'est pas proposé. */
+export async function clearLiveResult(actorId: string, matchId: string, now = new Date()): Promise<void> {
+  await db
+    .$transaction(async (tx) => {
+      const e = await loadLiveMatchEncounter(tx, actorId, matchId, now);
+      await tx.match.update({ where: { id: matchId }, data: { outcome: null, winnerSide: null, sets: Prisma.DbNull } });
+      await logEvent(tx, e, e.status, actorId, "Résultat de match effacé", { matchId });
+    })
+    .catch(asDomain);
+}
+
+/** La rencontre d'un match, si l'acteur peut y saisir en direct : staff, rencontre en cours (commencée, score pas proposé), match actif. */
+async function loadLiveMatchEncounter(tx: Tx, actorId: string, matchId: string, now: Date) {
+  const m = await tx.match.findUnique({ where: { id: matchId }, select: { encounterId: true, voidedAt: true } });
+  if (!m || m.voidedAt) throw new DomainError("NOT_FOUND", "Match introuvable");
+  const e = await loadEncounter(tx, m.encounterId);
+  await requireStaff(tx, actorId, e);
+  if (effectiveStatus(e, now) !== "LOCKED") throw new DomainError("INVALID_TRANSITION", "La saisie en direct est possible une fois la rencontre commencée, tant que le score final n'est pas proposé");
+  return e;
+}
+
 /** S8 : l'auteur retire sa proposition tant que personne n'a confirmé ni contesté. Les résultats saisis sont effacés. */
 export async function withdrawScore(actorId: string, encounterId: string, now = new Date()): Promise<void> {
   await db
@@ -173,16 +216,18 @@ export type ScoreView = {
   tally: null | { home: number; away: number };
   /** Le score est proposé mais pas encore confirmé : tout le monde le voit, marqué « provisoire ». */
   provisional: boolean;
+  /** Rencontre en cours avec au moins un résultat de match saisi : le score se met à jour match par match (visible de tous, pas encore proposé). */
+  live: boolean;
   /** Résultats saisis visibles : tout le monde une fois proposés (provisoires) ou confirmés ; un score contesté reste réservé aux admins et capitaines (S11). */
   resultsVisible: boolean;
   staff: boolean;
   proposedBy: string | null;
   disputeReason: string | null;
-  actions: { canPropose: boolean; canWithdraw: boolean; canConfirm: boolean; canDispute: boolean; canResolve: boolean };
+  actions: { canRecordLive: boolean; canPropose: boolean; canWithdraw: boolean; canConfirm: boolean; canDispute: boolean; canResolve: boolean };
   journal: { id: string; at: Date; actor: string; text: string }[];
 };
 
-const NO_ACTIONS = { canPropose: false, canWithdraw: false, canConfirm: false, canDispute: false, canResolve: false };
+const NO_ACTIONS = { canRecordLive: false, canPropose: false, canWithdraw: false, canConfirm: false, canDispute: false, canResolve: false };
 
 /** Ce que la page d'une rencontre affiche sur les scores, selon qui regarde. L'appelant a déjà contrôlé l'accès à la page. */
 export async function getScoreView(viewerId: string | null, encounterId: string, now = new Date()): Promise<ScoreView> {
@@ -194,7 +239,8 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
   const reviewer = role !== null && (role === "ADMIN" || (await isCaptainInClub(viewerId!, e.organizerClubId)));
   const final = status === "CONFIRMED";
   const provisional = status === "SCORE_PROPOSED";
-  const resultsVisible = final || provisional || (reviewer && status === "DISPUTED");
+  const liveStatus = status === "LOCKED";
+  const resultsVisible = final || provisional || liveStatus || (reviewer && status === "DISPUTED");
 
   const names = { select: { firstName: true, lastName: true } } as const;
   const rows = numberByKind(
@@ -238,13 +284,15 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
     };
   });
 
-  const tally = final || provisional ? tallyPoints(rows) : null;
+  const live = liveStatus && rows.some((m) => m.outcome !== null);
+  const tally = final || provisional || live ? tallyPoints(rows) : null;
 
   const staffHere = viewerId ? await isStaff(viewerId, e) : false;
   const mine = e.scoreProposedById === viewerId;
   const actions = viewerId
     ? {
-        canPropose: staffHere && status === "LOCKED",
+        canRecordLive: staffHere && liveStatus,
+        canPropose: staffHere && liveStatus,
         canWithdraw: status === "SCORE_PROPOSED" && mine && role !== null,
         canConfirm: status === "SCORE_PROPOSED" && reviewer && !mine,
         canDispute: status === "SCORE_PROPOSED" && reviewer && !mine,
@@ -275,5 +323,5 @@ export async function getScoreView(viewerId: string | null, encounterId: string,
     }
   }
 
-  return { matches, tally, provisional, resultsVisible, staff: reviewer, proposedBy, disputeReason, actions, journal };
+  return { matches, tally, provisional, live, resultsVisible, staff: reviewer, proposedBy, disputeReason, actions, journal };
 }

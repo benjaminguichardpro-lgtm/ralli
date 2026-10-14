@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import {
+  clearLiveResultAction,
   confirmScoreAction,
   disputeScoreAction,
   proposeScoreAction,
+  recordLiveResultAction,
   resolveDisputeAction,
   withdrawScoreAction,
 } from "@/app/actions/scores";
@@ -142,5 +144,58 @@ export function WithdrawScoreForm({ encounterId }: { encounterId: string }) {
       <SubmitButton variant="ghost">Retirer ma proposition</SubmitButton>
       <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
     </form>
+  );
+}
+
+/**
+ * Saisie en direct (capitaines et admins) : le résultat d'UN match, sous le match dans la liste du score. Un clic sur
+ * « Saisir le résultat » (ou « Corriger ») ouvre le formulaire ; « Effacer » retire une saisie faite par erreur.
+ */
+export function LiveResultForm({ match }: { match: ScoreMatch }) {
+  const [state, action] = useActionState(recordLiveResultAction, initialFormState);
+  const [clearState, clearAction] = useActionState(clearLiveResultAction, initialFormState);
+  const v = (k: string) => state.values?.[k];
+  const done = match.result !== null;
+  // Le volet se referme une fois le résultat enregistré (le score affiché au-dessus est déjà à jour).
+  const panel = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (state.ok && panel.current) panel.current.open = false;
+  }, [state]);
+  return (
+    <div className="space-y-2 pt-2" data-testid={`live-form-${match.id}`}>
+      <details ref={panel} className="rounded-lg border border-line px-3">
+        <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary" data-testid="live-open">
+          {done ? "Corriger le résultat" : "Saisir le résultat"}
+        </summary>
+        <form key={JSON.stringify(state.values ?? {})} action={action} className="space-y-3 pb-3" noValidate>
+          <input type="hidden" name="matchId" value={match.id} />
+          <Select label="Issue du match" name="outcome" defaultValue={v("outcome") ?? match.result?.outcome ?? "COMPLETED"} options={outcomeOptions} />
+          <Select
+            label="Vainqueur"
+            name="winner"
+            placeholder="Aucun (match non joué)"
+            defaultValue={v("winner") ?? match.result?.winnerSide ?? ""}
+            options={[
+              { value: "HOME", label: match.home },
+              { value: "AWAY", label: match.away },
+            ]}
+          />
+          <Field label="Sets (facultatif)" name="sets" defaultValue={v("sets") ?? match.result?.sets ?? ""} placeholder="6-4 3-6 10-8" hint="Score du domicile en premier, séparé par des espaces." />
+          <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
+          <SubmitButton className="w-full" pendingLabel="Enregistrement…">
+            Enregistrer le résultat
+          </SubmitButton>
+        </form>
+      </details>
+      {done && (
+        <form action={clearAction} onSubmit={confirmOnSubmit("Effacer le résultat de ce match ?")}>
+          <input type="hidden" name="matchId" value={match.id} />
+          <SubmitButton variant="ghost" pendingLabel="…">
+            Effacer le résultat
+          </SubmitButton>
+          <FormMessage signal={clearState} ok={clearState.ok}>{clearState.message}</FormMessage>
+        </form>
+      )}
+    </div>
   );
 }

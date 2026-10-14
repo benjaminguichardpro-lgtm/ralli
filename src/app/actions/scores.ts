@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/current-user";
 import { type MatchResult, ScoreError, parseSets } from "@/lib/scores/result";
 import { idSchema } from "@/lib/validation/team";
 import { DomainError } from "@/server/errors";
-import { type MatchResultInput, confirmScore, disputeScore, proposeScore, resolveDispute, withdrawScore } from "@/server/scores";
+import { type MatchResultInput, clearLiveResult, confirmScore, disputeScore, proposeScore, recordLiveResult, resolveDispute, withdrawScore } from "@/server/scores";
 import type { FormState } from "./types";
 
 const get = (fd: FormData, k: string) => {
@@ -94,4 +94,32 @@ export async function disputeScoreAction(_: FormState, fd: FormData): Promise<Fo
   if (reason.trim().length > 300) return { errors: { reason: "Au plus 300 caractères" }, values: valuesOf(fd) };
   if (!reason.trim()) return { errors: { reason: "Indiquez le motif de la contestation" }, values: valuesOf(fd) };
   return run(() => disputeScore(user.id, id.data, reason), "Score contesté : un admin du club va trancher.", fd);
+}
+
+/** Saisie en direct du résultat d'un match (champs `outcome`, `winner`, `sets`, `matchId`). */
+export async function recordLiveResultAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const matchId = idSchema.safeParse(get(fd, "matchId"));
+  const outcome = get(fd, "outcome");
+  if (!matchId.success || !OUTCOMES.includes(outcome as (typeof OUTCOMES)[number])) return { message: "Requête invalide" };
+  const winner = get(fd, "winner");
+  let sets: MatchResult["sets"];
+  try {
+    sets = parseSets(get(fd, "sets") ?? "");
+  } catch (e) {
+    if (e instanceof ScoreError) return { message: e.message, values: valuesOf(fd) };
+    throw e;
+  }
+  return run(
+    () => recordLiveResult(user.id, matchId.data, { outcome: outcome as MatchResult["outcome"], winnerSide: winner === "HOME" || winner === "AWAY" ? winner : null, sets }),
+    "Résultat enregistré.",
+    fd,
+  );
+}
+
+export async function clearLiveResultAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const matchId = idSchema.safeParse(get(fd, "matchId"));
+  if (!matchId.success) return { message: "Requête invalide" };
+  return run(() => clearLiveResult(user.id, matchId.data), "Résultat effacé.");
 }

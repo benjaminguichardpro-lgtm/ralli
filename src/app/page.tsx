@@ -258,6 +258,11 @@ function EncounterCard({ e, now, showLogo }: { e: FeedEncounter; now: Date; show
       </span>
       <span className="flex items-center gap-2 text-sm text-ink-muted">
         <StatusBadge status={e.status} label={e.statusLabel} />
+        {e.liveScore && (
+          <span className="rounded-full border border-accent bg-pale px-2 py-0.5 text-xs font-semibold text-ink" data-testid="live-score">
+            En direct {e.liveScore.home} – {e.liveScore.away}
+          </span>
+        )}
         {e.matches.length} simple{e.matches.length > 1 ? "s" : ""}
       </span>
     </Link>

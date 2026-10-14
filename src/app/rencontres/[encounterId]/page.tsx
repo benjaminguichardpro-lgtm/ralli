@@ -14,7 +14,7 @@ import {
 import { JoinClubButton } from "@/components/club-directory";
 import { type Access, MatchPicks } from "@/components/match-picks";
 import { WhatsAppShare } from "@/components/share-link";
-import { ConfirmScoreForm, DisputeScoreForm, ProposeScoreForm, ResolveDisputeForm, WithdrawScoreForm } from "@/components/score-forms";
+import { ConfirmScoreForm, DisputeScoreForm, LiveResultForm, ProposeScoreForm, ResolveDisputeForm, WithdrawScoreForm } from "@/components/score-forms";
 import { StatusBadge } from "@/components/encounter-list";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { kindTitle, kindWord, pointsLabel } from "@/lib/matches";
@@ -76,6 +76,19 @@ async function Encounter({ params }: { params: Promise<{ encounterId: string }> 
           <p className="text-sm text-on-primary-soft">Rencontre reportée : les pronostics sont restés fermés.</p>
         )}
       </div>
+      {score.live && score.tally && (
+        <div className="space-y-1 rounded-2xl border-2 border-accent bg-pale p-4 text-center" data-testid="tally">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+            <span aria-hidden="true">● </span>Score en direct
+          </p>
+          <p className="font-figures text-5xl font-bold leading-none text-primary">
+            {score.tally.home} – {score.tally.away}
+          </p>
+          <p className="text-sm font-medium">
+            {e.home} – {e.away}
+          </p>
+        </div>
+      )}
       {published && e.status !== "CANCELLED" && (
         <WhatsAppShare
           text={`${e.home} – ${e.away}, ${formatParisDay(e.startsAt)} à ${formatParisTime(e.startsAt)} 🎾 Fais ton pronostic sur Ralli (jeu gratuit, sans argent réel) :`}
@@ -221,13 +234,13 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
     result: x.result ? { outcome: x.result.outcome, winnerSide: x.result.winnerSide, sets: x.result.sets } : null,
   }));
   const hasForm = a.canPropose || a.canWithdraw || a.canConfirm || a.canDispute || a.canResolve;
-  const show = e.status === "SCORE_PROPOSED" || e.status === "DISPUTED" || e.status === "CONFIRMED" || hasForm;
+  const show = e.status === "SCORE_PROPOSED" || e.status === "DISPUTED" || e.status === "CONFIRMED" || score.live || hasForm;
   if (!show) return null;
   return (
     <div className="space-y-4 rounded-2xl bg-surface p-4 shadow-sm" data-testid="score-section">
       <h2 className="font-serif text-xl text-primary">Score</h2>
 
-      {score.tally && (
+      {score.tally && !score.live && (
         <p className="text-lg font-semibold" data-testid="tally">
           {score.provisional ? "Score provisoire" : "Score final"} : {e.home} {score.tally.home} – {score.tally.away} {e.away}
         </p>
@@ -235,6 +248,17 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
       {score.provisional && (
         <p className="rounded-lg border-l-4 border-accent bg-pale p-3" data-testid="provisional-note">
           Score provisoire : il sera définitif quand un second admin ou capitaine l&apos;aura confirmé, et peut encore changer d&apos;ici là.
+        </p>
+      )}
+      {score.live && (
+        <p className="rounded-lg border-l-4 border-accent bg-pale p-3" data-testid="live-note">
+          Score en direct : il se met à jour match par match. Il ne sera définitif qu&apos;après la proposition du score final et sa confirmation par une
+          seconde personne ; les pronostics sont réglés à ce moment-là.
+        </p>
+      )}
+      {a.canRecordLive && !score.live && (
+        <p className="text-sm text-ink-muted" data-testid="live-hint">
+          La rencontre a commencé : saisis le résultat de chaque match dès qu&apos;il est terminé, le score s&apos;affiche en direct.
         </p>
       )}
       {e.status === "DISPUTED" && !score.resultsVisible && <p data-testid="score-pending">Score contesté : un admin du club va trancher.</p>}
@@ -255,6 +279,7 @@ function ScoreSection({ e, score }: { e: EncounterPageView; score: ScoreView }) 
               ) : (
                 <p className="text-ink-muted">Pas de résultat saisi.</p>
               )}
+              {a.canRecordLive && <LiveResultForm match={forms.find((f) => f.id === x.id)!} />}
             </li>
           ))}
         </ol>

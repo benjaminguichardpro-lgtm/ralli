@@ -731,7 +731,9 @@ function toListItems(rows: ListRow[], now: Date, viewer?: { userId: string; isAd
  * et un résultat « provisoire » à celles dont le score est proposé mais pas encore confirmé.
  */
 async function attachResults(rows: ListRow[], items: EncounterListItem[]): Promise<EncounterListItem[]> {
-  const confirmed = rows.filter((r) => r.status === "CONFIRMED" || r.status === "SCORE_PROPOSED").map((r) => r.id);
+  // Score en direct : rencontre ouverte et commencée (statut « verrouillée ») dont au moins un match a un résultat.
+  const isLive = (i: number) => rows[i]!.status === "OPEN" && items[i]!.status === "LOCKED";
+  const confirmed = rows.filter((r, i) => r.status === "CONFIRMED" || r.status === "SCORE_PROPOSED" || isLive(i)).map((r) => r.id);
   if (confirmed.length === 0) return items;
   const matches = await db.match.findMany({
     where: { encounterId: { in: confirmed }, voidedAt: null },
@@ -741,8 +743,11 @@ async function attachResults(rows: ListRow[], items: EncounterListItem[]): Promi
   for (const m of matches) byEncounter.set(m.encounterId, [...(byEncounter.get(m.encounterId) ?? []), m]);
   return items.map((it, i) => {
     const row = rows[i]!;
-    if (row.status !== "CONFIRMED" && row.status !== "SCORE_PROPOSED") return it;
-    return { ...it, result: clubResult(tallyPoints(byEncounter.get(it.id) ?? []), row.homeTeam.kind === "CLUB", row.status === "SCORE_PROPOSED") };
+    if (row.status !== "CONFIRMED" && row.status !== "SCORE_PROPOSED" && !isLive(i)) return it;
+    const ms = byEncounter.get(it.id) ?? [];
+    const live = isLive(i);
+    if (live && !ms.some((m) => m.winnerSide !== null)) return it; // aucun résultat saisi : pas de score à montrer
+    return { ...it, result: clubResult(tallyPoints(ms), row.homeTeam.kind === "CLUB", row.status === "SCORE_PROPOSED", live) };
   });
 }
 

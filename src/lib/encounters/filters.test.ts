@@ -91,3 +91,14 @@ describe("filtres de la liste", () => {
     expect(FILTERS.map((f) => f.key)).toHaveLength(8);
   });
 });
+
+describe("score en direct", () => {
+  it("le badge dit « En direct » et le résultat n'est ni une victoire ni une défaite pour les filtres", () => {
+    const live = clubResult({ home: 2, away: 1 }, true, false, true);
+    expect(live).toEqual({ kind: "WIN", club: 2, opp: 1, live: true });
+    expect(resultBadgeText(live)).toBe("En direct 2 – 1");
+    const item = { status: "LOCKED" as const, result: live };
+    for (const key of ["victoires", "defaites", "nuls"] as const) expect(applyFilter([item], key)).toEqual([]);
+    expect(applyFilter([item], "en-cours")).toEqual([item]);
+  });
+});

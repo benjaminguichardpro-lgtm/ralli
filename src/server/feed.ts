@@ -2,7 +2,7 @@ import type { Side } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { type EffectiveStatus, STATUS_LABELS, effectiveStatus } from "@/lib/encounters/state";
 import { fftLabel } from "@/lib/fft";
-import { numberByKind, sideName } from "@/lib/matches";
+import { numberByKind, sideName, tallyPoints } from "@/lib/matches";
 import { formatOdds } from "@/lib/odds/model";
 import { type MyPrediction, balanceIn, exclusionReason } from "./predictions";
 import { sideLabel } from "./encounters";
@@ -27,6 +27,8 @@ export type FeedEncounter = {
   away: string;
   /** Club organisateur : son logo s'affiche sur la carte quand l'utilisateur a plusieurs clubs. */
   club: { id: string; name: string; logoUpdatedAt: Date | null };
+  /** Score en direct (domicile, extérieur) d'une rencontre en cours dont au moins un match est saisi ; null sinon. */
+  liveScore: { home: number; away: number } | null;
   /** Motif d'anti-trucage pour ce lecteur, null s'il peut pronostiquer. */
   blockedReason: string | null;
   matches: FeedMatch[];
@@ -75,6 +77,8 @@ export async function getHomeFeed(userId: string, now = new Date()): Promise<Hom
           select: {
             id: true,
             kind: true,
+            points: true,
+            winnerSide: true,
             oddsHomeX100: true,
             oddsAwayX100: true,
             homePlayer: { select: playerSelect },
@@ -113,6 +117,7 @@ export async function getHomeFeed(userId: string, now = new Date()): Promise<Hom
         away: sideLabel(e.awayTeam),
         club: e.organizerClub,
         blockedReason,
+        liveScore: status === "LOCKED" && e.matches.some((m) => m.winnerSide !== null) ? tallyPoints(e.matches) : null,
         matches: numberByKind(e.matches).map((m) => {
           const mine = m.predictions[0];
           return {

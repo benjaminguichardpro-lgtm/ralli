@@ -4,10 +4,10 @@ import { effectiveStatus } from "@/lib/encounters/state";
 import { makeUser } from "../../tests/db/factories";
 import { joinClub } from "./club-directory";
 import { createClub } from "./clubs";
-import { addMatch, cancelEncounter, createEncounter, publishEncounter } from "./encounters";
+import { addMatch, cancelEncounter, createEncounter, listClubEncounters, publishEncounter } from "./encounters";
 import { getBalance } from "./ledger";
 import { placePrediction } from "./predictions";
-import { type MatchResultInput, confirmScore, disputeScore, getScoreView, proposeScore, resolveDispute, withdrawScore } from "./scores";
+import { type MatchResultInput, clearLiveResult, confirmScore, disputeScore, getScoreView, proposeScore, recordLiveResult, resolveDispute, withdrawScore } from "./scores";
 import { addNewPlayerToTeam, createExternalTeam, createTeam } from "./teams";
 
 const T0 = new Date("2026-10-10T10:00:00Z");
@@ -241,7 +241,7 @@ describe("lecture (getScoreView)", () => {
       expect(s.matches[0]!.result).toMatchObject({ winnerName: "Léa M." });
       expect(s.journal).toEqual([]);
       expect(s.proposedBy).toBeNull();
-      expect(s.actions).toEqual({ canPropose: false, canWithdraw: false, canConfirm: false, canDispute: false, canResolve: false });
+      expect(s.actions).toEqual({ canRecordLive: false, canPropose: false, canWithdraw: false, canConfirm: false, canDispute: false, canResolve: false });
     }
     const author = await getScoreView(capA, enc, NOW);
     expect(author.matches[0]!.result).toMatchObject({ outcomeLabel: "Joué jusqu'au bout", winnerName: "Léa M." });
@@ -307,5 +307,78 @@ describe("indépendance des rencontres", () => {
     await proposeScore(capA, enc, full(), NOW);
     expect((await db.encounter.findUniqueOrThrow({ where: { id: otherEnc } })).status).toBe("DRAFT");
     expect((await db.match.findUniqueOrThrow({ where: { id: otherMatch } })).outcome).toBeNull();
+  });
+});
+
+describe("saisie en direct", () => {
+  const live = (matchId: string, winnerSide: "HOME" | "AWAY" = "HOME") => ({ outcome: "COMPLETED" as const, winnerSide, sets: [] });
+
+  it("capitaine de l'équipe ou admin seulement ; pas un autre capitaine, un membre, ni un non-membre", async () => {
+    await expect(recordLiveResult(capB, mA, live(mA), NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(recordLiveResult(member, mA, live(mA), NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(recordLiveResult(outsider, mA, live(mA), NOW)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(recordLiveResult(capA, otherMatch, live(otherMatch), NOW)).rejects.toMatchObject({ code: "FORBIDDEN" }); // match d'une autre équipe
+    await recordLiveResult(capA, mA, live(mA), NOW);
+    await recordLiveResult(admin, mB, live(mB, "AWAY"), NOW);
+  });
+
+  it("seulement une fois la rencontre commencée et tant que le score final n'est pas proposé", async () => {
+    await expect(recordLiveResult(capA, mA, live(mA), BEFORE)).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+    await recordLiveResult(capA, mA, live(mA), NOW);
+    await proposeScore(capA, enc, [win(mA), win(mB)], NOW);
+    await expect(recordLiveResult(capA, mA, live(mA, "AWAY"), NOW)).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+    await expect(clearLiveResult(capA, mA, NOW)).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+  });
+
+  it("le score est visible de tous, en direct, et il évolue match par match", async () => {
+    expect(await getScoreView(null, enc, NOW)).toMatchObject({ live: false, tally: null });
+    await recordLiveResult(capA, mA, live(mA), NOW);
+    let v = await getScoreView(null, enc, NOW);
+    expect(v).toMatchObject({ live: true, provisional: false, resultsVisible: true, tally: { home: 1, away: 0 } });
+    expect(v.matches.find((m) => m.id === mA)?.result?.winnerSide).toBe("HOME");
+    expect(v.matches.find((m) => m.id === mB)?.result).toBeNull();
+    expect(v.actions.canRecordLive).toBe(false); // un visiteur ne saisit pas
+    await recordLiveResult(capA, mB, live(mB, "AWAY"), NOW);
+    v = await getScoreView(member, enc, NOW);
+    expect(v.tally).toEqual({ home: 1, away: 1 });
+    expect((await getScoreView(capA, enc, NOW)).actions).toMatchObject({ canRecordLive: true, canPropose: true });
+    expect((await getScoreView(capB, enc, NOW)).actions.canRecordLive).toBe(false);
+  });
+
+  it("aucun pronostic n'est réglé en direct : seule la confirmation du score final règle", async () => {
+    await placePrediction(member, { matchId: mA, side: "HOME", committedAces: 100 }, BEFORE);
+    const balance = await getBalance(member);
+    await recordLiveResult(capA, mA, live(mA), NOW);
+    expect((await db.prediction.findFirstOrThrow({ where: { userId: member } })).status).toBe("PENDING");
+    expect(await getBalance(member)).toBe(balance);
+    await proposeScore(capA, enc, [win(mA), { matchId: mB, outcome: "NOT_PLAYED", winnerSide: null, sets: [] }], NOW);
+    expect((await db.prediction.findFirstOrThrow({ where: { userId: member } })).status).toBe("PENDING");
+    await confirmScore(capB, enc, NOW);
+    expect((await db.prediction.findFirstOrThrow({ where: { userId: member } })).status).toBe("WON");
+  });
+
+  it("se corrige (on saisit à nouveau) et s'efface ; une trace reste au journal", async () => {
+    await recordLiveResult(capA, mA, live(mA, "HOME"), NOW);
+    await recordLiveResult(capA, mA, live(mA, "AWAY"), NOW);
+    expect(await db.match.findUniqueOrThrow({ where: { id: mA } })).toMatchObject({ outcome: "COMPLETED", winnerSide: "AWAY" });
+    expect((await getScoreView(null, enc, NOW)).tally).toEqual({ home: 0, away: 1 });
+    await clearLiveResult(capA, mA, NOW);
+    expect(await db.match.findUniqueOrThrow({ where: { id: mA } })).toMatchObject({ outcome: null, winnerSide: null });
+    expect((await getScoreView(null, enc, NOW)).live).toBe(false);
+    expect(await db.encounterEvent.count({ where: { encounterId: enc, note: { in: ["Match saisi en direct", "Résultat de match effacé"] } } })).toBe(3);
+  });
+
+  it("refuse un résultat invalide (vainqueur manquant) et ne touche pas le match", async () => {
+    await expect(recordLiveResult(capA, mA, { outcome: "COMPLETED", winnerSide: null, sets: [] }, NOW)).rejects.toMatchObject({ code: "INVALID" });
+    expect((await db.match.findUniqueOrThrow({ where: { id: mA } })).outcome).toBeNull();
+  });
+
+  it("les résultats saisis en direct servent de départ au score final, et la liste montre « En direct »", async () => {
+    await recordLiveResult(capA, mA, live(mA), NOW);
+    const list = await listClubEncounters(admin, clubId, NOW);
+    expect(list.find((e) => e.id === enc)?.result).toMatchObject({ live: true, club: 1, opp: 0 });
+    expect(list.find((e) => e.id === otherEnc)?.result).toBeNull(); // aucune saisie : pas de score
+    await proposeScore(capA, enc, [win(mA), win(mB)], NOW);
+    expect((await listClubEncounters(admin, clubId, NOW)).find((e) => e.id === enc)?.result).toMatchObject({ provisional: true });
   });
 });
