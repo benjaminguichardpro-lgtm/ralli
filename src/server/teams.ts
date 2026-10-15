@@ -145,7 +145,7 @@ export async function addExistingPlayerToTeam(actorId: string, teamId: string, p
   const { team } = await requireManageTeam(actorId, teamId);
   if (team.kind !== "CLUB") throw new DomainError("INVALID", "Les joueurs d'une équipe externe se saisissent directement");
   const candidate = await db.player.findFirst({
-    where: { id: playerId, clubId: team.clubId, teams: { some: { team: { kind: "CLUB" } } } },
+    where: { id: playerId, clubId: team.clubId, OR: [{ teams: { some: { team: { kind: "CLUB" } } } }, { teams: { none: {} } }] },
     select: { id: true },
   });
   if (!candidate) throw PLAYER_NOT_FOUND;
@@ -326,7 +326,7 @@ export async function getTeamView(actorId: string, teamId: string): Promise<Team
     const inTeam = new Set(players.map((p) => p.id));
     if (team.kind === "CLUB") {
       const candidates = await db.player.findMany({
-        where: { clubId: team.clubId, teams: { some: { team: { kind: "CLUB" } } } },
+        where: { clubId: team.clubId, OR: [{ teams: { some: { team: { kind: "CLUB" } } } }, { teams: { none: {} } }] },
         orderBy: { lastName: "asc" },
         select: { id: true, firstName: true, lastName: true, fftRank: true },
       });

@@ -123,6 +123,11 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
             </ButtonLink>
           )}
           {publicSettings?.publicPage && publicSettings.slug && <CopyLinkButton path={publicPath(publicSettings.slug)} />}
+          {isAdmin && (
+            <ButtonLink href={`/clubs/${club.id}/joueurs`} variant="ghost">
+              Joueurs du club
+            </ButtonLink>
+          )}
         </div>
       </div>
 

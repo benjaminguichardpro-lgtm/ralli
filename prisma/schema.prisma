@@ -281,13 +281,14 @@ model Team {
 
 // Personne qui joue. Peut exister sans compte. Liée à au plus un User.
 model Player {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   clubId    String // club Ralli qui gère la fiche (pour un joueur externe : le club qui l'a saisi)
   firstName String
   lastName  String // affiché publiquement sous la forme « Prénom N. »
   fftRank   FftRank // niveau déclaré, saisi à la main
-  userId    String?  @unique // lien optionnel ; refusé tant que le joueur est dans une rencontre non réglée
-  createdAt DateTime @default(now())
+  userId    String?   @unique // lien optionnel ; refusé tant que le joueur est dans une rencontre non réglée
+  birthDate DateTime? @db.Date // facultative, visible des admins du club seulement (jamais sur les pages publiques ni pour les membres)
+  createdAt DateTime  @default(now())
 
   club              Club              @relation(fields: [clubId], references: [id], onDelete: Cascade)
   user              User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
