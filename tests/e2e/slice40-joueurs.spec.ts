@@ -61,15 +61,15 @@ test("l'admin ajoute un joueur à la main (classement NC, date de naissance), le
   await checkPage(p, "joueurs-du-club");
 
   // Recherche : sans accents ni casse, par nom, classement ou équipe ; aucun résultat ; effacer.
+  await p.waitForLoadState("networkidle");
   const search = p.getByTestId("player-search");
   await search.getByRole("searchbox", { name: "Rechercher un joueur" }).fill("LEFEVRE");
-  await search.getByRole("button", { name: "Chercher" }).click();
   await expect(p).toHaveURL(/joueurs\?q=LEFEVRE$/);
+  await expect(search.getByRole("button")).toHaveCount(0); // plus de bouton « Chercher » : la liste se filtre en tapant
   await expect(p.getByTestId("club-player")).toHaveCount(1);
   await expect(p.getByTestId("club-player")).toContainText("Hugo Lefèvre");
   await expect(p.getByTestId("players-count")).toHaveText(`(1 sur ${total})`);
   await search.getByRole("searchbox", { name: "Rechercher un joueur" }).fill("zzzz");
-  await search.getByRole("button", { name: "Chercher" }).click();
   await expect(p.getByTestId("player-search-empty")).toContainText("zzzz");
   await expect(p.getByTestId("club-player")).toHaveCount(0);
   await p.getByTestId("player-search-clear").click();

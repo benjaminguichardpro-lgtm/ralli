@@ -1,6 +1,7 @@
 "use client";
 
-import { startTransition, useActionState, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { addClubPlayerAction, addPlayerToTeamAction, deleteClubPlayerAction, importPlayersAction, updateClubPlayerAction } from "@/app/actions/club-players";
 import { type ImportPreviewRow, initialImportState } from "@/app/actions/import-state";
 import { initialFormState } from "@/app/actions/types";
@@ -225,5 +226,38 @@ export function ImportPlayersPanel({ clubId }: { clubId: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Recherche de joueur : la liste se filtre au fil de la frappe (adresse `?q=` mise à jour après une courte pause). */
+export function PlayerSearch({ clubId, initial }: { clubId: string; initial: string }) {
+  const router = useRouter();
+  const [value, setValue] = useState(initial);
+  const last = useRef(initial);
+  useEffect(() => {
+    const q = value.trim();
+    if (q === last.current.trim()) return;
+    const t = setTimeout(() => {
+      last.current = value;
+      startTransition(() => router.replace(q ? `/clubs/${clubId}/joueurs?q=${encodeURIComponent(q)}` : `/clubs/${clubId}/joueurs`, { scroll: false }));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [value, clubId, router]);
+  return (
+    <form action={`/clubs/${clubId}/joueurs`} method="get" role="search" data-testid="player-search" onSubmit={(e) => e.preventDefault()}>
+      <label htmlFor="player-q" className="sr-only">
+        Rechercher un joueur
+      </label>
+      <input
+        id="player-q"
+        name="q"
+        type="search"
+        value={value}
+        onChange={(e) => setValue(e.target.value.slice(0, 80))}
+        placeholder="Rechercher un joueur (nom, classement, équipe)"
+        autoComplete="off"
+        className="min-h-11 w-full min-w-0 rounded-lg border border-ink-muted bg-surface px-3 text-ink focus-visible:outline-2 focus-visible:outline-primary"
+      />
+    </form>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { AddClubPlayerForm, AddToTeamForm, DeleteClubPlayerForm, EditClubPlayerForm, ImportPlayersPanel } from "@/components/club-player-forms";
+import { AddClubPlayerForm, AddToTeamForm, DeleteClubPlayerForm, EditClubPlayerForm, ImportPlayersPanel, PlayerSearch } from "@/components/club-player-forms";
 import { requireUser } from "@/lib/auth/current-user";
 import { formatBirth } from "@/lib/players/birth";
 import { filterPlayers } from "@/lib/players/search";
@@ -85,23 +85,7 @@ async function Content({ params, searchParams }: { params: Promise<{ clubId: str
             ({query ? `${matching.length} sur ${players.length}` : players.length})
           </span>
         </h2>
-        <form action={`/clubs/${clubId}/joueurs`} method="get" role="search" className="flex gap-2" data-testid="player-search">
-          <label htmlFor="player-q" className="sr-only">
-            Rechercher un joueur
-          </label>
-          <input
-            id="player-q"
-            name="q"
-            type="search"
-            defaultValue={query}
-            placeholder="Rechercher un joueur (nom, classement, équipe)"
-            autoComplete="off"
-            className="min-h-11 min-w-0 flex-1 rounded-lg border border-ink-muted bg-surface px-3 text-ink focus-visible:outline-2 focus-visible:outline-primary"
-          />
-          <button type="submit" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 font-semibold text-on-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-            Chercher
-          </button>
-        </form>
+        <PlayerSearch clubId={clubId} initial={query} />
         {query && (
           <Link href={`/clubs/${clubId}/joueurs`} className="inline-flex min-h-11 items-center font-semibold text-primary underline" data-testid="player-search-clear">
             Effacer la recherche
