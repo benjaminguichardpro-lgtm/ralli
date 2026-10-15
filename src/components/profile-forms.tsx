@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useRef } from "react";
-import { resetMemberAvatarAction, setAvatarPresetAction, uploadAvatarAction } from "@/app/actions/profile";
+import { resetMemberAvatarAction, setProfileVisibilityAction, setAvatarPresetAction, uploadAvatarAction } from "@/app/actions/profile";
 import { initialFormState } from "@/app/actions/types";
 import { AVATARS, PHOTO_MAX_BYTES } from "@/lib/avatars";
 import { FormMessage, SubmitButton, confirmOnSubmit } from "./ui";
@@ -93,6 +93,25 @@ export function ResetAvatarForm({ clubId, userId, displayName }: { clubId: strin
         Retirer la photo
       </SubmitButton>
       {state.message && !state.ok && <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>}
+    </form>
+  );
+}
+
+/** Visibilité du profil pour les membres des clubs en commun (activée par défaut). */
+export function ProfileVisibilityForm({ visible }: { visible: boolean }) {
+  const [state, action] = useActionState(setProfileVisibilityAction, initialFormState);
+  return (
+    <form action={action} className="space-y-3" data-testid="profile-visibility">
+      <p className="text-ink-muted" data-testid="profile-visibility-state">
+        {visible
+          ? "Les membres de tes clubs peuvent voir ton profil : tes clubs, ton classement et tes pronostics terminés."
+          : "Ton profil est masqué : les autres membres ne voient que ton avatar et ton pseudo."}
+      </p>
+      <input type="hidden" name="visible" value={visible ? "false" : "true"} />
+      <SubmitButton variant="ghost" pendingLabel="Un instant…">
+        {visible ? "Masquer mon profil" : "Rendre mon profil visible"}
+      </SubmitButton>
+      {state.message && <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>}
     </form>
   );
 }

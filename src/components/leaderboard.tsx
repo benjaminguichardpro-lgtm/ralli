@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { DEFAULT_AVATAR_KEY } from "@/lib/avatars";
 import { type RankMove, type RankedRow, rankMoveSentence, rankMoveShort } from "@/lib/leaderboard/rank";
 import { Avatar } from "./avatar";
@@ -45,7 +46,9 @@ export function LeaderboardTable({ rows, viewerId, compact = false, viewerMove =
               <span className="flex items-center gap-2">
                 <Avatar user={{ id: r.userId, avatarKey: r.avatarKey ?? DEFAULT_AVATAR_KEY, avatarPhotoAt: r.avatarPhotoAt ?? null }} size={32} />
                 <span>
-                  {r.displayName}
+                  <Link href={r.userId === viewerId ? "/profil" : `/membres/${r.userId}`} className="inline-flex min-h-11 items-center font-medium text-primary underline-offset-2 hover:underline" data-testid="leaderboard-profile-link">
+                    {r.displayName}
+                  </Link>
                   {r.userId === viewerId && <span className="ml-1 font-normal text-ink-muted">(vous)</span>}
                 </span>
               </span>

@@ -3,11 +3,12 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { signOutAction } from "@/app/actions/auth";
 import { Avatar } from "@/components/avatar";
-import { AvatarPicker, PhotoUploadButton } from "@/components/profile-forms";
+import { AvatarPicker, PhotoUploadButton, ProfileVisibilityForm } from "@/components/profile-forms";
 import { PostalCodeForm } from "@/components/location-forms";
 import { GuideReplayButton } from "@/components/onboarding-guide";
 import { requireUser } from "@/lib/auth/current-user";
 import { listMyClubs } from "@/server/clubs";
+import { getProfilePublic } from "@/server/member-profile";
 import { getMyLocation } from "@/server/nearby";
 
 export const metadata: Metadata = { title: "Mon profil · Ralli" };
@@ -25,7 +26,7 @@ export default function ProfilePage() {
 
 async function Content() {
   const user = await requireUser();
-  const [myClubs, location] = await Promise.all([listMyClubs(user.id), getMyLocation(user.id)]);
+  const [myClubs, location, profilePublic] = await Promise.all([listMyClubs(user.id), getMyLocation(user.id), getProfilePublic(user.id)]);
   const hasClub = myClubs.length > 0;
   // Un seul club : le bouton y mène directement ; sinon la liste « Mes clubs ».
   const clubsHref = myClubs.length === 1 ? `/clubs/${myClubs[0]!.id}` : "/clubs";
@@ -42,6 +43,11 @@ async function Content() {
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
         <h2 className="font-serif text-xl text-primary">Ou choisir un avatar</h2>
         <AvatarPicker current={user.avatarPhotoAt ? null : user.avatarKey} />
+      </div>
+
+      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
+        <h2 className="font-serif text-xl text-primary">Qui voit mon profil ?</h2>
+        <ProfileVisibilityForm visible={profilePublic} />
       </div>
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="profile-location">

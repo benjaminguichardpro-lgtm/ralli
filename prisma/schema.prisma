@@ -136,6 +136,7 @@ model User {
   latitude           Float?
   longitude          Float?
   nearbyRadiusKm     Int       @default(30) // rayon de la recherche à proximité, réglable par la personne (1 à 200 km)
+  profilePublic      Boolean   @default(true) // profil visible des membres des clubs en commun (tranche 39) ; false = avatar et pseudo seulement
   createdAt          DateTime  @default(now())
 
   memberships         ClubMembership[]

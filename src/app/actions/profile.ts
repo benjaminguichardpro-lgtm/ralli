@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth/current-user";
 import { PHOTO_MAX_BYTES } from "@/lib/avatars";
 import { resetMemberAvatar, setPresetAvatar, uploadAvatarPhoto } from "@/server/avatars";
 import { DomainError } from "@/server/errors";
+import { setProfilePublic } from "@/server/member-profile";
 import type { FormState } from "./types";
 
 const idSchema = z.string().min(1).max(64);
@@ -50,4 +51,12 @@ export async function resetMemberAvatarAction(_: FormState, fd: FormData): Promi
   }
   refresh();
   return { ok: true, message: "Avatar remis par défaut." };
+}
+
+export async function setProfileVisibilityAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const visible = fd.get("visible") === "true";
+  await setProfilePublic(user.id, visible);
+  refresh();
+  return { ok: true, message: visible ? "Ton profil est visible des membres de tes clubs." : "Ton profil est masqué." };
 }

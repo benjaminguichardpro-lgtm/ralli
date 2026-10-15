@@ -314,7 +314,9 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
             <li key={m.userId} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2">
               <span className="flex items-center gap-3">
                 <Avatar user={{ id: m.userId, avatarKey: m.avatarKey, avatarPhotoAt: m.avatarPhotoAt }} size={36} />
-                <span className="font-medium">{m.displayName}</span>
+                <Link href={m.userId === user.id ? "/profil" : `/membres/${m.userId}`} className="inline-flex min-h-11 items-center font-medium text-primary underline-offset-2 hover:underline" data-testid="member-profile-link">
+                  {m.displayName}
+                </Link>
                 {m.role === "ADMIN" && (
                   <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-on-primary">admin</span>
                 )}
