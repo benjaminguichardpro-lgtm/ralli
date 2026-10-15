@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { TeamStandingsTable } from "@/components/team-standings";
+import { seasonYearOf } from "@/lib/standings/teams";
+import { getTeamStandings } from "@/server/team-standings";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -27,7 +30,13 @@ async function PublicClub({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const club = await getPublicClub(slug);
   if (!club) notFound();
-  const [{ upcoming, recent }, viewer, tournaments] = await Promise.all([getPublicClubEncounters(club.id), getCurrentUser(), listClubTournaments(club.id)]);
+  const now = new Date();
+  const [{ upcoming, recent }, viewer, tournaments, standings] = await Promise.all([
+    getPublicClubEncounters(club.id),
+    getCurrentUser(),
+    listClubTournaments(club.id),
+    getTeamStandings(club.id, seasonYearOf(now), now),
+  ]);
   const address = formatAddress(club);
   const facts = [
     club.foundedYear !== null && `Fondé en ${club.foundedYear}`,
@@ -90,6 +99,13 @@ async function PublicClub({ params }: { params: Promise<{ slug: string }> }) {
         <h2 className="font-serif text-xl text-primary">Rencontres à venir</h2>
         <EncounterList items={upcoming} empty="Aucune rencontre à venir pour l'instant." />
       </div>
+
+      {club.teams.length > 0 && (
+        <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="public-standings">
+          <h2 className="font-serif text-xl text-primary">Classement des équipes</h2>
+          <TeamStandingsTable data={standings} />
+        </div>
+      )}
 
       {club.teams.length > 0 && (
         <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="public-teams">

@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { TeamStandingsTable } from "@/components/team-standings";
+import { parseSeason, seasonYearOf } from "@/lib/standings/teams";
+import { getTeamStandings } from "@/server/team-standings";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ResultCard } from "@/components/result-card";
@@ -9,7 +12,7 @@ import { RESULTS_PAGE_SIZE, getResultsOptions, listResults } from "@/server/resu
 
 export const metadata: Metadata = { title: "Résultats · Ralli" };
 
-type Props = { searchParams: Promise<{ club?: string | string[]; equipe?: string | string[]; limite?: string | string[] }> };
+type Props = { searchParams: Promise<{ club?: string | string[]; equipe?: string | string[]; limite?: string | string[]; saison?: string | string[] }> };
 
 export default function ResultsPage(props: Props) {
   return (
@@ -60,6 +63,8 @@ async function Results({ searchParams }: Props) {
   const teamClub = club ?? (options.clubs.length === 1 ? options.clubs[0]! : null);
   const team = teamClub?.teams.find((t) => t.id === one(sp.equipe)) ?? null;
   const limit = parseLimit(sp.limite);
+  const now = new Date();
+  const standings = teamClub ? await getTeamStandings(teamClub.id, parseSeason(one(sp.saison), seasonYearOf(now)), now) : null;
   const { items, hasMore } = await listResults(user.id, { clubId: club?.id ?? teamClub?.id ?? null, teamId: team?.id ?? null, limit });
 
   if (options.clubs.length === 0) {
@@ -107,6 +112,14 @@ async function Results({ searchParams }: Props) {
             ))}
           </ul>
         </nav>
+      )}
+      {teamClub && standings && (
+        <details className="rounded-2xl bg-surface p-4 shadow-sm" data-testid="results-standings">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center font-serif text-xl text-primary">Classement des équipes · {teamClub.name}</summary>
+          <div className="pt-2">
+            <TeamStandingsTable data={standings} seasonHref={(y) => `/resultats-clubs?club=${teamClub.id}&saison=${y}`} />
+          </div>
+        </details>
       )}
       {items.length === 0 ? (
         <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="results-empty">

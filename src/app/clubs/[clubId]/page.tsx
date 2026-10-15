@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { TeamStandingsTable } from "@/components/team-standings";
+import { parseSeason, seasonYearOf } from "@/lib/standings/teams";
+import { getTeamStandings } from "@/server/team-standings";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -46,7 +49,7 @@ export default function ClubPage({
   searchParams,
 }: {
   params: Promise<{ clubId: string }>;
-  searchParams: Promise<{ statut?: string | string[] }>;
+  searchParams: Promise<{ statut?: string | string[]; saison?: string | string[] }>;
 }) {
   return (
     <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
@@ -55,13 +58,14 @@ export default function ClubPage({
   );
 }
 
-async function Club({ params, searchParams }: { params: Promise<{ clubId: string }>; searchParams: Promise<{ statut?: string | string[] }> }) {
+async function Club({ params, searchParams }: { params: Promise<{ clubId: string }>; searchParams: Promise<{ statut?: string | string[]; saison?: string | string[] }> }) {
   const { clubId } = await params;
   const user = await getCurrentUser();
   // Lien partagé ouvert sans compte : on se connecte (ou s'inscrit), puis on revient sur ce club.
   if (!user) redirect(`/connexion${parseClubParam(clubId) ? `?club=${clubId}` : ""}`);
   if (user.mustChangePassword) redirect("/mot-de-passe");
-  const filter = parseFilter((await searchParams).statut);
+  const sp = await searchParams;
+  const filter = parseFilter(sp.statut);
   // Les clubs sont publics : un compte qui n'est pas membre consulte une page en lecture seule, avec « Rejoindre le club ».
   if ((await getClubRole(user.id, clubId)) === null) return <VisitorClub userId={user.id} clubId={clubId} />;
   let club: ClubView;
@@ -71,7 +75,10 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
     if (e instanceof DomainError && e.code === "NOT_FOUND") notFound();
     throw e;
   }
-  const followers = await countFollowers(club.id);
+  const now = new Date();
+  const currentSeason = seasonYearOf(now);
+  const seasonParam = Array.isArray(sp.saison) ? sp.saison[0] : sp.saison;
+  const [followers, standings] = await Promise.all([countFollowers(club.id), getTeamStandings(club.id, parseSeason(seasonParam, currentSeason), now)]);
   const isAdmin = club.myRole === "ADMIN";
   const [teams, isCaptain, encounters, archived, board, returnRequests, pendingReports, publicSettings, tournaments] = await Promise.all([
     listClubTeams(user.id, club.id),
@@ -231,6 +238,13 @@ async function Club({ params, searchParams }: { params: Promise<{ clubId: string
           Voir le classement
         </ButtonLink>
       </div>
+
+      <details className="rounded-2xl bg-surface p-4 shadow-sm" data-testid="section-standings">
+        <summary className={SECTION_SUMMARY}>Classement des équipes</summary>
+        <div className="pt-2">
+          <TeamStandingsTable data={standings} seasonHref={(y) => `/clubs/${club.id}?saison=${y}`} />
+        </div>
+      </details>
 
       <details className="rounded-2xl bg-surface p-4 shadow-sm" data-testid="section-teams">
         <summary className={SECTION_SUMMARY}>Équipes du club ({clubTeams.length})</summary>

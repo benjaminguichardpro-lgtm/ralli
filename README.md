@@ -425,3 +425,7 @@ Lien discret « Supprimer le club » tout en bas de la fiche (admins). Un encart
 ## Documents
 
 - [EXCLUSIONS.md](EXCLUSIONS.md) : ce qui est volontairement hors MVP.
+
+## Classement des équipes
+
+Pour chaque club, un classement de ses équipes (équipes du club seulement, pas les adverses) sur la saison choisie (du 1er septembre au 31 août, heure de Paris). Victoire = 3 points, nul = 1, défaite = 0, d'après le total des points de match d'une rencontre. Seules les rencontres **confirmées** comptent (ni provisoires, ni en direct, ni contestées, ni annulées) ; les archivées comptent. Départage : différence de points de match, puis victoires, puis ordre alphabétique ; égalité parfaite = même rang. Une équipe sans rencontre apparaît en bas avec 0 joué. Visible sur la page du club (section « Classement des équipes », choix de saison `?saison=2026`), sur la page publique `/c/<adresse>` (saison en cours) et sur « Résultats des clubs » (club choisi). Code : `src/lib/standings/teams.ts`, `src/server/team-standings.ts`, `src/components/team-standings.tsx`. Aucune migration.
