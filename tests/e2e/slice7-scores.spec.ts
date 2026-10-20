@@ -100,10 +100,10 @@ test("pronostics avant le début : Vera sur les deux rencontres, Ugo sur la prem
     await placeBet(page, page.getByTestId("matches").locator("li").nth(n), pick, aces);
     await expect(page.getByTestId("my-prediction").first()).toBeVisible();
   };
-  await bet(vera, url2, 0, /Léa M\. gagne/, "100");
-  await bet(vera, url2, 1, /Marc L\. gagne, cote 2,78/, "50");
-  await bet(vera, url1, 0, /Léa M\. gagne/, "40");
-  await bet(ugo, url1, 0, /Paul V\. gagne, cote 2,78/, "100");
+  await bet(vera, url2, 0, /Léa Martin gagne/, "100");
+  await bet(vera, url2, 1, /Marc Lenoir gagne, cote 2,78/, "50");
+  await bet(vera, url1, 0, /Léa Martin gagne/, "40");
+  await bet(ugo, url1, 0, /Paul Voisin gagne, cote 2,78/, "100");
 });
 
 test("avant le début : aucun bouton de score", async () => {
@@ -132,7 +132,7 @@ test("Tess propose : saisie contrôlée, puis succès", async () => {
   await box.locator("summary").click();
   await checkPage(tess, "40-proposer-score");
 
-  await fillMatch(box, 1, { winner: "Léa M.", sets: "20-0 6-3" });
+  await fillMatch(box, 1, { winner: "Léa Martin", sets: "20-0 6-3" });
   await fillMatch(box, 2, { outcome: "Non joué", winner: "", sets: "" });
   tess.once("dialog", (d) => void d.accept());
   await box.getByRole("button", { name: "Proposer le score" }).click();
@@ -144,7 +144,7 @@ test("Tess propose : saisie contrôlée, puis succès", async () => {
   await box.getByRole("button", { name: "Proposer le score" }).click();
   await expect(tess.getByText("Score proposé", { exact: true })).toBeVisible();
   await expect(tess.getByTestId("proposed-by")).toHaveText("Proposé par Tess.");
-  await expect(tess.getByTestId("results")).toContainText("Léa M.");
+  await expect(tess.getByTestId("results")).toContainText("Léa Martin");
   await expect(tess.getByTestId("results")).toContainText("6-4 3-6 10-8");
   await expect(tess.getByTestId("results")).toContainText("Non joué");
 });
@@ -171,7 +171,7 @@ test("l'auteur ne peut pas confirmer, il peut retirer ; le public voit le score 
 
 test("Ugo conteste : motif obligatoire", async () => {
   await ugo.goto(url1);
-  await expect(ugo.getByTestId("results")).toContainText("Léa M.");
+  await expect(ugo.getByTestId("results")).toContainText("Léa Martin");
   await expect(ugo.getByRole("button", { name: "Confirmer le score" })).toBeVisible();
   const box = ugo.getByTestId("dispute-score");
   await box.locator("summary").click();
@@ -194,7 +194,7 @@ test("Tess (capitaine) ne peut pas trancher ; Sacha (admin) le peut, avec l'aver
   await expect(box.getByTestId("cheat-warning")).toHaveText("Chaque triche sera suivie d'un bannissement à vie de Ralli.");
   await expect(box.getByLabel("Sets du simple 1")).toHaveValue("6-4 3-6 10-8");
   await checkPage(sacha, "42-trancher-litige");
-  await fillMatch(box, 1, { winner: "Paul V.", sets: "4-6 3-6" });
+  await fillMatch(box, 1, { winner: "Paul Voisin", sets: "4-6 3-6" });
   sacha.once("dialog", (d) => void d.accept());
   await box.getByRole("button", { name: "Trancher le litige" }).click();
   await expect(sacha.getByText("Terminée", { exact: true })).toBeVisible();
@@ -204,7 +204,7 @@ test("Tess (capitaine) ne peut pas trancher ; Sacha (admin) le peut, avec l'aver
 test("score définitif : public avec décompte, plus aucune action, journal réservé", async () => {
   await anon.goto(url1);
   await expect(anon.getByTestId("tally")).toContainText("TC Scores · Messieurs 1 0 – 1 TC Voisin 1");
-  await expect(anon.getByTestId("results")).toContainText("Paul V.");
+  await expect(anon.getByTestId("results")).toContainText("Paul Voisin");
   await expect(anon.getByTestId("results")).toContainText("4-6 3-6");
   await expect(anon.getByTestId("journal")).toHaveCount(0);
   await expect(anon.locator("main")).not.toContainText("Voisin 2");
@@ -225,8 +225,8 @@ test("seconde rencontre : retrait puis nouvelle proposition, confirmée par une 
   await tess.goto(url2);
   let box = tess.getByTestId("propose-score");
   await box.locator("summary").click();
-  await fillMatch(box, 1, { winner: "Léa M.", sets: "" });
-  await fillMatch(box, 2, { winner: "Hugo D.", sets: "" });
+  await fillMatch(box, 1, { winner: "Léa Martin", sets: "" });
+  await fillMatch(box, 2, { winner: "Hugo Durand", sets: "" });
   tess.once("dialog", (d) => void d.accept());
   await box.getByRole("button", { name: "Proposer le score" }).click();
   await expect(tess.getByText("Score proposé", { exact: true })).toBeVisible();
@@ -241,8 +241,8 @@ test("seconde rencontre : retrait puis nouvelle proposition, confirmée par une 
   box = tess.getByTestId("propose-score");
   await box.locator("summary").click();
   await expect(box.getByLabel("Issue du simple 1")).toHaveValue("COMPLETED");
-  await fillMatch(box, 1, { winner: "Paul V.", sets: "" });
-  await fillMatch(box, 2, { winner: "Marc L.", sets: "" });
+  await fillMatch(box, 1, { winner: "Paul Voisin", sets: "" });
+  await fillMatch(box, 2, { winner: "Marc Lenoir", sets: "" });
   tess.once("dialog", (d) => void d.accept());
   await box.getByRole("button", { name: "Proposer le score" }).click();
   await expect(tess.getByText("Score proposé", { exact: true })).toBeVisible();

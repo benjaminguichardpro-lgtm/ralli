@@ -580,7 +580,7 @@ export type EncounterPageView = {
 };
 
 /**
- * Page d'une rencontre. Publique (sans compte) dès la publication, avec « Prénom N. » ;
+ * Page d'une rencontre. Publique (sans compte) dès la publication, avec « Prénom Nom » ;
  * brouillon visible seulement des admins et capitaines du club organisateur.
  */
 export async function getEncounterPage(viewerId: string | null, encounterId: string, now = new Date()): Promise<EncounterPageView> {

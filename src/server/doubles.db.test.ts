@@ -177,7 +177,7 @@ describe("anti-trucage", () => {
 });
 
 describe("affichage et score", () => {
-  it("la page met les simples avant les doubles, numérote par type et affiche « Prénom N. / Prénom N. »", async () => {
+  it("la page met les simples avant les doubles, numérote par type et affiche « Prénom Nom / Prénom Nom »", async () => {
     const e = await encounter();
     await addMatch(cap, e, double([h[0]!, h[1]!], [x[0]!, x[1]!], 2), T0);
     await addMatch(cap, e, { homePlayerId: h[2]!, awayPlayerId: x[2]! }, T0);
@@ -185,8 +185,8 @@ describe("affichage et score", () => {
     const page = await getEncounterPage(cap, e, T0);
     expect(page.matches.map((m) => `${m.kind}:${m.number}`)).toEqual(["SINGLES:1", "SINGLES:2", "DOUBLES:1"]);
     const d = page.matches[2]!;
-    expect(d.home.name).toBe("Léa M. / Hugo D.");
-    expect(d.away.name).toBe("Paul V. / Marc L.");
+    expect(d.home.name).toBe("Léa Martin / Hugo Durand");
+    expect(d.away.name).toBe("Paul Voisin / Marc Lenoir");
     expect(d.home.rank).toBe("30 · 30/1");
     expect(d.points).toBe(2);
     expect(page.manage!.matches.find((m) => m.kind === "DOUBLES")).toMatchObject({ homePlayer2Id: h[1], awayPlayer2Id: x[1], points: 2 });
@@ -217,7 +217,7 @@ describe("affichage et score", () => {
     const pr = await placePrediction(punter, { matchId: d.id, side: "AWAY", committedAces: 100 }, BEFORE);
     const odds = (await matchRow(d.id)).oddsAwayX100!;
     const pending = await getWallet(punter);
-    expect(pending.pending[0]).toMatchObject({ matchLabel: "Léa M. / Hugo D. contre Paul V. / Marc L.", pickedName: "Paul V. / Marc L." });
+    expect(pending.pending[0]).toMatchObject({ matchLabel: "Léa Martin / Hugo Durand contre Paul Voisin / Marc Lenoir", pickedName: "Paul Voisin / Marc Lenoir" });
 
     await proposeScore(cap, e, [{ matchId: d.id, outcome: "COMPLETED", winnerSide: "AWAY", sets: [] }], AFTER);
     await confirmScore(admin, e, AFTER);

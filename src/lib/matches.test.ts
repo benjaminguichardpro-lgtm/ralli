@@ -19,9 +19,9 @@ describe("numérotation et ordre", () => {
 });
 
 describe("noms", () => {
-  it("un joueur ou une paire, toujours « Prénom N. »", () => {
-    expect(sideName([{ firstName: "Léa", lastName: "Martin" }])).toBe("Léa M.");
-    expect(sideName([{ firstName: "Léa", lastName: "Martin" }, { firstName: "Hugo", lastName: "Durand" }])).toBe("Léa M. / Hugo D.");
+  it("un joueur ou une paire, toujours « Prénom Nom »", () => {
+    expect(sideName([{ firstName: "Léa", lastName: "Martin" }])).toBe("Léa Martin");
+    expect(sideName([{ firstName: "Léa", lastName: "Martin" }, { firstName: "Hugo", lastName: "Durand" }])).toBe("Léa Martin / Hugo Durand");
   });
 });
 

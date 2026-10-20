@@ -23,7 +23,7 @@ export function sortSinglesFirst<T extends { kind: MatchKind; order: number }>(m
 
 type Person = { firstName: string; lastName: string };
 
-/** « Léa M. » pour un simple, « Léa M. / Hugo D. » pour une paire. */
+/** « Léa Martin » pour un simple, « Léa Martin / Hugo Durand » pour une paire. */
 export function sideName(players: readonly Person[]): string {
   return players.map((p) => publicPlayerName(p.firstName, p.lastName)).join(" / ");
 }

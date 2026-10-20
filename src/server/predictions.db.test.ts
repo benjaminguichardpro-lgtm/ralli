@@ -185,7 +185,7 @@ describe("remboursement et lecture", () => {
     expect(w.balance).toBe(900);
     expect(w.pendingAces).toBe(100);
     expect(w.pending).toHaveLength(1);
-    expect(w.pending[0]!.matchLabel).toBe("Léa M. contre Paul V.");
+    expect(w.pending[0]!.matchLabel).toBe("Léa Martin contre Paul Voisin");
     expect(w.entries.map((e) => e.label)).toEqual(["Aces engagés", "Bonus d'inscription"]);
   });
 });

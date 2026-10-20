@@ -238,13 +238,13 @@ describe("lecture (getScoreView)", () => {
       expect(s.resultsVisible).toBe(true);
       expect(s.provisional).toBe(true);
       expect(s.tally).not.toBeNull();
-      expect(s.matches[0]!.result).toMatchObject({ winnerName: "Léa M." });
+      expect(s.matches[0]!.result).toMatchObject({ winnerName: "Léa Martin" });
       expect(s.journal).toEqual([]);
       expect(s.proposedBy).toBeNull();
       expect(s.actions).toEqual({ canRecordLive: false, canPropose: false, canWithdraw: false, canConfirm: false, canDispute: false, canResolve: false });
     }
     const author = await getScoreView(capA, enc, NOW);
-    expect(author.matches[0]!.result).toMatchObject({ outcomeLabel: "Joué jusqu'au bout", winnerName: "Léa M." });
+    expect(author.matches[0]!.result).toMatchObject({ outcomeLabel: "Joué jusqu'au bout", winnerName: "Léa Martin" });
     expect(author.matches[1]!.result).toMatchObject({ outcomeLabel: "Non joué", winnerName: null });
     expect(author.actions).toMatchObject({ canWithdraw: true, canConfirm: false, canDispute: false });
     expect(author.proposedBy).toBe("CapA");
@@ -290,7 +290,7 @@ describe("lecture (getScoreView)", () => {
     expect(pub.resultsVisible).toBe(true);
     expect(pub.provisional).toBe(false);
     expect(pub.tally).toEqual({ home: 1, away: 1 });
-    expect(pub.matches[0]!.result?.winnerName).toBe("Léa M.");
+    expect(pub.matches[0]!.result?.winnerName).toBe("Léa Martin");
     expect(pub.journal).toEqual([]);
     expect((await getScoreView(admin, enc, NOW)).journal.length).toBeGreaterThan(3);
     expect(Object.values((await getScoreView(admin, enc, NOW)).actions).every((v) => v === false)).toBe(true);

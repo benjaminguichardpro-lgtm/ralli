@@ -87,7 +87,7 @@ test("accueil de Yanis : uniquement la carte de la rencontre, l'heure en grand, 
   await expect(yanis.getByTestId("feed")).toContainText("TC Voisin D1");
   // Ni cotes ni joueurs sur l'accueil, et la rencontre n'apparaît qu'une fois.
   await expect(yanis.getByTestId("odds")).toHaveCount(0);
-  await expect(yanis.getByTestId("feed")).not.toContainText("Eva M.");
+  await expect(yanis.getByTestId("feed")).not.toContainText("Eva Moreau");
   await expect(yanis.getByTestId("feed").locator('a[href^="/rencontres/"]')).toHaveCount(1);
   await noHorizontalScroll(yanis);
   await checkPage(yanis, "50-accueil-fil");
@@ -102,8 +102,8 @@ test("un admin qui ne peut pas pronostiquer voit « Voir la rencontre »", async
 test("la case touchée se remplit de terre battue avant l'ouverture du panneau, puis se vide à la fermeture", async () => {
   await yanis.goto(encounterUrl);
   const match = yanis.getByTestId("matches").locator("li").first();
-  const picked = match.getByRole("button", { name: /Lou P\. gagne/ });
-  const other = match.getByRole("button", { name: /Eva M\. gagne/ });
+  const picked = match.getByRole("button", { name: /Lou Petit gagne/ });
+  const other = match.getByRole("button", { name: /Eva Moreau gagne/ });
   const fillOf = (b: typeof picked) => b.getByTestId("clay-fill");
   const hidden = /^inset\(0(px)? 100% 0(px)? 0(px)?\)$/;
 
@@ -113,7 +113,7 @@ test("la case touchée se remplit de terre battue avant l'ouverture du panneau, 
   // On note l'état de la case à l'instant précis où le panneau s'ouvre.
   await yanis.evaluate(() => {
     const dialog = document.querySelector("dialog.sheet")!;
-    // Deuxième case du premier simple : celle de « Lou P. », que le test touche.
+    // Deuxième case du premier simple : celle de « Lou Petit », que le test touche.
     const fill = document.querySelectorAll('[data-testid="matches"] li [data-testid="clay-fill"]')[1] as HTMLElement;
     new MutationObserver(() => {
       if ((dialog as HTMLDialogElement).open) (window as unknown as Record<string, string>).__fillWhenOpened = getComputedStyle(fill).clipPath;
@@ -153,7 +153,7 @@ test("la case touchée se remplit de terre battue avant l'ouverture du panneau, 
 test("« réduire les animations » : case pleine et panneau ouvert immédiatement, sans transition", async () => {
   await yanis.emulateMedia({ reducedMotion: "reduce" });
   await yanis.goto(encounterUrl);
-  const picked = yanis.getByTestId("matches").locator("li").first().getByRole("button", { name: /Lou P\. gagne/ });
+  const picked = yanis.getByTestId("matches").locator("li").first().getByRole("button", { name: /Lou Petit gagne/ });
   await expect(picked.getByTestId("clay-fill")).toHaveCSS("transition-property", "none");
   await picked.click();
   const sheet = yanis.getByRole("dialog", { name: "Votre pronostic" });
@@ -169,12 +169,12 @@ test("pour pronostiquer : toucher la carte, puis la cote, le montant, valider ; 
   await yanis.goto("/");
   await yanis.getByTestId("next-encounter").click();
   await expect(yanis).toHaveURL(encounterUrl);
-  await placeBet(yanis, yanis.getByTestId("matches").locator("li").first(), /Lou P\. gagne/, "100");
+  await placeBet(yanis, yanis.getByTestId("matches").locator("li").first(), /Lou Petit gagne/, "100");
   await expect(yanis.getByTestId("my-prediction")).toContainText("100 Aces engagés à la cote 2,78");
   await expect(yanis.getByTestId("balance")).toHaveText("900 Aces");
   await yanis.getByRole("link", { name: "Mes rallis et mon solde" }).click(); // le solde de l'en-tête mène à « Mes rallis »
   await expect(yanis).toHaveURL(/\/rallis$/);
-  await expect(yanis.getByTestId("pending")).toContainText("Lou P."); // le ralli vient d'être validé : il est « en cours »
+  await expect(yanis.getByTestId("pending")).toContainText("Lou Petit"); // le ralli vient d'être validé : il est « en cours »
   await expect(yanis.getByTestId("balance")).toHaveText("900 Aces");
 });
 
@@ -183,7 +183,7 @@ test("après le pronostic, l'accueil reste une simple carte vers la rencontre", 
   await expect(yanis.getByTestId("odds")).toHaveCount(0);
   await expect(yanis.getByTestId("my-prediction")).toHaveCount(0);
   await yanis.getByTestId("next-encounter").click();
-  await expect(yanis.getByTestId("my-prediction")).toContainText("Lou P.");
+  await expect(yanis.getByTestId("my-prediction")).toContainText("Lou Petit");
 });
 
 test("barre du bas : « Clubs » ouvre la recherche, « Classement » mène au classement du club unique, onglet actif signalé", async () => {

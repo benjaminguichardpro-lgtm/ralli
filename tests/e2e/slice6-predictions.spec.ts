@@ -91,7 +91,7 @@ test("Kevin pronostique : validations dans le panneau, récapitulatif, puis succ
   await expect(balance(kevin)).toHaveText("1 000 Aces");
   await kevin.goto(encounterUrl);
   const match1 = kevin.getByTestId("matches").locator("li").first();
-  await match1.getByRole("button", { name: /Paul V\. gagne/ }).click();
+  await match1.getByRole("button", { name: /Paul Voisin gagne/ }).click();
   const sheet = kevin.getByRole("dialog", { name: "Votre pronostic" });
   await expect(sheet.getByTestId("sheet-odds")).toHaveText("2,78");
   await checkPage(kevin, "30-pronostic-panneau");
@@ -122,7 +122,7 @@ test("Kevin pronostique : validations dans le panneau, récapitulatif, puis succ
   await expect(sheet).toBeHidden();
 
   const mine = kevin.getByTestId("my-prediction");
-  await expect(mine).toContainText("Paul V.");
+  await expect(mine).toContainText("Paul Voisin");
   await expect(mine).toContainText("300 Aces engagés à la cote 2,78");
   await expect(mine).toContainText("En attente du résultat.");
   await expect(balance(kevin)).toHaveText("700 Aces"); // le solde de l'en-tête suit
@@ -136,7 +136,7 @@ test("Mes rallis de Kevin : solde, en attente, historique", async () => {
   await kevin.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Mes rallis" }).click();
   await expect(balance(kevin)).toHaveText("700 Aces");
   await expect(kevin.getByTestId("pending-aces")).toContainText("300 Aces");
-  await expect(kevin.getByTestId("pending")).toContainText("Léa M. contre Paul V.");
+  await expect(kevin.getByTestId("pending")).toContainText("Léa Martin contre Paul Voisin");
   await expect(kevin.getByTestId("ledger").locator("li")).toHaveText([/Aces engagés[\s\S]*-300 Aces/, /Bonus d'inscription[\s\S]*\+1\s000 Aces/]);
   await expect(kevin.getByTestId("ledger-section")).not.toHaveAttribute("open", ""); // l'historique est replié par défaut
   await checkPage(kevin, "32-mes-rallis");

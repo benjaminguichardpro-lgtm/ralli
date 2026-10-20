@@ -1,5 +1,4 @@
-/** Nom public d'un joueur : « Prénom N. » (décision 23 : jamais le nom complet sur la page publique). */
+/** Nom d'un joueur : « Prénom Nom » partout (décision de Benjamin, 2026-10-20 : remplace l'ancienne forme abrégée avec l'initiale du nom). */
 export function publicPlayerName(firstName: string, lastName: string): string {
-  const initial = lastName.trim().match(/\p{L}/u)?.[0]?.toLocaleUpperCase("fr-FR");
-  return initial ? `${firstName.trim()} ${initial}.` : firstName.trim();
+  return [firstName, lastName].map((part) => part.trim()).filter(Boolean).join(" ");
 }

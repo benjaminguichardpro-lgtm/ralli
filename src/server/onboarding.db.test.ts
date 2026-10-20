@@ -80,7 +80,7 @@ describe("récapitulatif des pronostics réglés", () => {
     expect(recap.encounters[0]!.items.map((i) => i.status).sort()).toEqual(["LOST", "WON"]);
     const lost = recap.encounters[0]!.items.find((i) => i.status === "LOST")!;
     expect(lost).toMatchObject({ payoutAces: 0, committedAces: 50 });
-    expect(lost.pickedName).toBe("E2 N.");
+    expect(lost.pickedName).toBe("E2 Nom");
   });
 
   it("après la fermeture, seuls les pronostics réglés ensuite reviennent", async () => {

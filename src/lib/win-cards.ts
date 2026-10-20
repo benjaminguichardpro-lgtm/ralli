@@ -51,7 +51,7 @@ export function shareState(r: ShareInput, now: Date): ShareState {
   return age >= 0 && age <= WIN_SHARE_WINDOW_MS ? "can" : "closed";
 }
 
-/** Message du bouton WhatsApp : « J'ai gagné 340 Aces sur Léa M. contre Sara T. avec Ralli ! » (le lien est ajouté par le bouton). */
+/** Message du bouton WhatsApp : « J'ai gagné 340 Aces sur Léa Martin contre Sara Thomas avec Ralli ! » (le lien est ajouté par le bouton). */
 export function whatsappText(payoutAces: number, matchLabel: string): string {
   return `J'ai gagné ${payoutAces.toLocaleString("fr-FR")} Aces sur ${matchLabel} avec Ralli !`;
 }

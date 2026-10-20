@@ -117,8 +117,8 @@ test("Cedric compose : un simple, puis un double de 2 points ; le double ne prop
   await expect(cedric.getByTestId("matches").locator("li")).toHaveCount(2);
   const second = cedric.getByTestId("matches").locator("li").nth(1);
   await expect(second).toContainText("Double 1 · 2 points");
-  await expect(second).toContainText("Léa M. / Hugo D.");
-  await expect(second).toContainText("Paul V. / Marc L.");
+  await expect(second).toContainText("Léa Martin / Hugo Durand");
+  await expect(second).toContainText("Paul Voisin / Marc Lenoir");
   await expect(cedric.getByTestId("matches").locator("li").first()).toContainText("Simple 1");
   await checkPage(cedric, "100-double-brouillon");
 });
@@ -160,7 +160,7 @@ test("publication : le double a ses cotes (moyenne des niveaux), Pablo pronostiq
   await expect(row).toContainText("Double 1 · 2 points");
   await expect(row.getByTestId("odds")).toHaveText(["1,56", "2,78"]); // 30 et 30/1 contre 30/1 et 30/2 : écart de 100 points, comme un simple 30 – 30/1
   await checkPage(pablo, "101-double-publie");
-  await placeBet(pablo, row, /Paul V\. \/ Marc L\. gagne/, "100");
+  await placeBet(pablo, row, /Paul Voisin \/ Marc Lenoir gagne/, "100");
   await expect(row.getByTestId("my-prediction")).toContainText("100 Aces engagés à la cote 2,78");
   // Les participants (capitaine, admin) ne peuvent pas pronostiquer : le double aussi est protégé.
   await cedric.goto(url);
@@ -173,17 +173,17 @@ test("score : le double est saisi comme un simple, il rapporte 2 points ; décom
   await cedric.goto(url);
   const box = cedric.getByTestId("propose-score");
   await box.locator("summary").click();
-  await expect(box.getByText(/Double 1 : Léa M\. \/ Hugo D\. contre Paul V\. \/ Marc L\./)).toBeVisible();
+  await expect(box.getByText(/Double 1 : Léa Martin \/ Hugo Durand contre Paul Voisin \/ Marc Lenoir/)).toBeVisible();
   await expect(box.getByText(/Double 1 : .* · 2 points/)).toBeVisible();
-  await box.getByLabel("Vainqueur du simple 1").selectOption({ label: "Léa M." });
-  await box.getByLabel("Vainqueur du double 1").selectOption({ label: "Paul V. / Marc L." });
+  await box.getByLabel("Vainqueur du simple 1").selectOption({ label: "Léa Martin" });
+  await box.getByLabel("Vainqueur du double 1").selectOption({ label: "Paul Voisin / Marc Lenoir" });
   await box.getByLabel("Sets du double 1 (facultatif)").fill("4-6 3-6");
   await box.getByLabel("Issue du double 2").selectOption({ label: "Non joué" });
   await box.getByLabel("Vainqueur du double 2").selectOption({ value: "" });
   cedric.once("dialog", (d) => void d.accept());
   await box.getByRole("button", { name: "Proposer le score" }).click();
   await expect(cedric.getByText("Score proposé", { exact: true })).toBeVisible();
-  await expect(cedric.getByTestId("results")).toContainText("Paul V. / Marc L.");
+  await expect(cedric.getByTestId("results")).toContainText("Paul Voisin / Marc Lenoir");
   await expect(cedric.getByTestId("results")).toContainText("Double 2");
 
   await dora.goto(url);
@@ -199,7 +199,7 @@ test("règlement : le pronostic sur le double est gagné à 2,78 et le portefeui
   await expect(pablo.getByTestId("balance")).toHaveText("1 178 Aces"); // 1000 − 100 + 278
   await checkPage(pablo, "103-double-portefeuille");
   await pablo.goto("/rallis");
-  await expect(pablo.getByTestId("results-list")).toContainText("Léa M. / Hugo D. contre Paul V. / Marc L.");
+  await expect(pablo.getByTestId("results-list")).toContainText("Léa Martin / Hugo Durand contre Paul Voisin / Marc Lenoir");
   await expect(pablo.getByTestId("results-list")).toContainText("Gagné");
   await expect(pablo.getByTestId("results-list")).toContainText("+178 Aces"); // 278 − 100
 });

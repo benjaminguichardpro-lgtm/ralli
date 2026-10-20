@@ -100,10 +100,10 @@ test("5. Bruno et Chloe pronostiquent, leur solde baisse", async () => {
     await placeBet(page, page.getByTestId("matches").locator("li").nth(n), pick, aces);
     await expect(page.getByTestId("my-prediction").first()).toBeVisible();
   };
-  await bet(bruno, 0, /Léa M\. gagne/, "100");
-  await bet(bruno, 1, /Marc L\. gagne/, "50");
-  await bet(chloe, 0, /Paul V\. gagne/, "100");
-  await bet(chloe, 1, /Hugo D\. gagne/, "40");
+  await bet(bruno, 0, /Léa Martin gagne/, "100");
+  await bet(bruno, 1, /Marc Lenoir gagne/, "50");
+  await bet(chloe, 0, /Paul Voisin gagne/, "100");
+  await bet(chloe, 1, /Hugo Durand gagne/, "40");
   await bruno.goto("/portefeuille");
   await expect(bruno.getByTestId("balance")).toHaveText("850 Aces");
   await chloe.goto("/portefeuille");
@@ -116,8 +116,8 @@ test("6. La rencontre commence : Cyril propose le score, il ne peut pas le confi
   await expect(cyril.getByText("Pronostics fermés", { exact: true })).toBeVisible();
   const box = cyril.getByTestId("propose-score");
   await box.locator("summary").click();
-  await box.getByLabel("Vainqueur du simple 1").selectOption({ label: "Léa M." });
-  await box.getByLabel("Vainqueur du simple 2").selectOption({ label: "Marc L." });
+  await box.getByLabel("Vainqueur du simple 1").selectOption({ label: "Léa Martin" });
+  await box.getByLabel("Vainqueur du simple 2").selectOption({ label: "Marc Lenoir" });
   cyril.once("dialog", (d) => void d.accept());
   await box.getByRole("button", { name: "Proposer le score" }).click();
   await expect(cyril.getByText("Score proposé", { exact: true })).toBeVisible();

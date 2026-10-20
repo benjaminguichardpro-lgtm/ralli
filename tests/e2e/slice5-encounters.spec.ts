@@ -124,14 +124,12 @@ test("publication : confirmation, cotes figées et affichées", async () => {
   await checkPage(jade, "22-rencontre-publiee-capitaine");
 });
 
-test("page publique : visible sans compte, « Prénom N. », non indexée, sans gestion", async () => {
+test("page publique : visible sans compte, « Prénom Nom », non indexée, sans gestion", async () => {
   await anon.goto(encounterUrl);
   await expect(anon.getByText("Pronostics ouverts", { exact: true })).toBeVisible();
   const matches = anon.getByTestId("matches");
-  await expect(matches).toContainText("Léa M.");
-  await expect(matches).toContainText("Paul V.");
-  await expect(anon.locator("main")).not.toContainText("Martin");
-  await expect(anon.locator("main")).not.toContainText("Durand");
+  await expect(matches).toContainText("Léa Martin");
+  await expect(matches).toContainText("Paul Voisin");
   await expect(anon.getByTestId("manage")).toHaveCount(0);
   await expect(anon.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   expect(encounterUrl).toMatch(/\/rencontres\/c[a-z0-9]{20,}$/);
@@ -159,7 +157,7 @@ test("après publication : modifier un match (confirmation), puis reporter", asy
     void d.accept();
   });
   await second.getByRole("button", { name: "Enregistrer le match" }).click();
-  await expect(jade.getByTestId("matches")).toContainText("Yann R.");
+  await expect(jade.getByTestId("matches")).toContainText("Yann Roux");
   expect(asked).toContain("Les pronostics déjà faits sur ce match seront remboursés.");
   await expect(jade.getByTestId("matches").locator("li")).toHaveCount(2);
   await expect(jade.getByTestId("matches")).toContainText("Simple 2");

@@ -3,16 +3,15 @@ import { publicPlayerName } from "./names";
 
 describe("publicPlayerName", () => {
   it.each([
-    ["Léa", "Martin", "Léa M."],
-    ["Jean-Pierre", "dupont", "Jean-Pierre D."],
-    ["Hugo", "de la Tour", "Hugo D."],
-    ["Zoé", "Élan", "Zoé É."],
-    ["Paul", "'t Hooft", "Paul T."],
+    ["Léa", "Martin", "Léa Martin"],
+    ["Jean-Pierre", "dupont", "Jean-Pierre dupont"],
+    ["Hugo", "de la Tour", "Hugo de la Tour"],
+    ["  Zoé ", " Élan  ", "Zoé Élan"],
   ])("%s %s → %s", (first, last, expected) => {
     expect(publicPlayerName(first, last)).toBe(expected);
   });
 
-  it("ne contient jamais le nom complet", () => {
-    expect(publicPlayerName("Léa", "Martin")).not.toContain("Martin");
+  it("garde un nom seul si l'autre partie est vide", () => {
+    expect(publicPlayerName("Léa", " ")).toBe("Léa");
   });
 });

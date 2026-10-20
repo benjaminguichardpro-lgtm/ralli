@@ -53,7 +53,7 @@ describe("partager un ralli gagné", () => {
     const win = await getWinShare(ana, anaWon, NOW);
     expect(win.state).toBe("can");
     expect(win.clubName).toBe("TC Cartes");
-    expect(win.card).toMatchObject({ matchLabel: "Léa M. contre Paul V.", pickedName: "Léa M.", committedAces: 100 });
+    expect(win.card).toMatchObject({ matchLabel: "Léa Martin contre Paul Voisin", pickedName: "Léa Martin", committedAces: 100 });
     expect(win.card.payoutAces).toBeGreaterThan(100);
 
     const { id, clubId: shownTo } = await shareWin(ana, anaWon, "  Quel match !  ", NOW);
@@ -123,7 +123,7 @@ describe("rond « Rallis gagnants »", () => {
     expect(rings[0]).toMatchObject({ wins: true, key: `${clubId}:wins`, clubName: "TC Cartes", unseen: 1 });
     const story = rings[0]!.stories[0]!;
     expect(story).toMatchObject({ kind: "WIN_CARD", authorName: "Ana", isMine: false, canReact: true, body: "Quel match !" });
-    expect(story.winCard).toMatchObject({ matchLabel: "Léa M. contre Paul V.", committedAces: 100 });
+    expect(story.winCard).toMatchObject({ matchLabel: "Léa Martin contre Paul Voisin", committedAces: 100 });
     expect(await listStoryRings(outsider, { now: NOW })).toEqual([]);
     expect((await listStoryRings(ana, { now: NOW }))[0]!.stories[0]).toMatchObject({ isMine: true, canReact: false });
   });
@@ -177,7 +177,7 @@ describe("signalement", () => {
     await reportStory(capA, storyId, "", NOW);
     const pending = await listPendingReports(admin, clubId);
     expect(pending).toHaveLength(1);
-    expect(pending[0]).toMatchObject({ storyId, authorName: "Ana", comment: "Propos limite", matchLabel: "Léa M. contre Paul V." });
+    expect(pending[0]).toMatchObject({ storyId, authorName: "Ana", comment: "Propos limite", matchLabel: "Léa Martin contre Paul Voisin" });
     expect(pending[0]!.reports.map((r) => r.reason)).toEqual(["Pas sympa", null]);
     expect(JSON.stringify(pending)).not.toContain("Bob");
     expect((await listStoryRings(bob, { now: NOW }))[0]!.stories[0]!.reportedByMe).toBe(true);

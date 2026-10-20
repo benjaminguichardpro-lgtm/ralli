@@ -50,9 +50,9 @@ describe("signalement et textes", () => {
     expect(reportReasonSchema.safeParse("a".repeat(201)).success).toBe(false);
   });
   it("texte WhatsApp et résumé de la carte sans mot interdit", () => {
-    const text = whatsappText(1340, "Léa M. contre Sara T.");
-    expect(text).toBe(`J'ai gagné ${(1340).toLocaleString("fr-FR")} Aces sur Léa M. contre Sara T. avec Ralli !`);
-    expect(winCardSummary({ author: "Hugo", matchLabel: "Léa M. contre Sara T.", pickedName: "Léa M.", committedAces: 100, odds: "3,40", payoutAces: 340 })).toContain("cote 3,40");
+    const text = whatsappText(1340, "Léa Martin contre Sara T.");
+    expect(text).toBe(`J'ai gagné ${(1340).toLocaleString("fr-FR")} Aces sur Léa Martin contre Sara T. avec Ralli !`);
+    expect(winCardSummary({ author: "Hugo", matchLabel: "Léa Martin contre Sara T.", pickedName: "Léa Martin", committedAces: 100, odds: "3,40", payoutAces: 340 })).toContain("cote 3,40");
     expect(winCommentSchema.safeParse(text).success).toBe(true);
   });
 });

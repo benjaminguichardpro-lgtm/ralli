@@ -228,10 +228,10 @@ test("mise en place : club, équipe, rencontre publiée, pronostics d'Oscar et d
     await placeBet(page, page.getByTestId("matches").locator("li").nth(n), pick, aces);
     await expect(page.getByTestId("my-prediction").first()).toBeVisible();
   };
-  await bet(oscar, 0, /Léa M\. gagne/, "100"); // sera gagné
-  await bet(oscar, 1, /Hugo D\. gagne/, "40"); // sera perdu
-  await bet(rita, 0, /Paul V\. gagne/, "100"); // perdu
-  await bet(rita, 1, /Hugo D\. gagne/, "40"); // perdu
+  await bet(oscar, 0, /Léa Martin gagne/, "100"); // sera gagné
+  await bet(oscar, 1, /Hugo Durand gagne/, "40"); // sera perdu
+  await bet(rita, 0, /Paul Voisin gagne/, "100"); // perdu
+  await bet(rita, 1, /Hugo Durand gagne/, "40"); // perdu
   // Rien n'est réglé : pas de récapitulatif.
   await oscar.goto("/");
   await oscar.waitForTimeout(800);
@@ -244,8 +244,8 @@ test("règlement : Quentin propose, Pia confirme", async () => {
   await quentin.goto(encounterUrl);
   const box = quentin.getByTestId("propose-score");
   await box.locator("summary").click();
-  await box.getByLabel("Vainqueur du simple 1").selectOption({ label: "Léa M." });
-  await box.getByLabel("Vainqueur du simple 2").selectOption({ label: "Marc L." });
+  await box.getByLabel("Vainqueur du simple 1").selectOption({ label: "Léa Martin" });
+  await box.getByLabel("Vainqueur du simple 2").selectOption({ label: "Marc Lenoir" });
   quentin.once("dialog", (d) => void d.accept());
   await box.getByRole("button", { name: "Proposer le score" }).click();
   await expect(quentin.getByText("Score proposé", { exact: true })).toBeVisible();
@@ -263,8 +263,8 @@ test("Oscar : récapitulatif gagnant, détail, pluie d'or, puis le bonus de conn
   await expect(oscar.getByTestId("recap-summary")).toHaveText("1 pronostic juste sur 2. Bravo !");
   const won = recap(oscar).locator('[data-status="WON"]');
   const lost = recap(oscar).locator('[data-status="LOST"]');
-  await expect(won).toContainText("Léa M. contre Paul V.");
-  await expect(won).toContainText("tu avais choisi Léa M. (100 Aces engagés)");
+  await expect(won).toContainText("Léa Martin contre Paul Voisin");
+  await expect(won).toContainText("tu avais choisi Léa Martin (100 Aces engagés)");
   await expect(won).toContainText("Gagné : +156 Aces");
   await expect(lost).toContainText("Perdu");
   await expect(recap(oscar).getByRole("link", { name: /TC Récap17/ })).toHaveAttribute("href", /\/rencontres\//);

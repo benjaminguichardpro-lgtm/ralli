@@ -217,7 +217,7 @@ describe("résultats : règlement et avancée du vainqueur", () => {
     expect(t).toMatchObject({ status: "FINISHED", winnerId: p[2] });
     expect((await db.prediction.findFirstOrThrow({ where: { tournamentMatchId: fin } })).status).toBe("WON");
     const page = await getTournamentPage(null, tid);
-    expect(page.winner).toBe("Chloé P.");
+    expect(page.winner).toBe("Chloé Petit");
     expect(page.rounds[0]!.matches[0]!.state).toBe("done");
   });
 
@@ -237,7 +237,7 @@ describe("résultats : règlement et avancée du vainqueur", () => {
     await placeTournamentPrediction(member2, { matchId: sf1, side: "AWAY", committedAces: 100 }, T0);
     const wallet = await getWallet(member);
     expect(wallet.pending).toHaveLength(1);
-    expect(wallet.pending[0]).toMatchObject({ encounterId: tid, pickedName: "Aline M." });
+    expect(wallet.pending[0]).toMatchObject({ encounterId: tid, pickedName: "Aline Martin" });
     expect(wallet.pending[0]!.matchLabel).toContain("Tournoi d'automne · Demi-finale");
     await recordTournamentResult(admin, sf1, win("HOME"), AFTER_SF);
     const totals = await clubTotals(clubId, new Date("2026-10-01T00:00:00Z"), new Date("2026-11-01T00:00:00Z"));
@@ -265,7 +265,7 @@ describe("lecture", () => {
       expect(v.rounds.map((r) => r.matches.length)).toEqual([2, 1]);
     }
     const open = (await getTournamentPage(null, tid, T0)).rounds[0]!.matches[0]!;
-    expect(open).toMatchObject({ state: "open", home: { name: "Aline M." }, away: { name: "Boris D." } });
+    expect(open).toMatchObject({ state: "open", home: { name: "Aline Martin" }, away: { name: "Boris Durand" } });
     expect((await getTournamentPage(null, tid, T0)).rounds[1]!.matches[0]!.state).toBe("waiting");
   });
 

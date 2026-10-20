@@ -109,7 +109,7 @@ export async function forceStarted(encounterUrl: string) {
 
 /**
  * Pronostic par le parcours en trois gestes : toucher la cote, saisir/choisir un montant, valider.
- * `match` est la ligne du simple (un <li> de la page de la rencontre) ; `pick` désigne le bouton de cote, ex. /Léa M\. gagne/.
+ * `match` est la ligne du simple (un <li> de la page de la rencontre) ; `pick` désigne le bouton de cote, ex. /Léa Martin gagne/.
  */
 export async function placeBet(page: Page, match: Locator, pick: RegExp, aces: string) {
   await match.getByRole("button", { name: pick }).click();

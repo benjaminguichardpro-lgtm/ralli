@@ -74,7 +74,7 @@ describe("onglet Résultats", () => {
     expect(r.groups[0]).toMatchObject({ encounterId: e1, title: "TC Résultats · Messieurs 1 – TC Voisin 1" });
     expect(r.groups[0]!.items.map((i) => i.status).sort()).toEqual(["LOST", "REFUNDED", "WON"]);
     const won = r.groups[0]!.items.find((i) => i.status === "WON")!;
-    expect(won).toMatchObject({ matchLabel: "Léa M. contre Paul V.", pickedName: "Léa M.", committedAces: 100, payoutAces: win });
+    expect(won).toMatchObject({ matchLabel: "Léa Martin contre Paul Voisin", pickedName: "Léa Martin", committedAces: 100, payoutAces: win });
   });
 
   it("chacun ne voit que ses propres rallis", async () => {
