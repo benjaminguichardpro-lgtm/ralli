@@ -46,6 +46,9 @@ test.afterAll(wipeTestDb);
 test("un membre voit le tournoi sur l'accueil et la page du club, puis le tableau : quarts joués, quarts ouverts, demi-finale connue", async ({ browser }) => {
   const p = await login(browser, "parieur1");
   await p.goto("/");
+  await expect(p.getByTestId("feed")).toBeVisible();
+  await expect(p.getByTestId("home-tournaments-current")).toHaveCount(0); // les tournois ont leur propre onglet
+  await p.getByTestId("home-tab-tournois").click();
   await expect(p.getByTestId("home-tournaments-current")).toContainText("Tournoi d'automne");
   await expect(p.getByTestId("home-tournaments-current").getByTestId("open-matches")).toBeVisible();
   await p.goto(`/clubs/${lyonId}`);

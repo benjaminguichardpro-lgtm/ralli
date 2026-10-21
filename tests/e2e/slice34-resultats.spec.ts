@@ -44,11 +44,11 @@ test.beforeAll(async () => {
 });
 test.afterAll(wipeTestDb);
 
-test("accueil : deux onglets, « Rencontres à venir » par défaut, « Résultats » à un clic ; le choix reste dans l'adresse", async ({ browser }) => {
+test("accueil : trois onglets, « Rencontres à venir » par défaut, « Résultats » et « Tournoi à venir » à un clic ; le choix reste dans l'adresse", async ({ browser }) => {
   const p = await login(browser, "parieur1");
   await p.goto("/");
   const tabs = p.getByTestId("home-tabs");
-  await expect(tabs.getByRole("link")).toHaveText(["Résultats", "Rencontres à venir"]);
+  await expect(tabs.getByRole("link")).toHaveText(["Résultats", "Rencontres à venir", "Tournoi à venir"]);
   await expect(p.getByTestId("home-tab-a-venir")).toHaveAttribute("aria-current", "page");
   await expect(p.getByTestId("home-tab-resultats")).not.toHaveAttribute("aria-current", "page");
   await expect(p.getByTestId("feed")).toBeVisible();
@@ -67,6 +67,13 @@ test("accueil : deux onglets, « Rencontres à venir » par défaut, « Résulta
   await expect(p.getByTestId("home-results")).toBeVisible();
   await p.goto("/?onglet=nimporte");
   await expect(p.getByTestId("feed")).toBeVisible();
+  // Onglet « Tournoi à venir » : à un clic, dans l'adresse, sans les rencontres ni les résultats.
+  await p.getByTestId("home-tab-tournois").click();
+  await expect(p).toHaveURL(/\/\?onglet=tournois$/);
+  await expect(p.getByTestId("home-tab-tournois")).toHaveAttribute("aria-current", "page");
+  await expect(p.getByTestId("feed")).toHaveCount(0);
+  await expect(p.getByTestId("home-results")).toHaveCount(0);
+  await expect(p.getByTestId("home-tournaments-current").or(p.getByTestId("home-tournaments-empty"))).toBeVisible();
   await p.context().close();
 });
 

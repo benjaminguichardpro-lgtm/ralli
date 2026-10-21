@@ -31,16 +31,19 @@ export default function Home({ searchParams }: HomeProps) {
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
-/** Les deux onglets de l'accueil : « Résultats » et « Rencontres à venir » (par défaut). Le choix reste dans l'adresse (`?onglet=resultats`). */
+/** Les trois onglets de l'accueil : « Résultats », « Rencontres à venir » (par défaut) et « Tournoi à venir ». Le choix reste dans l'adresse (`?onglet=resultats`, `?onglet=tournois`). */
 const HOME_TABS = [
   { key: "resultats", label: "Résultats", href: "/?onglet=resultats" },
   { key: "a-venir", label: "Rencontres à venir", href: "/" },
+  { key: "tournois", label: "Tournoi à venir", href: "/?onglet=tournois" },
 ] as const;
 
-function HomeTabs({ active }: { active: "resultats" | "a-venir" }) {
+type HomeTab = (typeof HOME_TABS)[number]["key"];
+
+function HomeTabs({ active }: { active: HomeTab }) {
   return (
     <nav aria-label="Accueil" data-testid="home-tabs">
-      <ul className="grid grid-cols-2 gap-1 rounded-full bg-pale p-1">
+      <ul className="grid grid-cols-3 gap-1 rounded-full bg-pale p-1">
         {HOME_TABS.map((t) => {
           const on = t.key === active;
           return (
@@ -71,7 +74,8 @@ async function HomeContent({ searchParams }: HomeProps) {
   const now = new Date();
   const sp = await searchParams;
   const nearby = one(sp.proximite) === "1";
-  const tab = one(sp.onglet) === "resultats" ? "resultats" : "a-venir";
+  const wanted = one(sp.onglet);
+  const tab: HomeTab = wanted === "resultats" ? "resultats" : wanted === "tournois" ? "tournois" : "a-venir";
   const [feed, location] = await Promise.all([getHomeFeed(user.id, now), getMyLocation(user.id)]);
   const next = feed.encounters.find((e) => e.status === "OPEN");
   const others = feed.encounters.filter((e) => e !== next);
@@ -127,6 +131,10 @@ async function HomeContent({ searchParams }: HomeProps) {
                     <HomeTournaments userId={user.id} which="finished" now={now} />
                   </Suspense>
                 </>
+              ) : tab === "tournois" ? (
+                <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
+                  <HomeTournaments userId={user.id} which="current" now={now} />
+                </Suspense>
               ) : feed.encounters.length === 0 ? (
                 <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
                   <h2 className="font-serif text-xl text-primary">Pas de rencontre pour l&apos;instant</h2>
@@ -169,11 +177,6 @@ async function HomeContent({ searchParams }: HomeProps) {
                   )}
                 </div>
               )}
-              {tab !== "resultats" && (
-                <Suspense fallback={null}>
-                  <HomeTournaments userId={user.id} which="current" now={now} />
-                </Suspense>
-              )}
             </>
           )}
         </>
@@ -182,14 +185,22 @@ async function HomeContent({ searchParams }: HomeProps) {
   );
 }
 
-/** Tournois des clubs de l'utilisateur : en cours (onglet « Rencontres à venir ») ou terminés (onglet « Résultats »). Rien s'il n'y en a pas. */
+/** Tournois des clubs de l'utilisateur : à venir ou en cours (onglet « Tournoi à venir ») ou terminés (onglet « Résultats »). Rien s'il n'y en a pas, sauf dans son propre onglet. */
 async function HomeTournaments({ userId, which, now }: { userId: string; which: "current" | "finished"; now: Date }) {
   const { current, finished } = await listTournamentsForUser(userId, now);
   const items = which === "current" ? current : finished;
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    if (which === "finished") return null;
+    return (
+      <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm" data-testid="home-tournaments-empty">
+        <h2 className="font-serif text-xl text-primary">Pas de tournoi à venir</h2>
+        <p className="text-ink-muted">Les tournois publiés par tes clubs apparaissent ici, avec leur tableau et les matchs à pronostiquer.</p>
+      </div>
+    );
+  }
   return (
     <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid={`home-tournaments-${which}`}>
-      <h2 className="font-serif text-xl text-primary">{which === "current" ? "Tournois en cours" : "Tournois terminés"}</h2>
+      <h2 className="font-serif text-xl text-primary">{which === "current" ? "Tournois à venir" : "Tournois terminés"}</h2>
       <TournamentList items={items} empty="" showClub />
     </div>
   );
