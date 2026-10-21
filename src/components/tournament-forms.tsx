@@ -4,22 +4,26 @@ import { useActionState } from "react";
 import {
   addEntryAction,
   addNewEntryAction,
+  addRefereeAction,
   cancelTournamentAction,
   createTournamentAction,
   deleteDraftTournamentAction,
   publishTournamentAction,
   recordTournamentResultAction,
   removeEntryAction,
+  removeRefereeAction,
   setFirstRoundAction,
   setMatchTimeAction,
+  setTournamentInfoAction,
 } from "@/app/actions/tournaments";
 import { initialFormState } from "@/app/actions/types";
 import { FFT_RANKS } from "@/lib/fft";
 import { DRAW_SIZES } from "@/lib/tournaments/bracket";
+import { TABLE_CODES } from "@/lib/tournaments/poster";
 import { OUTCOME_LABELS } from "@/lib/scores/result";
 import { Field, FormMessage, Select, SubmitButton, confirmOnSubmit } from "./ui";
 
-// Formulaires des tournois (admins du club). Chaque action revérifie les droits côté serveur.
+// Formulaires des tournois (admins du club, et juges-arbitres pour la préparation). Chaque action revérifie les droits côté serveur.
 
 export function CreateTournamentForm({ clubId }: { clubId: string }) {
   const [state, action] = useActionState(createTournamentAction, initialFormState);
@@ -64,6 +68,7 @@ export function AddNewEntryForm({ tournamentId }: { tournamentId: string }) {
         <Field label="Prénom" name="firstName" maxLength={40} defaultValue={v.firstName} />
         <Field label="Nom" name="lastName" maxLength={40} defaultValue={v.lastName} />
       </div>
+      <Field label="Club du joueur" name="clubName" maxLength={60} defaultValue={v.clubName} error={state.errors?.clubName} placeholder="TC des Flandres" />
       <Select label="Niveau FFT" name="fftRank" placeholder="Choisir le niveau" defaultValue={v.fftRank ?? ""} options={FFT_RANKS.map((r) => ({ value: r.value, label: r.label }))} error={state.errors?.fftRank} />
       <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
       <SubmitButton variant="ghost" pendingLabel="…">
@@ -204,6 +209,58 @@ export function TournamentResultForm({ matchId, home, away }: { matchId: string;
       <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
       <SubmitButton className="w-full" pendingLabel="Enregistrement…">
         Enregistrer le résultat
+      </SubmitButton>
+    </form>
+  );
+}
+
+/** Juges-arbitres du tournoi (admins) : nommer un membre du club, ou en retirer un. */
+export function AddRefereeForm({ tournamentId, candidates }: { tournamentId: string; candidates: { userId: string; name: string }[] }) {
+  const [state, action] = useActionState(addRefereeAction, initialFormState);
+  if (candidates.length === 0) return <p className="text-sm text-ink-muted">Aucun membre à nommer pour l&apos;instant (seuls les membres simples du club peuvent être juges-arbitres).</p>;
+  return (
+    <form action={action} className="space-y-3" noValidate data-testid="add-referee">
+      <input type="hidden" name="tournamentId" value={tournamentId} />
+      <Select label="Membre du club" name="userId" placeholder="Choisir un membre" options={candidates.map((c) => ({ value: c.userId, label: c.name }))} error={state.errors?.userId} />
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
+      <SubmitButton variant="ghost" pendingLabel="…">
+        Nommer juge-arbitre
+      </SubmitButton>
+    </form>
+  );
+}
+
+export function RemoveRefereeForm({ tournamentId, userId, name }: { tournamentId: string; userId: string; name: string }) {
+  const [state, action] = useActionState(removeRefereeAction, initialFormState);
+  return (
+    <form action={action} onSubmit={confirmOnSubmit(`Retirer ${name} des juges-arbitres de ce tournoi ?`)} className="inline">
+      <input type="hidden" name="tournamentId" value={tournamentId} />
+      <input type="hidden" name="userId" value={userId} />
+      <SubmitButton variant="ghost" pendingLabel="…" aria-label={`Retirer ${name}`}>
+        Retirer
+      </SubmitButton>
+      {state.message && !state.ok && <FormMessage signal={state}>{state.message}</FormMessage>}
+    </form>
+  );
+}
+
+/** Infos de l'affiche (admins et juges-arbitres) : sigle du tableau et lieu. */
+export function TournamentInfoForm({ tournamentId, tableLabel, venue, venueHint }: { tournamentId: string; tableLabel: string; venue: string; venueHint: string }) {
+  const [state, action] = useActionState(setTournamentInfoAction, initialFormState);
+  const v = state.values ?? {};
+  return (
+    <form action={action} className="space-y-3" noValidate data-testid="tournament-info-form">
+      <input type="hidden" name="tournamentId" value={tournamentId} />
+      <Field label="Sigle du tableau" name="tableLabel" maxLength={12} list="table-codes" defaultValue={v.tableLabel ?? tableLabel} hint="SM, SD, FT4SD… ou ton propre sigle. Il s'affiche sur chaque match de l'affiche." />
+      <datalist id="table-codes">
+        {TABLE_CODES.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
+      <Field label="Lieu" name="venue" maxLength={80} defaultValue={v.venue ?? venue} hint={`Vide : ${venueHint}`} />
+      <FormMessage signal={state} ok={state.ok}>{state.message}</FormMessage>
+      <SubmitButton variant="ghost" pendingLabel="…">
+        Enregistrer
       </SubmitButton>
     </form>
   );

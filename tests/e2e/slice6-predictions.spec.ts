@@ -128,7 +128,7 @@ test("Kevin pronostique : validations dans le panneau, récapitulatif, puis succ
   await expect(balance(kevin)).toHaveText("700 Aces"); // le solde de l'en-tête suit
   // Définitif : plus de cotes à toucher sur ce match, encore sur l'autre.
   await expect(kevin.getByTestId("predict")).toHaveCount(1);
-  await expect(kevin.getByRole("link", { name: "Partager mon pronostic" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=.*Paul%20V\..*%C3%A0%202%2C78/);
+  await expect(kevin.getByRole("link", { name: "Partager mon pronostic" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=.*Paul%20Voisin.*%C3%A0%202%2C78/);
   await checkPage(kevin, "31-pronostic-enregistre");
 });
 

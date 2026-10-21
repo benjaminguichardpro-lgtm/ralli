@@ -156,6 +156,8 @@ model User {
   storyReports        StoryReport[]         @relation("StoryReporter")
   storyReportsHandled StoryReport[]         @relation("StoryReportHandler")
   tournamentsCreated  Tournament[]          @relation("TournamentCreatedBy")
+  refereeOf           TournamentReferee[]   @relation("TournamentRefereeUser")
+  refereesAdded       TournamentReferee[]   @relation("TournamentRefereeAddedBy")
   removedFrom         ClubRemoval[]         @relation("RemovedUser")
   removalsMade        ClubRemoval[]         @relation("RemovedBy")
 }
@@ -282,14 +284,15 @@ model Team {
 
 // Personne qui joue. Peut exister sans compte. Liée à au plus un User.
 model Player {
-  id        String    @id @default(cuid())
-  clubId    String // club Ralli qui gère la fiche (pour un joueur externe : le club qui l'a saisi)
-  firstName String
-  lastName  String // affiché publiquement sous la forme « Prénom N. »
-  fftRank   FftRank // niveau déclaré, saisi à la main
-  userId    String?   @unique // lien optionnel ; refusé tant que le joueur est dans une rencontre non réglée
-  birthDate DateTime? @db.Date // facultative, visible des admins du club seulement (jamais sur les pages publiques ni pour les membres)
-  createdAt DateTime  @default(now())
+  id               String    @id @default(cuid())
+  clubId           String // club Ralli qui gère la fiche (pour un joueur externe : le club qui l'a saisi)
+  firstName        String
+  lastName         String // affiché publiquement sous la forme « Prénom N. »
+  fftRank          FftRank // niveau déclaré, saisi à la main
+  userId           String?   @unique // lien optionnel ; refusé tant que le joueur est dans une rencontre non réglée
+  birthDate        DateTime? @db.Date // facultative, visible des admins du club seulement (jamais sur les pages publiques ni pour les membres)
+  externalClubName String? // joueur d'un autre club inscrit à un tournoi : son club en texte libre (jamais listé parmi les joueurs du club)
+  createdAt        DateTime  @default(now())
 
   club              Club              @relation(fields: [clubId], references: [id], onDelete: Cascade)
   user              User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -573,13 +576,32 @@ model Tournament {
   publishedAt DateTime?
   finishedAt  DateTime?
   winnerId    String? // joueur vainqueur (fiche), posé à la finale
+  tableLabel  String? // sigle du tableau pour l'affiche (SM, SD, FT4SD…)
+  venue       String? // lieu affiché sur l'affiche (à défaut : l'adresse du club)
 
-  club      Club              @relation(fields: [clubId], references: [id], onDelete: Restrict)
-  createdBy User              @relation("TournamentCreatedBy", fields: [createdById], references: [id])
+  club      Club                @relation(fields: [clubId], references: [id], onDelete: Restrict)
+  createdBy User                @relation("TournamentCreatedBy", fields: [createdById], references: [id])
   entries   TournamentEntry[]
   matches   TournamentMatch[]
+  referees  TournamentReferee[]
 
   @@index([clubId, status])
+}
+
+// Juge-arbitre d'un tournoi : nommé par un admin du club (membre du club), autant que nécessaire. Prépare le tableau, fixe les heures,
+// saisit les résultats (qui règlent les pronostics) ; ne crée, ne publie ni n'annule. Ne pronostique pas ce tournoi.
+model TournamentReferee {
+  tournamentId String
+  userId       String
+  addedById    String
+  addedAt      DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User       @relation("TournamentRefereeUser", fields: [userId], references: [id], onDelete: Cascade)
+  addedBy    User       @relation("TournamentRefereeAddedBy", fields: [addedById], references: [id])
+
+  @@id([tournamentId, userId])
+  @@index([userId])
 }
 
 model TournamentEntry {

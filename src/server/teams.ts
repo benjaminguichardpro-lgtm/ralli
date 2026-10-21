@@ -326,7 +326,7 @@ export async function getTeamView(actorId: string, teamId: string): Promise<Team
     const inTeam = new Set(players.map((p) => p.id));
     if (team.kind === "CLUB") {
       const candidates = await db.player.findMany({
-        where: { clubId: team.clubId, OR: [{ teams: { some: { team: { kind: "CLUB" } } } }, { teams: { none: {} } }] },
+        where: { clubId: team.clubId, externalClubName: null, OR: [{ teams: { some: { team: { kind: "CLUB" } } } }, { teams: { none: {} } }] },
         orderBy: { lastName: "asc" },
         select: { id: true, firstName: true, lastName: true, fftRank: true },
       });

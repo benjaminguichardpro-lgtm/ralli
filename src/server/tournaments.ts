@@ -16,9 +16,10 @@ import { settleTournamentMatch } from "./settlement";
 
 type Tx = Prisma.TransactionClient;
 
-// Tournois à élimination directe. Création, joueurs, tableau, heures, résultats et annulation : admins du club. Lecture : un tournoi
-// publié est visible de tous (page publique du club comprise) ; un brouillon des admins seulement. Pronostics : membres du club,
-// match par match, jamais pour les admins ni les joueurs inscrits. Le résultat saisi par un admin règle les pronostics du match
+// Tournois à élimination directe. Création, publication, annulation et nomination des juges-arbitres : admins du club. Joueurs, tableau,
+// heures, infos de l'affiche et résultats : admins ET juges-arbitres du tournoi (membres du club nommés par un admin). Lecture : un tournoi
+// publié est visible de tous (page publique du club comprise) ; un brouillon du personnel seulement. Pronostics : membres du club,
+// match par match, jamais pour les admins, les juges-arbitres ni les joueurs inscrits. Le résultat saisi règle les pronostics du match
 // et fait avancer le vainqueur (pas de seconde confirmation : un tournoi n'a pas d'équipe adverse).
 
 const NOT_FOUND = new DomainError("NOT_FOUND", "Tournoi introuvable");
@@ -67,6 +68,24 @@ async function loadAdminTournament(tx: Tx, actorId: string, tournamentId: string
   return t;
 }
 
+const NOT_STAFF = new DomainError("FORBIDDEN", "Action réservée aux admins du club et aux juges-arbitres du tournoi");
+
+/** Admin du club ou juge-arbitre du tournoi (droits lus DANS la transaction). Un non-membre ne distingue pas « introuvable » de « interdit ». */
+async function requireStaffIn(tx: Tx, actorId: string, t: { id: string; clubId: string }): Promise<void> {
+  const role = await getClubRole(actorId, t.clubId, tx);
+  if (!role) throw CLUB_NOT_FOUND;
+  if (role === "ADMIN") return;
+  const ref = await tx.tournamentReferee.findUnique({ where: { tournamentId_userId: { tournamentId: t.id, userId: actorId } }, select: { userId: true } });
+  if (!ref) throw NOT_STAFF;
+}
+
+async function loadStaffTournament(tx: Tx, actorId: string, tournamentId: string) {
+  const t = await tx.tournament.findUnique({ where: { id: tournamentId }, select: { id: true, clubId: true, drawSize: true, status: true, name: true, club: { select: { deletedAt: true } } } });
+  if (!t || t.club.deletedAt) throw NOT_FOUND;
+  await requireStaffIn(tx, actorId, t);
+  return t;
+}
+
 const requireDraft = (status: TournamentStatus) => {
   if (status !== "DRAFT") throw new DomainError("INVALID_TRANSITION", "Le tournoi est déjà publié : le tableau ne peut plus être modifié");
 };
@@ -74,7 +93,7 @@ const requireDraft = (status: TournamentStatus) => {
 /** Inscrit un joueur du club (fiche existante). */
 export async function addEntry(actorId: string, tournamentId: string, playerId: string): Promise<void> {
   await db.$transaction(async (tx) => {
-    const t = await loadAdminTournament(tx, actorId, tournamentId);
+    const t = await loadStaffTournament(tx, actorId, tournamentId);
     requireDraft(t.status);
     const player = await tx.player.findFirst({ where: { id: playerId, clubId: t.clubId }, select: { id: true } });
     if (!player) throw new DomainError("NOT_FOUND", "Joueur introuvable dans ce club");
@@ -82,15 +101,17 @@ export async function addEntry(actorId: string, tournamentId: string, playerId: 
   });
 }
 
-/** Inscrit un joueur qui n'a pas de fiche (joueur extérieur) : la fiche est créée dans le club, avec son niveau. */
-export async function addNewEntry(actorId: string, tournamentId: string, input: { firstName: string; lastName: string; fftRank: FftRank }): Promise<{ playerId: string }> {
+/** Inscrit un joueur qui n'a pas de fiche (joueur d'un autre club) : la fiche est créée dans le club avec son niveau et son club en texte libre ; elle n'est jamais listée parmi les joueurs du club. */
+export async function addNewEntry(actorId: string, tournamentId: string, input: { firstName: string; lastName: string; fftRank: FftRank; clubName?: string }): Promise<{ playerId: string }> {
   const firstName = input.firstName.trim();
   const lastName = input.lastName.trim();
   if (!firstName || !lastName || firstName.length > 40 || lastName.length > 40) throw new DomainError("INVALID", "Prénom et nom : 1 à 40 caractères");
+  const externalClubName = input.clubName?.trim() || null;
+  if (externalClubName && externalClubName.length > 60) throw new DomainError("INVALID", "Nom du club : 60 caractères au maximum");
   return db.$transaction(async (tx) => {
-    const t = await loadAdminTournament(tx, actorId, tournamentId);
+    const t = await loadStaffTournament(tx, actorId, tournamentId);
     requireDraft(t.status);
-    const p = await tx.player.create({ data: { clubId: t.clubId, firstName, lastName, fftRank: input.fftRank }, select: { id: true } });
+    const p = await tx.player.create({ data: { clubId: t.clubId, firstName, lastName, fftRank: input.fftRank, externalClubName }, select: { id: true } });
     await addEntryRow(tx, t, p.id);
     return { playerId: p.id };
   });
@@ -107,7 +128,7 @@ async function addEntryRow(tx: Tx, t: { id: string; drawSize: number }, playerId
 /** Retire un joueur inscrit (brouillon) : il quitte aussi le tableau du premier tour. */
 export async function removeEntry(actorId: string, tournamentId: string, playerId: string): Promise<void> {
   await db.$transaction(async (tx) => {
-    const t = await loadAdminTournament(tx, actorId, tournamentId);
+    const t = await loadStaffTournament(tx, actorId, tournamentId);
     requireDraft(t.status);
     const r = await tx.tournamentEntry.deleteMany({ where: { tournamentId, playerId } });
     if (r.count === 0) throw new DomainError("NOT_FOUND", "Ce joueur n'est pas inscrit");
@@ -124,7 +145,7 @@ export type FirstRoundPair = { position: number; homePlayerId: string | null; aw
  */
 export async function setFirstRound(actorId: string, tournamentId: string, pairs: FirstRoundPair[]): Promise<void> {
   await db.$transaction(async (tx) => {
-    const t = await loadAdminTournament(tx, actorId, tournamentId);
+    const t = await loadStaffTournament(tx, actorId, tournamentId);
     requireDraft(t.status);
     const slots = matchesInRound(t.drawSize, 1);
     const entries = new Set((await tx.tournamentEntry.findMany({ where: { tournamentId }, select: { playerId: true } })).map((e) => e.playerId));
@@ -185,6 +206,46 @@ export async function cancelTournament(actorId: string, tournamentId: string, no
   });
 }
 
+// ─────────────────────────────── Juges-arbitres et infos de l'affiche ───────────────────────────────
+
+/**
+ * Nomme un juge-arbitre (admins du club) : un membre simple du club, autant que nécessaire. Un admin a déjà tous les droits ; un joueur
+ * inscrit avec un compte lié ne peut pas arbitrer son propre tournoi.
+ */
+export async function addReferee(actorId: string, tournamentId: string, userId: string): Promise<void> {
+  await db.$transaction(async (tx) => {
+    const t = await loadAdminTournament(tx, actorId, tournamentId);
+    if (t.status === "FINISHED" || t.status === "CANCELLED") throw new DomainError("INVALID_TRANSITION", "Ce tournoi est terminé ou annulé");
+    const role = await getClubRole(userId, t.clubId, tx);
+    if (!role) throw new DomainError("NOT_FOUND", "Cette personne n'est pas membre du club");
+    if (role === "ADMIN") throw new DomainError("INVALID", "Cette personne est déjà admin du club : elle a déjà tous les droits");
+    if (await tx.tournamentEntry.findFirst({ where: { tournamentId, player: { userId } }, select: { playerId: true } })) throw new DomainError("INVALID", "Cette personne joue le tournoi : elle ne peut pas l'arbitrer");
+    if (await tx.tournamentReferee.findUnique({ where: { tournamentId_userId: { tournamentId, userId } }, select: { userId: true } })) throw new DomainError("ALREADY_IN_TEAM", "Cette personne est déjà juge-arbitre du tournoi");
+    await tx.tournamentReferee.create({ data: { tournamentId, userId, addedById: actorId } });
+  });
+}
+
+export async function removeReferee(actorId: string, tournamentId: string, userId: string): Promise<void> {
+  await db.$transaction(async (tx) => {
+    await loadAdminTournament(tx, actorId, tournamentId);
+    const r = await tx.tournamentReferee.deleteMany({ where: { tournamentId, userId } });
+    if (r.count === 0) throw new DomainError("NOT_FOUND", "Cette personne n'est pas juge-arbitre du tournoi");
+  });
+}
+
+/** Sigle du tableau (SM, SD, FT4SD…) et lieu affichés sur l'affiche (admins et juges-arbitres). Vide = non renseigné. */
+export async function setTournamentInfo(actorId: string, tournamentId: string, input: { tableLabel: string; venue: string }): Promise<void> {
+  const tableLabel = input.tableLabel.trim().toUpperCase() || null;
+  const venue = input.venue.trim() || null;
+  if (tableLabel && (tableLabel.length > 12 || !/^[A-Z0-9]+$/.test(tableLabel))) throw new DomainError("INVALID", "Sigle du tableau : lettres et chiffres, 12 caractères au maximum (SM, SD, FT4SD…)");
+  if (venue && venue.length > 80) throw new DomainError("INVALID", "Lieu : 80 caractères au maximum");
+  await db.$transaction(async (tx) => {
+    const t = await loadStaffTournament(tx, actorId, tournamentId);
+    if (t.status === "CANCELLED") throw new DomainError("INVALID_TRANSITION", "Ce tournoi est annulé");
+    await tx.tournament.update({ where: { id: tournamentId }, data: { tableLabel, venue } });
+  });
+}
+
 // ─────────────────────────────── Cotes ───────────────────────────────
 
 /** Fige les cotes d'un match de tournoi dont les deux joueurs sont connus : niveau, forme et confrontations (matchs d'interclubs confirmés). */
@@ -208,25 +269,25 @@ async function freezeTournamentOdds(tx: Tx, matchId: string, now: Date): Promise
   });
 }
 
-// ─────────────────────────────── Heures et résultats (admins) ───────────────────────────────
+// ─────────────────────────────── Heures et résultats (admins et juges-arbitres) ───────────────────────────────
 
-async function loadMatchForAdmin(tx: Tx, actorId: string, matchId: string) {
+async function loadMatchForStaff(tx: Tx, actorId: string, matchId: string) {
   const m = await tx.tournamentMatch.findUnique({
     where: { id: matchId },
     select: { id: true, round: true, position: true, startsAt: true, outcome: true, homePlayerId: true, awayPlayerId: true, tournament: { select: { id: true, clubId: true, drawSize: true, status: true, club: { select: { deletedAt: true } } } } },
   });
   if (!m || m.tournament.club.deletedAt) throw MATCH_NOT_FOUND;
-  await requireAdminIn(tx, actorId, m.tournament.clubId);
+  await requireStaffIn(tx, actorId, m.tournament);
   return m;
 }
 
 /**
- * Fixe ou change l'heure de début d'un match (admins). Les pronostics ferment à cette heure. Impossible une fois le match commencé ou joué ;
+ * Fixe ou change l'heure de début d'un match (admins et juges-arbitres). Les pronostics ferment à cette heure. Impossible une fois le match commencé ou joué ;
  * hors brouillon, l'heure doit être dans le futur. Un match d'un tour suivant peut recevoir son heure avant que ses joueurs soient connus.
  */
 export async function setMatchTime(actorId: string, matchId: string, startsAt: Date, now = new Date()): Promise<void> {
   await db.$transaction(async (tx) => {
-    const m = await loadMatchForAdmin(tx, actorId, matchId);
+    const m = await loadMatchForStaff(tx, actorId, matchId);
     if (m.tournament.status !== "OPEN" && m.tournament.status !== "DRAFT") throw new DomainError("INVALID_TRANSITION", "Ce tournoi n'est plus modifiable");
     if (m.outcome) throw new DomainError("INVALID_TRANSITION", "Ce match est déjà joué");
     if (m.startsAt && m.startsAt.getTime() <= now.getTime()) throw new DomainError("INVALID_TRANSITION", "Ce match a commencé : son heure ne peut plus changer");
@@ -236,7 +297,7 @@ export async function setMatchTime(actorId: string, matchId: string, startsAt: D
 }
 
 /**
- * Saisit le résultat d'un match (admins) : une fois l'heure de début passée, quand les deux joueurs sont connus. Le résultat est DÉFINITIF :
+ * Saisit le résultat d'un match (admins et juges-arbitres) : une fois l'heure de début passée, quand les deux joueurs sont connus. Le résultat est DÉFINITIF :
  * il règle tout de suite les pronostics du match et fait avancer le vainqueur au tour suivant (dont les cotes sont alors figées si l'adversaire
  * est connu). À la finale, le tournoi est terminé. Issues possibles : joué, abandon, WO (toutes donnent un vainqueur).
  */
@@ -249,7 +310,7 @@ export async function recordTournamentResult(actorId: string, matchId: string, r
     throw new DomainError("INVALID", err instanceof Error ? err.message : "Résultat invalide");
   }
   await db.$transaction(async (tx) => {
-    const m = await loadMatchForAdmin(tx, actorId, matchId);
+    const m = await loadMatchForStaff(tx, actorId, matchId);
     if (m.tournament.status !== "OPEN") throw new DomainError("INVALID_TRANSITION", "Le tournoi n'est pas en cours");
     if (m.outcome) throw new DomainError("CONFLICT", "Le résultat de ce match est déjà saisi");
     if (!m.homePlayerId || !m.awayPlayerId) throw new DomainError("INVALID_TRANSITION", "Les deux joueurs ne sont pas encore connus");
@@ -309,7 +370,14 @@ export type TournamentPageView = {
   startsAt: Date;
   winner: string | null;
   isAdmin: boolean;
+  /** Admin du club ou juge-arbitre du tournoi : prépare le tableau, fixe les heures, saisit les résultats. */
+  isStaff: boolean;
   isMember: boolean;
+  tableLabel: string | null;
+  venue: string | null;
+  /** Juges-arbitres (personnel seulement) et membres que l'admin peut encore nommer. */
+  referees: { userId: string; name: string }[];
+  refereeCandidates: { userId: string; name: string }[];
   rounds: { round: number; matches: TournamentMatchView[] }[];
   /** Inscrits (admins, brouillon ou non) : sert à saisir le tableau. */
   entries: { playerId: string; name: string; fullName: string; rank: string }[];
@@ -324,8 +392,9 @@ export async function getTournamentPage(viewerId: string | null, tournamentId: s
   const t = await db.tournament.findUnique({
     where: { id: tournamentId },
     select: {
-      id: true, clubId: true, name: true, status: true, drawSize: true, startsAt: true, winnerId: true,
+      id: true, clubId: true, name: true, status: true, drawSize: true, startsAt: true, winnerId: true, tableLabel: true, venue: true,
       club: { select: { name: true, deletedAt: true } },
+      referees: { select: { userId: true, user: { select: { displayName: true } } }, orderBy: { addedAt: "asc" } },
       entries: { select: { player: playerSel }, orderBy: { addedAt: "asc" } },
       matches: {
         orderBy: [{ round: "asc" }, { position: "asc" }],
@@ -336,7 +405,8 @@ export async function getTournamentPage(viewerId: string | null, tournamentId: s
   if (!t || t.club.deletedAt) throw NOT_FOUND;
   const role = viewerId ? await getClubRole(viewerId, t.clubId) : null;
   const isAdmin = role === "ADMIN";
-  if (t.status === "DRAFT" && !isAdmin) throw NOT_FOUND;
+  const isStaff = isAdmin || (role !== null && t.referees.some((r) => r.userId === viewerId));
+  if (t.status === "DRAFT" && !isStaff) throw NOT_FOUND;
   const person = (p: { id: string; firstName: string; lastName: string; fftRank: FftRank } | null) => (p ? { id: p.id, name: sideName([p]), rank: fftLabel(p.fftRank) } : null);
 
   const matches: TournamentMatchView[] = t.matches.map((m) => {
@@ -369,10 +439,16 @@ export async function getTournamentPage(viewerId: string | null, tournamentId: s
   const winner = t.winnerId ? (await db.player.findUnique({ where: { id: t.winnerId }, select: { firstName: true, lastName: true } })) : null;
 
   let availablePlayers: TournamentPageView["availablePlayers"] = [];
-  if (isAdmin && t.status === "DRAFT") {
+  if (isStaff && t.status === "DRAFT") {
     const taken = new Set(t.entries.map((e) => e.player.id));
-    const club = await db.player.findMany({ where: { clubId: t.clubId }, orderBy: [{ lastName: "asc" }, { firstName: "asc" }], select: { id: true, firstName: true, lastName: true, fftRank: true } });
+    const club = await db.player.findMany({ where: { clubId: t.clubId, externalClubName: null }, orderBy: [{ lastName: "asc" }, { firstName: "asc" }], select: { id: true, firstName: true, lastName: true, fftRank: true } });
     availablePlayers = club.filter((p) => !taken.has(p.id)).map((p) => ({ id: p.id, name: `${p.firstName} ${p.lastName}`, rank: fftLabel(p.fftRank) }));
+  }
+  let refereeCandidates: TournamentPageView["refereeCandidates"] = [];
+  if (isAdmin && (t.status === "DRAFT" || t.status === "OPEN")) {
+    const taken = new Set(t.referees.map((r) => r.userId));
+    const members = await db.clubMembership.findMany({ where: { clubId: t.clubId, role: "MEMBER" }, select: { userId: true, user: { select: { displayName: true } } }, orderBy: { joinedAt: "asc" } });
+    refereeCandidates = members.filter((m) => !taken.has(m.userId)).map((m) => ({ userId: m.userId, name: m.user.displayName })).sort((a, b) => a.name.localeCompare(b.name, "fr"));
   }
   return {
     id: t.id,
@@ -385,9 +461,14 @@ export async function getTournamentPage(viewerId: string | null, tournamentId: s
     startsAt: t.startsAt,
     winner: winner ? sideName([winner]) : null,
     isAdmin,
+    isStaff,
     isMember: role !== null,
+    tableLabel: t.tableLabel,
+    venue: t.venue,
+    referees: isStaff ? t.referees.map((r) => ({ userId: r.userId, name: r.user.displayName })) : [],
+    refereeCandidates,
     rounds,
-    entries: isAdmin ? t.entries.map((e) => ({ playerId: e.player.id, name: sideName([e.player]), fullName: `${e.player.firstName} ${e.player.lastName}`, rank: fftLabel(e.player.fftRank) })) : [],
+    entries: isStaff ? t.entries.map((e) => ({ playerId: e.player.id, name: sideName([e.player]), fullName: `${e.player.firstName} ${e.player.lastName}`, rank: fftLabel(e.player.fftRank) })) : [],
     availablePlayers,
   };
 }
@@ -411,9 +492,10 @@ export async function getTournamentPanel(viewerId: string | null, tournamentId: 
   };
 }
 
-/** Anti-trucage : admins du club, joueurs inscrits au tournoi et comptes liés à ces joueurs ne pronostiquent pas ce tournoi. */
+/** Anti-trucage : admins du club, juges-arbitres du tournoi, joueurs inscrits au tournoi et comptes liés à ces joueurs ne pronostiquent pas ce tournoi. */
 export async function tournamentExclusion(tx: Tx | typeof db, userId: string, t: { id: string; clubId: string }): Promise<string | null> {
   if ((await getClubRole(userId, t.clubId, tx)) === "ADMIN") return "Les admins ne peuvent pas pronostiquer les matchs de leurs clubs.";
+  if (await tx.tournamentReferee.findUnique({ where: { tournamentId_userId: { tournamentId: t.id, userId } }, select: { userId: true } })) return "Tu es juge-arbitre de ce tournoi : tu ne peux pas le pronostiquer.";
   const entered = await tx.tournamentEntry.findFirst({ where: { tournamentId: t.id, player: { userId } }, select: { playerId: true } });
   if (entered) return "Tu es inscrit à ce tournoi : tu ne peux pas le pronostiquer.";
   return null;

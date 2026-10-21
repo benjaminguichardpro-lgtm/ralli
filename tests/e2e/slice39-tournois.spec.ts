@@ -165,15 +165,20 @@ test("créer un tournoi de 4 joueurs de A à Z : brouillon invisible des membres
   await member.goto(`/tournois/${newId}`);
   await expect(member.getByRole("heading", { name: "Page introuvable" })).toBeVisible();
 
-  // Quatre joueurs extérieurs.
+  // Quatre joueurs d'autres clubs (leur club est demandé).
   const players = [["Alex", "Dumont", "30"], ["Bruno", "Lopez", "30/1"], ["Carla", "Moreau", "30/2"], ["David", "Faure", "30/3"]] as const;
   for (const [i, [first, last, rank]] of players.entries()) {
     const form = admin.getByTestId("add-new-entry");
-    if (i === 0) await admin.getByText("Ajouter un joueur extérieur au club").click();
+    if (i === 0) await admin.getByText("Ajouter un joueur d'un autre club").click();
     await form.getByLabel("Prénom").fill(first);
     await form.getByLabel("Nom", { exact: true }).fill(last);
     await form.getByLabel("Niveau FFT").selectOption({ label: rank });
-    await form.getByRole("button", { name: "Ajouter et inscrire" }).click();
+    if (i === 0) {
+      await form.getByRole("button", { name: "Ajouter et inscrire" }).click();
+      await expect(admin.getByTestId("add-new-entry").getByText("Indique son club")).toBeVisible(); // le club du joueur est obligatoire
+    }
+    await admin.getByTestId("add-new-entry").getByLabel("Club du joueur").fill("TC des Flandres");
+    await admin.getByTestId("add-new-entry").getByRole("button", { name: "Ajouter et inscrire" }).click();
     await expect(admin.getByTestId("entries-count")).toHaveText(`${i + 1} / 4`);
   }
   // Publier trop tôt : message d'erreur, rien ne change.

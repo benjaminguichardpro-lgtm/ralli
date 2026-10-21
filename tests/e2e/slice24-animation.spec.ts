@@ -142,10 +142,16 @@ const rankOf = (tot: Tot[], min: number): Map<string, number> => {
 };
 async function totals(sinceSql: string, untilSql: string): Promise<Tot[]> {
   const rows = await queryTestDb<{ name: string; net: string; settled: string }>(
-    `SELECT u."displayName" AS name, sum(coalesce(p."payoutAces",0) - p."committedAces")::text AS net, count(*)::text AS settled
-       FROM "Prediction" p JOIN "User" u ON u.id = p."userId" JOIN "Match" m ON m.id = p."matchId" JOIN "Encounter" e ON e.id = m."encounterId"
-      WHERE p.status IN ('WON','LOST') AND e."organizerClubId" = $1 AND e.status = 'CONFIRMED' AND e."settledAt" >= ${sinceSql} AND e."settledAt" < ${untilSql}
-      GROUP BY u."displayName"`,
+    // Interclubs confirmés et matchs de tournoi réglés du club comptent de la même façon (comme `clubTotals`).
+    `SELECT t.name, sum(t.net)::text AS net, count(*)::text AS settled FROM (
+       SELECT u."displayName" AS name, coalesce(p."payoutAces",0) - p."committedAces" AS net
+         FROM "Prediction" p JOIN "User" u ON u.id = p."userId" JOIN "Match" m ON m.id = p."matchId" JOIN "Encounter" e ON e.id = m."encounterId"
+        WHERE p.status IN ('WON','LOST') AND e."organizerClubId" = $1 AND e.status = 'CONFIRMED' AND e."settledAt" >= ${sinceSql} AND e."settledAt" < ${untilSql}
+       UNION ALL
+       SELECT u."displayName" AS name, coalesce(p."payoutAces",0) - p."committedAces" AS net
+         FROM "Prediction" p JOIN "User" u ON u.id = p."userId" JOIN "TournamentMatch" tm ON tm.id = p."tournamentMatchId" JOIN "Tournament" tn ON tn.id = tm."tournamentId"
+        WHERE p.status IN ('WON','LOST') AND tn."clubId" = $1 AND tm."settledAt" >= ${sinceSql} AND tm."settledAt" < ${untilSql}
+     ) t GROUP BY t.name`,
     [clubId],
   );
   return rows.map((r) => ({ name: r.name, net: Number(r.net), settled: Number(r.settled) }));

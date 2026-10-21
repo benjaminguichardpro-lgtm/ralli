@@ -27,9 +27,10 @@ export type ClubPlayerRow = {
   deletable: boolean;
 };
 
-/** Joueurs « du club » : ceux d'une équipe du club et ceux sans équipe (importés, ou inscrits à un tournoi). Les joueurs des équipes adverses n'y sont pas. */
+/** Joueurs « du club » : ceux d'une équipe du club et ceux sans équipe (importés, ou inscrits à un tournoi). Les joueurs des équipes adverses et ceux d'autres clubs saisis pour un tournoi n'y sont pas. */
 const clubPlayerFilter = (clubId: string): Prisma.PlayerWhereInput => ({
   clubId,
+  externalClubName: null, // un joueur d'un autre club, saisi pour un tournoi, n'est pas un joueur du club
   OR: [{ teams: { none: {} } }, { teams: { some: { team: { kind: "CLUB" } } } }],
 });
 

@@ -8,12 +8,15 @@ import { WhatsAppShare } from "@/components/share-link";
 import {
   AddEntryForm,
   AddNewEntryForm,
+  AddRefereeForm,
   CancelTournamentForm,
   DeleteDraftTournamentForm,
   FirstRoundForm,
   MatchTimeForm,
   PublishTournamentForm,
   RemoveEntryForm,
+  RemoveRefereeForm,
+  TournamentInfoForm,
   TournamentResultForm,
 } from "@/components/tournament-forms";
 import { StatusBadge } from "@/components/encounter-list";
@@ -75,7 +78,14 @@ async function Tournament({ params }: { params: Promise<{ tournamentId: string }
       )}
       {t.status === "CANCELLED" && <p className="rounded-lg border-l-4 border-accent bg-pale p-3">Ce tournoi est annulé : les pronostics en cours ont été remboursés.</p>}
 
-      {published && t.status !== "CANCELLED" && <WhatsAppShare text={`${t.name} 🎾 Suis le tableau et fais tes pronostics sur Ralli (jeu gratuit, sans argent réel) :`} path={`/tournois/${t.id}`} label="Partager le tournoi" />}
+      {published && t.status !== "CANCELLED" && (
+        <div className="flex flex-wrap gap-3">
+          <WhatsAppShare text={`${t.name} 🎾 Suis le tableau et fais tes pronostics sur Ralli (jeu gratuit, sans argent réel) :`} path={`/tournois/${t.id}`} label="Partager le tournoi" />
+          <Link href={`/tournois/${t.id}/affiche`} className="inline-flex min-h-11 items-center rounded-lg border-2 border-primary px-4 font-semibold text-primary" data-testid="poster-link">
+            {t.isStaff ? "Générer la fiche" : "Voir l'affiche"}
+          </Link>
+        </div>
+      )}
 
       {viewer && !panel.isMember && t.status === "OPEN" && (
         <div className="space-y-2 rounded-2xl bg-pale p-4" data-testid="join-to-predict">
@@ -84,7 +94,9 @@ async function Tournament({ params }: { params: Promise<{ tournamentId: string }
         </div>
       )}
 
-      {t.isAdmin && t.status === "DRAFT" && <DraftSection t={t} />}
+
+      {t.isStaff && t.status === "DRAFT" && <DraftSection t={t} />}
+      {t.isStaff && (t.status === "DRAFT" || t.status === "OPEN") && <PosterSection t={t} />}
 
       {published &&
         t.rounds.map((r) => (
@@ -98,11 +110,11 @@ async function Tournament({ params }: { params: Promise<{ tournamentId: string }
           </div>
         ))}
 
-      {t.isAdmin && t.status === "OPEN" && (
+      {t.isStaff && t.status === "OPEN" && (
         <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="tournament-manage">
           <h2 className="font-serif text-xl text-primary">Gestion du tournoi</h2>
           <p className="text-sm text-ink-muted">Fixe l&apos;heure de chaque match dès que ses joueurs sont connus, puis saisis le résultat une fois le match joué : il règle les pronostics et fait avancer le vainqueur.</p>
-          <CancelTournamentForm tournamentId={t.id} />
+          {t.isAdmin && <CancelTournamentForm tournamentId={t.id} />}
         </div>
       )}
     </section>
@@ -164,7 +176,7 @@ function MatchCard({ t, m, panel, loggedIn, now }: { t: TournamentPageView; m: T
           Ton pronostic : <strong>{panel.mine[m.id]!.side === "HOME" ? m.home?.name : m.away?.name}</strong>, {panel.mine[m.id]!.committedAces.toLocaleString("fr-FR")} Aces engagés à la cote {panel.mine[m.id]!.odds}.
         </p>
       )}
-      {t.isAdmin && t.status === "OPEN" && m.state !== "done" && (
+      {t.isStaff && t.status === "OPEN" && m.state !== "done" && (
         <div className="space-y-2 pt-1">
           {!started && (
             <details className="rounded-lg border border-line px-3">
@@ -199,7 +211,7 @@ function DraftSection({ t }: { t: TournamentPageView }) {
   return (
     <div className="space-y-6" data-testid="draft-section">
       <p className="rounded-lg border-l-4 border-accent bg-pale p-3">
-        Brouillon : seuls les admins du club le voient. Inscris {t.drawSize} joueurs, compose le tableau du premier tour (joueurs et heures), puis publie.
+        Brouillon : seuls les admins du club et les juges-arbitres le voient. Inscris {t.drawSize} joueurs, compose le tableau du premier tour (joueurs et heures), puis publie.
       </p>
 
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="entries">
@@ -224,7 +236,7 @@ function DraftSection({ t }: { t: TournamentPageView }) {
           <>
             <AddEntryForm tournamentId={t.id} players={t.availablePlayers} />
             <details className="rounded-lg border border-line px-3">
-              <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Ajouter un joueur extérieur au club</summary>
+              <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">Ajouter un joueur d&apos;un autre club</summary>
               <div className="pb-3">
                 <AddNewEntryForm tournamentId={t.id} />
               </div>
@@ -246,10 +258,41 @@ function DraftSection({ t }: { t: TournamentPageView }) {
         )}
       </div>
 
-      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <h2 className="font-serif text-xl text-primary">Publication</h2>
-        <PublishTournamentForm tournamentId={t.id} />
-        <DeleteDraftTournamentForm tournamentId={t.id} clubId={t.clubId} />
+      {t.isAdmin ? (
+        <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
+          <h2 className="font-serif text-xl text-primary">Publication</h2>
+          <PublishTournamentForm tournamentId={t.id} />
+          <DeleteDraftTournamentForm tournamentId={t.id} clubId={t.clubId} />
+        </div>
+      ) : (
+        <p className="text-sm text-ink-muted">Seuls les admins du club publient ou suppriment le tournoi.</p>
+      )}
+    </div>
+  );
+}
+
+/** Affiche (personnel) : sigle du tableau, lieu, et juges-arbitres (nommés par les admins). */
+function PosterSection({ t }: { t: TournamentPageView }) {
+  return (
+    <div className="space-y-4 rounded-2xl bg-surface p-4 shadow-sm" data-testid="poster-section">
+      <h2 className="font-serif text-xl text-primary">Affiche du tournoi</h2>
+      <p className="text-sm text-ink-muted">L&apos;affiche reprend le tableau : joueurs, heures et scores sont saisis ici, une seule fois. Ouvre-la avec « Générer la fiche ».</p>
+      <TournamentInfoForm tournamentId={t.id} tableLabel={t.tableLabel ?? ""} venue={t.venue ?? ""} venueHint="l'adresse du club" />
+      <div className="space-y-2 border-t border-line pt-3" data-testid="referees">
+        <h3 className="font-semibold text-primary">Juges-arbitres</h3>
+        {t.referees.length === 0 ? (
+          <p className="text-sm text-ink-muted">Aucun juge-arbitre. Les admins du club peuvent déjà tout faire ; nomme des membres pour qu&apos;ils t&apos;aident le jour du tournoi.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {t.referees.map((r) => (
+              <li key={r.userId} className="flex items-center justify-between gap-3 py-1" data-testid="referee">
+                <span>{r.name}</span>
+                {t.isAdmin && <RemoveRefereeForm tournamentId={t.id} userId={r.userId} name={r.name} />}
+              </li>
+            ))}
+          </ul>
+        )}
+        {t.isAdmin && <AddRefereeForm tournamentId={t.id} candidates={t.refereeCandidates} />}
       </div>
     </div>
   );

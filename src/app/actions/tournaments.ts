@@ -12,14 +12,17 @@ import {
   type FirstRoundPair,
   addEntry,
   addNewEntry,
+  addReferee,
   cancelTournament,
   createTournament,
   deleteDraftTournament,
   publishTournament,
   recordTournamentResult,
   removeEntry,
+  removeReferee,
   setFirstRound,
   setMatchTime,
+  setTournamentInfo,
 } from "@/server/tournaments";
 import type { FormState } from "./types";
 
@@ -80,11 +83,12 @@ export async function addNewEntryAction(_: FormState, fd: FormData): Promise<For
   const user = await requireUser();
   const t = idSchema.safeParse(get(fd, "tournamentId"));
   const rank = get(fd, "fftRank");
-  const values = { firstName: get(fd, "firstName") ?? "", lastName: get(fd, "lastName") ?? "", fftRank: rank ?? "" };
+  const values = { firstName: get(fd, "firstName") ?? "", lastName: get(fd, "lastName") ?? "", clubName: get(fd, "clubName") ?? "", fftRank: rank ?? "" };
   if (!t.success) return { message: "Requête invalide", values };
+  if (!values.clubName.trim()) return { errors: { clubName: "Indique son club" }, values };
   const level = FFT_RANKS.find((r) => r.value === rank);
   if (!level) return { errors: { fftRank: "Choisis le niveau" }, values };
-  return run(() => addNewEntry(user.id, t.data, { firstName: values.firstName, lastName: values.lastName, fftRank: level.value }), "Joueur ajouté et inscrit.", values);
+  return run(() => addNewEntry(user.id, t.data, { firstName: values.firstName, lastName: values.lastName, fftRank: level.value, clubName: values.clubName }), "Joueur ajouté et inscrit.", values);
 }
 
 export async function removeEntryAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -161,6 +165,31 @@ export async function setMatchTimeAction(_: FormState, fd: FormData): Promise<Fo
   }
   refresh();
   return { message: "Heure enregistrée.", ok: true, values };
+}
+
+export async function addRefereeAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const t = idSchema.safeParse(get(fd, "tournamentId"));
+  const u = idSchema.safeParse(get(fd, "userId"));
+  if (!t.success) return { message: "Requête invalide" };
+  if (!u.success) return { errors: { userId: "Choisis un membre" } };
+  return run(() => addReferee(user.id, t.data, u.data), "Juge-arbitre nommé.");
+}
+
+export async function removeRefereeAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const t = idSchema.safeParse(get(fd, "tournamentId"));
+  const u = idSchema.safeParse(get(fd, "userId"));
+  if (!t.success || !u.success) return { message: "Requête invalide" };
+  return run(() => removeReferee(user.id, t.data, u.data), "Juge-arbitre retiré.");
+}
+
+export async function setTournamentInfoAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const t = idSchema.safeParse(get(fd, "tournamentId"));
+  const values = { tableLabel: get(fd, "tableLabel") ?? "", venue: get(fd, "venue") ?? "" };
+  if (!t.success) return { message: "Requête invalide", values };
+  return run(() => setTournamentInfo(user.id, t.data, values), "Infos de l'affiche enregistrées.", values);
 }
 
 const OUTCOMES = ["COMPLETED", "RETIRED", "WALKOVER"] as const;
