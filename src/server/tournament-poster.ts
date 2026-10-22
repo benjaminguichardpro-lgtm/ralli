@@ -32,7 +32,10 @@ export type PosterRow = {
 export type PosterView = {
   id: string;
   name: string;
+  clubId: string;
   clubName: string;
+  /** Date du logo du club (null : pas de logo, pastille d'initiales). */
+  logoUpdatedAt: Date | null;
   venue: string;
   status: TournamentStatus;
   startsAt: Date;
@@ -51,7 +54,7 @@ export async function getTournamentPoster(viewerId: string | null, tournamentId:
     where: { id: tournamentId },
     select: {
       id: true, clubId: true, name: true, status: true, startsAt: true, tableLabel: true, venue: true,
-      club: { select: { name: true, deletedAt: true, address: true, city: true } },
+      club: { select: { name: true, deletedAt: true, address: true, city: true, logoUpdatedAt: true } },
       referees: { select: { userId: true } },
       matches: {
         orderBy: [{ startsAt: { sort: "asc", nulls: "last" } }, { round: "asc" }, { position: "asc" }],
@@ -85,7 +88,9 @@ export async function getTournamentPoster(viewerId: string | null, tournamentId:
   return {
     id: t.id,
     name: t.name,
+    clubId: t.clubId,
     clubName: t.club.name,
+    logoUpdatedAt: t.club.logoUpdatedAt,
     venue: t.venue ?? ([t.club.address, t.club.city].filter(Boolean).join(", ") || t.club.name),
     status: t.status,
     startsAt: t.startsAt,

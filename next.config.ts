@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // Photos de profil : 5 Mo au maximum (src/lib/avatars.ts), plus la marge du format multipart.
   experimental: { serverActions: { bodySizeLimit: "6mb" } },
+  // Affiche du tournoi en image : les polices (assets/fonts) sont lues sur le disque au démarrage de la route ; on les embarque explicitement.
+  outputFileTracingIncludes: { "/tournois/[tournamentId]/affiche/image": ["./assets/fonts/**/*"] },
   // Anciennes adresses du Portefeuille et des Résultats, regroupés dans « Mes rallis » (les paramètres, comme ?statut=, sont conservés).
   async redirects() {
     return [

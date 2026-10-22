@@ -36,6 +36,23 @@ export const TABLE_CODES: string[] = TABLE_LEGEND.flatMap((l) => l.items.map((i)
 /** Lignes par page sur l'écran du club-house (16:9). */
 export const POSTER_ROWS_PER_PAGE = 14;
 
+/** Les deux formats de l'image : écran du club-house (tableau complet) et story (club sous le nom, pas de colonne club). */
+export type PosterFormat = "ecran" | "story";
+
+export const POSTER_FORMATS: Record<PosterFormat, { width: number; height: number; rowsPerPage: number; label: string }> = {
+  ecran: { width: 1920, height: 1080, rowsPerPage: POSTER_ROWS_PER_PAGE, label: "Écran du club-house" },
+  story: { width: 1080, height: 1920, rowsPerPage: 25, label: "Story (Instagram, WhatsApp)" },
+};
+
+export function parsePosterFormat(raw: string | null | undefined): PosterFormat | null {
+  return raw === "ecran" || raw === "story" ? raw : null;
+}
+
+/** Nombre de pages (donc d'images) d'un programme dans un format. Au moins une. */
+export function posterPageCount(rowCount: number, format: PosterFormat): number {
+  return Math.max(1, Math.ceil(rowCount / POSTER_FORMATS[format].rowsPerPage));
+}
+
 /** Découpe en pages d'au plus `perPage` lignes ; toujours au moins une page (même vide). */
 export function paginate<T>(rows: readonly T[], perPage = POSTER_ROWS_PER_PAGE): T[][] {
   if (rows.length === 0) return [[]];

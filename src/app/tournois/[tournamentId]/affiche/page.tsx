@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { PosterExport } from "@/components/poster-export";
 import { TournamentPoster } from "@/components/tournament-poster";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { formatParisDay } from "@/lib/time";
+import { posterPageCount } from "@/lib/tournaments/poster";
 import { DomainError } from "@/server/errors";
 import { type PosterView, getTournamentPoster } from "@/server/tournament-poster";
 
@@ -44,6 +46,7 @@ async function Poster({ params }: { params: Promise<{ tournamentId: string }> })
         rows={p.rows}
         tournamentPath={`/tournois/${p.id}`}
       />
+      {p.isStaff && <PosterExport tournamentId={p.id} pageCounts={{ ecran: posterPageCount(p.rows.length, "ecran"), story: posterPageCount(p.rows.length, "story") }} />}
     </section>
   );
 }
