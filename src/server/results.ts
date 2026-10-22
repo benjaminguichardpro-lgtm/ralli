@@ -11,6 +11,7 @@ import {
   currentStreak,
   filterCounts,
   groupByEncounter,
+  matchesSearch,
   summarize,
 } from "@/lib/predictions/results";
 import { tournamentMatchTitle } from "@/lib/tournaments/labels";
@@ -18,7 +19,7 @@ import { type ShareState, shareState } from "@/lib/win-cards";
 import { sideLabel } from "./encounters";
 import type { WinCardData } from "./win-cards";
 
-export type ResultItem = {
+type ResultItem = {
   id: string;
   encounterId: string;
   matchLabel: string;
@@ -36,7 +37,7 @@ export type ResultItem = {
 };
 
 /** `title` nomme déjà le club (« TC Lyon · Messieurs 1 – TC Voisin 1 ») : il suffit à distinguer les clubs d'un utilisateur qui en a plusieurs. */
-export type ResultGroup = { encounterId: string; title: string; startsAt: Date; items: ResultItem[] };
+type ResultGroup = { encounterId: string; title: string; startsAt: Date; items: ResultItem[] };
 
 export type ResultsView = {
   summary: ResultsSummary;
@@ -56,7 +57,9 @@ const side = (a: Person, b: Person | null) => sideName(b ? [a, b] : [a]);
  * Rallis terminés (gagnés, perdus, remboursés) de l'utilisateur seul, tous clubs confondus, du plus récent au plus ancien.
  * Le résumé et les compteurs portent sur l'ensemble ; la liste est limitée à `limit` rallis (« Voir plus » pour en afficher davantage).
  */
-export async function getResults(userId: string, filter: ResultFilterKey = "tous", limit = PAGE_SIZE, now = new Date()): Promise<ResultsView> {
+export async function getResults(userId: string, filter: ResultFilterKey = "tous", limit = PAGE_SIZE, now = new Date(), search = ""): Promise<ResultsView> {
+  // Avec une recherche, le texte se compare en mémoire (noms composés ici) : on lit jusqu'à 200 rallis puis on filtre.
+  if (search) limit = 200;
   const status = RESULT_FILTERS.find((f) => f.key === filter)!.status;
   const [totalsRows, rows, recent, memberships] = await Promise.all([
     db.prediction.groupBy({
@@ -125,10 +128,10 @@ export async function getResults(userId: string, filter: ResultFilterKey = "tous
     refunded: { count: pick("REFUNDED")?._count._all ?? 0 },
   };
 
-  const hasMore = rows.length > limit;
+  const hasMore = !search && rows.length > limit;
   const page = rows.slice(0, limit);
   const meta = new Map<string, Omit<ResultGroup, "items">>();
-  const items: ResultItem[] = page.map((p) => {
+  const allItems: ResultItem[] = page.map((p) => {
     const tm = p.tournamentMatch;
     if (tm) {
       // Pronostic de tournoi : la page est celle du tournoi (l'identifiant « encounterId » sert de lien, /rencontres/<id> y redirige) ; pas de carte à partager.
@@ -181,6 +184,8 @@ export async function getResults(userId: string, filter: ResultFilterKey = "tous
           : null,
     };
   });
+
+  const items = search ? allItems.filter((i) => matchesSearch(search, i.matchLabel, i.pickedName, meta.get(i.encounterId)!.title)) : allItems;
 
   return {
     summary: summarize(totals),

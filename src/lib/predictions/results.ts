@@ -1,3 +1,4 @@
+import { normalizeSearch } from "@/lib/clubs/search";
 // Onglet « Résultats » : rallis terminés de l'utilisateur, résumé et filtres. Fonctions pures.
 // Un « ralli » est le pronostic validé par l'utilisateur. Définition du bénéfice identique à celle du classement :
 // Aces gagnés − Aces engagés, sur les rallis gagnés ou perdus ; les remboursés ne comptent pas.
@@ -17,6 +18,20 @@ export type ResultFilterKey = (typeof RESULT_FILTERS)[number]["key"];
 export function parseResultFilter(raw: string | string[] | undefined): ResultFilterKey {
   const v = Array.isArray(raw) ? raw[0] : raw;
   return RESULT_FILTERS.find((f) => f.key === v)?.key ?? "tous";
+}
+
+/** Texte cherché (`?q=`) : 60 caractères au plus, espaces nettoyés. */
+export function parseSearch(raw: string | string[] | undefined): string {
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  return (v ?? "").replace(/\s+/g, " ").trim().slice(0, 60);
+}
+
+/** Chaque mot saisi doit se retrouver dans le texte (sans tenir compte des accents ni des majuscules). */
+export function matchesSearch(query: string, ...texts: string[]): boolean {
+  const words = normalizeSearch(query).split(" ").filter(Boolean);
+  if (words.length === 0) return true;
+  const haystack = normalizeSearch(texts.join(" "));
+  return words.every((w) => haystack.includes(w));
 }
 
 export const PAGE_SIZE = 20;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterCounts, formatDelta, currentStreak, groupByEncounter, hitsSentence, isRecentResult, parseLimit, parseResultFilter, resultLine, streakLabel, summarize } from "./results";
+import { filterCounts, formatDelta, currentStreak, groupByEncounter, hitsSentence, isRecentResult, matchesSearch, parseSearch, parseLimit, parseResultFilter, resultLine, streakLabel, summarize } from "./results";
 
 const totals = { won: { count: 3, committed: 250, payout: 560 }, lost: { count: 2, committed: 150 }, refunded: { count: 4 } };
 
@@ -105,5 +105,19 @@ describe("série de rallis justes d'affilée", () => {
     expect(streakLabel(1)).toBeNull();
     expect(streakLabel(2)).toBe("2 d'affilée");
     expect(streakLabel(7)).toBe("7 d'affilée");
+  });
+});
+
+describe("recherche d'un match", () => {
+  it("cherche sans accents ni majuscules, chaque mot doit se trouver", () => {
+    expect(matchesSearch("ÉLISE dupont", "Élise Dupont contre Anna Roy", "TC Lyon")).toBe(true);
+    expect(matchesSearch("lyon roy", "Élise Dupont contre Anna Roy", "TC Lyon")).toBe(true);
+    expect(matchesSearch("martin", "Élise Dupont contre Anna Roy", "TC Lyon")).toBe(false);
+    expect(matchesSearch("", "x")).toBe(true);
+  });
+  it("nettoie et borne le texte saisi", () => {
+    expect(parseSearch("  a   b ")).toBe("a b");
+    expect(parseSearch(undefined)).toBe("");
+    expect(parseSearch("x".repeat(100))).toHaveLength(60);
   });
 });

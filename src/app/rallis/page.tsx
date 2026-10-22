@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { RallisSearch } from "@/components/rallis-search";
 import { ResultFilters } from "@/components/result-filters";
 import { ShareWinButton } from "@/components/share-win";
 import { ButtonLink } from "@/components/ui";
 import { requireUser } from "@/lib/auth/current-user";
-import { PAGE_SIZE, formatDelta, hitsSentence, isRecentResult, parseLimit, parseResultFilter, resultLine, streakLabel } from "@/lib/predictions/results";
+import { PAGE_SIZE, formatDelta, hitsSentence, isRecentResult, parseLimit, matchesSearch, parseResultFilter, parseSearch, resultLine, streakLabel } from "@/lib/predictions/results";
 import { formatParis, formatParisDay } from "@/lib/time";
 import { getWallet } from "@/server/predictions";
+import { getRallisSuggestions } from "@/server/rallis-suggestions";
 import { getResults } from "@/server/results";
 
 export const metadata: Metadata = { title: "Mes rallis · Ralli" };
 
-type Props = { searchParams: Promise<{ statut?: string | string[]; limite?: string | string[]; partage?: string | string[] }> };
+type Props = { searchParams: Promise<{ q?: string | string[]; statut?: string | string[]; limite?: string | string[]; partage?: string | string[] }> };
 
 export default function MyRallisPage(props: Props) {
   return (
@@ -31,11 +33,13 @@ async function MyRallis({ searchParams }: Props) {
   const sp = await searchParams;
   const filter = parseResultFilter(sp.statut);
   const limit = parseLimit(sp.limite);
+  const q = parseSearch(sp.q);
   const shareId = (Array.isArray(sp.partage) ? sp.partage[0] : sp.partage) ?? ""; // lien « Partager ma victoire » de la fenêtre de résultats
-  const [r, w] = await Promise.all([getResults(user.id, filter, limit), getWallet(user.id)]);
+  const [r, w, suggestions] = await Promise.all([getResults(user.id, filter, limit, new Date(), q), getWallet(user.id), getRallisSuggestions(user.id)]);
   const s = r.summary;
   const now = new Date();
   const moreHref = `/rallis?${filter === "tous" ? "" : `statut=${filter}&`}limite=${limit + PAGE_SIZE}`;
+  const pending = w.pending.filter((p) => matchesSearch(q, p.matchLabel, p.pickedName));
 
   return (
     <section className="space-y-6">
@@ -44,14 +48,16 @@ async function MyRallis({ searchParams }: Props) {
         <p className="text-ink-muted">Tes rallis en cours et terminés, dans tous tes clubs.</p>
       </div>
 
+      <RallisSearch q={q} filter={filter} suggestions={suggestions} />
+
       <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="pending-section">
         <h2 className="font-serif text-xl text-primary">En cours</h2>
-        {w.pending.length === 0 ? (
-          <p className="text-ink-muted">Aucun ralli en attente de résultat.</p>
+        {pending.length === 0 ? (
+          <p className="text-ink-muted">{q ? "Aucun ralli en cours ne correspond à ta recherche." : "Aucun ralli en attente de résultat."}</p>
         ) : (
           <>
             <ul className="divide-y divide-line" data-testid="pending">
-              {w.pending.map((p) => (
+              {pending.map((p) => (
                 <li key={p.id}>
                   <Link href={`/rencontres/${p.encounterId}`} className="block min-h-11 py-2">
                     <span className="font-medium text-primary">{p.matchLabel}</span>
@@ -109,9 +115,9 @@ async function MyRallis({ searchParams }: Props) {
         </div>
       ) : (
         <>
-          <ResultFilters current={filter} counts={r.counts} />
+          <ResultFilters current={filter} counts={r.counts} q={q} />
           {r.groups.length === 0 ? (
-            <p className="text-ink-muted" data-testid="results-empty-filter">Aucun ralli dans cette catégorie.</p>
+            <p className="text-ink-muted" data-testid="results-empty-filter">{q ? "Aucun ralli terminé ne correspond à ta recherche." : "Aucun ralli dans cette catégorie."}</p>
           ) : (
             <div className="space-y-4" data-testid="results-list">
               {r.groups.map((g) => (

@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { RESULT_FILTERS, type ResultFilterKey } from "@/lib/predictions/results";
 
+function rallisHref(filter: ResultFilterKey, q: string) {
+  const params = new URLSearchParams();
+  if (filter !== "tous") params.set("statut", filter);
+  if (q) params.set("q", q);
+  const qs = params.toString();
+  return qs ? `/rallis?${qs}` : "/rallis";
+}
+
 /** Puces de filtre des rallis terminés : des liens (le choix reste dans l'adresse), avec le nombre de rallis. */
-export function ResultFilters({ current, counts }: { current: ResultFilterKey; counts: Record<ResultFilterKey, number> }) {
+export function ResultFilters({ current, counts, q = "" }: { current: ResultFilterKey; counts: Record<ResultFilterKey, number>; q?: string }) {
   return (
     <nav aria-label="Filtrer les rallis" data-testid="result-filters">
       <ul className="flex flex-wrap gap-2">
@@ -11,7 +19,7 @@ export function ResultFilters({ current, counts }: { current: ResultFilterKey; c
           return (
             <li key={f.key}>
               <Link
-                href={f.key === "tous" ? "/rallis" : `/rallis?statut=${f.key}`}
+                href={rallisHref(f.key, q)}
                 scroll={false}
                 aria-current={on ? "true" : undefined}
                 data-testid={`result-filter-${f.key}`}
