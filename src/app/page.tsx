@@ -6,17 +6,20 @@ import { ResultCard } from "@/components/result-card";
 import { StatusBadge } from "@/components/encounter-list";
 import { BigLogo, LawnCard, lawnButton } from "@/components/lawn-card";
 import { ClubSearchBar } from "@/components/club-directory";
-import { NearbyButton } from "@/components/nearby-button";
-import { NearbySection } from "@/components/nearby-section";
+import { DistanceBar } from "@/components/distance-bar";
+import { NearbyEncounterList } from "@/components/nearby-section";
 import { StoriesSection } from "@/components/stories-section";
 import { WhatsAppShare } from "@/components/share-link";
 import { ButtonLink } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { formatParisDay, formatParisTime, relativeDayLabel } from "@/lib/time";
 import { type FeedEncounter, getHomeFeed } from "@/server/feed";
-import { getMyLocation } from "@/server/nearby";
+import { radiusTitle } from "@/lib/geo";
+import { getMyLocation, listNearbyEncounters } from "@/server/nearby";
+import { listNearbyTournaments } from "@/server/nearby-tournaments";
 import { HOME_RESULTS, listResults } from "@/server/results-feed";
 import { listTournamentsForUser } from "@/server/tournaments";
+import { NearbyTournamentsList } from "@/components/nearby-tournaments";
 import { TournamentList } from "@/components/tournament-list";
 
 type HomeProps = { searchParams: Promise<{ proximite?: string | string[]; onglet?: string | string[] }> };
@@ -31,10 +34,10 @@ export default function Home({ searchParams }: HomeProps) {
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
-/** Les trois onglets de l'accueil : « Résultats », « Rencontres à venir » (par défaut) et « Tournoi à venir ». Le choix reste dans l'adresse (`?onglet=resultats`, `?onglet=tournois`). */
+/** Les trois onglets de l'accueil : « Résultats », « Interclubs à venir » (par défaut) et « Tournoi à venir ». Le choix reste dans l'adresse (`?onglet=resultats`, `?onglet=tournois`). */
 const HOME_TABS = [
   { key: "resultats", label: "Résultats", href: "/?onglet=resultats" },
-  { key: "a-venir", label: "Rencontres à venir", href: "/" },
+  { key: "a-venir", label: "Interclubs à venir", href: "/" },
   { key: "tournois", label: "Tournoi à venir", href: "/?onglet=tournois" },
 ] as const;
 
@@ -73,13 +76,16 @@ async function HomeContent({ searchParams }: HomeProps) {
   if (user.mustChangePassword) redirect("/mot-de-passe");
   const now = new Date();
   const sp = await searchParams;
-  const nearby = one(sp.proximite) === "1";
+  if (one(sp.proximite) === "1") redirect("/"); // ancien lien « interclubs à proximité » : la barre de distance est maintenant sous les onglets
   const wanted = one(sp.onglet);
   const tab: HomeTab = wanted === "resultats" ? "resultats" : wanted === "tournois" ? "tournois" : "a-venir";
   const [feed, location] = await Promise.all([getHomeFeed(user.id, now), getMyLocation(user.id)]);
   const next = feed.encounters.find((e) => e.status === "OPEN");
   const others = feed.encounters.filter((e) => e !== next);
   const only = feed.stewardClubs[0];
+  // La barre de distance (sous les onglets) décide de ce que montre l'onglet : « Mes clubs » = le fil habituel ; au-delà, la liste du rayon.
+  const farEncounters = tab === "a-venir" && location.radiusKm > 0 ? await listNearbyEncounters(user.id, now) : null;
+  const tournaments = tab === "tournois" ? await listNearbyTournaments(user.id, now) : null;
 
   return (
     <section className="space-y-5">
@@ -88,120 +94,116 @@ async function HomeContent({ searchParams }: HomeProps) {
       </h1>
 
       <ClubSearchBar />
-      <NearbyButton located={location.located} href="/?proximite=1" />
 
-      {nearby ? (
-        // Sur l'accueil, les rencontres à proximité s'affichent ici même, à la place des onglets.
-        <div className="space-y-4">
-          <Link href="/" className="inline-flex min-h-11 items-center font-semibold text-primary underline" data-testid="nearby-home-back">
-            ‹ Retour à mes rencontres
-          </Link>
-          <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
-            <NearbySection userId={user.id} now={now} />
+      <>
+        {feed.hasClub && (
+          <Suspense fallback={null}>
+            <StoriesSection userId={user.id} />
           </Suspense>
-        </div>
-      ) : (
-        <>
-          {feed.hasClub && (
-            <Suspense fallback={null}>
-              <StoriesSection userId={user.id} />
-            </Suspense>
-          )}
+        )}
 
-          {!feed.hasClub ? (
-            <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
-              <h2 className="font-serif text-xl text-primary">Trouve ton club</h2>
-              <p className="text-ink-muted">Cherche ton club, consulte ses rencontres, puis rejoins-le d&apos;un bouton pour pronostiquer.</p>
-              <div className="flex flex-wrap gap-3">
-                <ButtonLink href="/clubs/recherche">Rechercher un club</ButtonLink>
-                <ButtonLink href="/clubs/demande" variant="ghost">
-                  Je suis admin d&apos;un club
-                </ButtonLink>
-              </div>
+        {!feed.hasClub ? (
+          <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
+            <h2 className="font-serif text-xl text-primary">Trouve ton club</h2>
+            <p className="text-ink-muted">Cherche ton club, consulte ses rencontres, puis rejoins-le d&apos;un bouton pour pronostiquer.</p>
+            <div className="flex flex-wrap gap-3">
+              <ButtonLink href="/clubs/recherche">Rechercher un club</ButtonLink>
+              <ButtonLink href="/clubs/demande" variant="ghost">
+                Je suis admin d&apos;un club
+              </ButtonLink>
             </div>
-          ) : (
-            <>
-              <HomeTabs active={tab} />
-              {tab === "resultats" ? (
-                <>
-                  <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
-                    <HomeResults userId={user.id} multiClub={feed.multiClub} />
-                  </Suspense>
-                  <Suspense fallback={null}>
-                    <HomeTournaments userId={user.id} which="finished" now={now} />
-                  </Suspense>
-                </>
-              ) : tab === "tournois" ? (
+          </div>
+        ) : (
+          <>
+            <HomeTabs active={tab} />
+            {tab === "a-venir" && (
+              <DistanceBar
+                kind="interclubs"
+                radiusKm={location.radiusKm}
+                scope={radiusTitle(location.radiusKm, location.commune)}
+                count={farEncounters ? (farEncounters.needsLocation ? null : farEncounters.encounters.length) : feed.encounters.length}
+                noun="interclub"
+              />
+            )}
+            {tab === "tournois" && tournaments && (
+              <DistanceBar
+                kind="tournois"
+                radiusKm={location.tournamentRadiusKm}
+                scope={radiusTitle(location.tournamentRadiusKm, location.commune)}
+                count={tournaments.needsLocation ? null : tournaments.tournaments.length}
+                noun="tournoi"
+              />
+            )}
+            {tab === "resultats" ? (
+              <>
                 <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
-                  <HomeTournaments userId={user.id} which="current" now={now} />
+                  <HomeResults userId={user.id} multiClub={feed.multiClub} />
                 </Suspense>
-              ) : feed.encounters.length === 0 ? (
-                <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
-                  <h2 className="font-serif text-xl text-primary">Pas de rencontre pour l&apos;instant</h2>
-                  {feed.stewardClubs.length > 0 ? (
-                    <>
-                      <p className="text-ink-muted">Publie la prochaine rencontre de ton club : elle apparaît ici avec ses cotes, et tes coéquipiers peuvent pronostiquer.</p>
-                      <ButtonLink href={feed.stewardClubs.length === 1 && only ? `/clubs/${only.id}/rencontres/nouvelle` : "/clubs"}>
-                        Créer une rencontre
+                <Suspense fallback={null}>
+                  <HomeTournaments userId={user.id} now={now} />
+                </Suspense>
+              </>
+            ) : tab === "tournois" ? (
+              tournaments && <NearbyTournamentsList result={tournaments} />
+            ) : farEncounters ? (
+              <NearbyEncounterList result={farEncounters} now={now} />
+            ) : feed.encounters.length === 0 ? (
+              <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
+                <h2 className="font-serif text-xl text-primary">Pas de rencontre pour l&apos;instant</h2>
+                {feed.stewardClubs.length > 0 ? (
+                  <>
+                    <p className="text-ink-muted">Publie la prochaine rencontre de ton club : elle apparaît ici avec ses cotes, et tes coéquipiers peuvent pronostiquer.</p>
+                    <ButtonLink href={feed.stewardClubs.length === 1 && only ? `/clubs/${only.id}/rencontres/nouvelle` : "/clubs"}>
+                      Créer une rencontre
+                    </ButtonLink>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-ink-muted" data-testid="empty-member">
+                      Ton capitaine publiera bientôt la prochaine rencontre. Elle apparaîtra ici avec ses cotes.
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <WhatsAppShare
+                        label="Inviter des coéquipiers"
+                        text="Rejoins-moi sur Ralli pour pronostiquer les interclubs de tennis (jeu gratuit, sans argent réel) :"
+                        path="/inscription"
+                      />
+                      <ButtonLink href="/clubs" variant="ghost">
+                        Mes clubs
                       </ButtonLink>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-ink-muted" data-testid="empty-member">
-                        Ton capitaine publiera bientôt la prochaine rencontre. Elle apparaîtra ici avec ses cotes.
-                      </p>
-                      <div className="flex flex-wrap gap-3">
-                        <WhatsAppShare
-                          label="Inviter des coéquipiers"
-                          text="Rejoins-moi sur Ralli pour pronostiquer les interclubs de tennis (jeu gratuit, sans argent réel) :"
-                          path="/inscription"
-                        />
-                        <ButtonLink href="/clubs" variant="ghost">
-                          Mes clubs
-                        </ButtonLink>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4" data-testid="feed">
-                  {next && <NextEncounter e={next} now={now} showLogo={feed.multiClub} />}
-                  {others.length > 0 && (
-                    <ul className="space-y-4">
-                      {others.map((e) => (
-                        <li key={e.id}>
-                          <EncounterCard e={e} now={now} showLogo={feed.multiClub} />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </>
-      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4" data-testid="feed">
+                {next && <NextEncounter e={next} now={now} showLogo={feed.multiClub} />}
+                {others.length > 0 && (
+                  <ul className="space-y-4">
+                    {others.map((e) => (
+                      <li key={e.id}>
+                        <EncounterCard e={e} now={now} showLogo={feed.multiClub} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </>
     </section>
   );
 }
 
-/** Tournois des clubs de l'utilisateur : à venir ou en cours (onglet « Tournoi à venir ») ou terminés (onglet « Résultats »). Rien s'il n'y en a pas, sauf dans son propre onglet. */
-async function HomeTournaments({ userId, which, now }: { userId: string; which: "current" | "finished"; now: Date }) {
-  const { current, finished } = await listTournamentsForUser(userId, now);
-  const items = which === "current" ? current : finished;
-  if (items.length === 0) {
-    if (which === "finished") return null;
-    return (
-      <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm" data-testid="home-tournaments-empty">
-        <h2 className="font-serif text-xl text-primary">Pas de tournoi à venir</h2>
-        <p className="text-ink-muted">Les tournois publiés par tes clubs apparaissent ici, avec leur tableau et les matchs à pronostiquer.</p>
-      </div>
-    );
-  }
+/** Tournois terminés des clubs de l'utilisateur (onglet « Résultats »). Rien s'il n'y en a pas. Les tournois à venir ont leur onglet (`NearbyTournamentsList`). */
+async function HomeTournaments({ userId, now }: { userId: string; now: Date }) {
+  const { finished } = await listTournamentsForUser(userId, now);
+  if (finished.length === 0) return null;
   return (
-    <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid={`home-tournaments-${which}`}>
-      <h2 className="font-serif text-xl text-primary">{which === "current" ? "Tournois à venir" : "Tournois terminés"}</h2>
-      <TournamentList items={items} empty="" showClub />
+    <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="home-tournaments-finished">
+      <h2 className="font-serif text-xl text-primary">Tournois terminés</h2>
+      <TournamentList items={finished} empty="" showClub />
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { addMatch, createEncounter, publishEncounter } from "./encounters";
 import { getMyLocation, listNearbyEncounters, setMyPostalCode, setMyRadius } from "./nearby";
 import { addNewPlayerToTeam, createExternalTeam, createTeam } from "./teams";
 
-// Rencontres à proximité : code postal (privé, vérifié), rayon réglable (30 km par défaut), clubs placés sur la carte.
+// Interclub à proximité : code postal (privé, vérifié), rayon réglable (30 km par défaut), clubs placés sur la carte.
 
 const T0 = new Date("2026-10-10T10:00:00Z");
 const NOW = new Date("2026-10-12T08:00:00Z");
@@ -45,9 +45,11 @@ beforeEach(async () => {
 });
 
 describe("code postal du compte", () => {
-  it("par défaut : pas de position, rayon de 30 km", async () => {
-    expect(await getMyLocation(me)).toEqual({ postalCode: null, commune: null, located: false, radiusKm: 30 });
-    expect(await listNearbyEncounters(me, NOW)).toBeNull();
+  it("par défaut : pas de position, « Mes clubs » (0 km) pour les interclubs comme pour les tournois", async () => {
+    expect(await getMyLocation(me)).toEqual({ postalCode: null, commune: null, located: false, radiusKm: 0, tournamentRadiusKm: 0 });
+    expect(await listNearbyEncounters(me, NOW)).toMatchObject({ needsLocation: false, located: false, radiusKm: 0, encounters: [] }); // mes clubs : pas besoin de code postal
+    await setMyRadius(me, 30);
+    expect(await listNearbyEncounters(me, NOW)).toMatchObject({ needsLocation: true, located: false, encounters: [] }); // 30 km sans code postal : on le demande
   });
 
   it("un code valide enregistre la commune et sa position (le centre de la commune)", async () => {
@@ -84,30 +86,37 @@ describe("code postal du compte", () => {
 });
 
 describe("rayon", () => {
-  it("1 à 200 km, entier ; gardé dans le compte", async () => {
+  it("0 (mes clubs), 1 à 200 km ou 999 (toute la France), entier ; gardé dans le compte, un réglage pour les interclubs et un pour les tournois", async () => {
     await expect(setMyRadius(me, "50")).resolves.toBe(50);
     expect((await getMyLocation(me)).radiusKm).toBe(50);
+    await setMyRadius(me, 0);
     await setMyRadius(me, 1);
     await setMyRadius(me, "200");
-    for (const bad of ["0", "201", "-3", "12,5", "abc", "", "1e2"]) await expect(setMyRadius(me, bad), bad).rejects.toMatchObject({ code: "INVALID" });
-    expect((await getMyLocation(me)).radiusKm).toBe(200);
+    await setMyRadius(me, "999");
+    for (const bad of ["201", "998", "1000", "-3", "12,5", "abc", "", "1e2"]) await expect(setMyRadius(me, bad), bad).rejects.toMatchObject({ code: "INVALID" });
+    expect((await getMyLocation(me)).radiusKm).toBe(999);
+    await setMyRadius(me, 75, "tournois"); // réglage séparé : ne touche pas celui des interclubs
+    expect(await getMyLocation(me)).toMatchObject({ radiusKm: 999, tournamentRadiusKm: 75 });
   });
 
   it("la base refuse un rayon, un code postal ou une position absurdes", async () => {
-    await expect(db.user.update({ where: { id: me }, data: { nearbyRadiusKm: 0 } })).rejects.toThrow();
+    await expect(db.user.update({ where: { id: me }, data: { nearbyRadiusKm: -1 } })).rejects.toThrow();
     await expect(db.user.update({ where: { id: me }, data: { nearbyRadiusKm: 201 } })).rejects.toThrow();
+    await expect(db.user.update({ where: { id: me }, data: { tournamentRadiusKm: 500 } })).rejects.toThrow();
+    await db.user.update({ where: { id: me }, data: { nearbyRadiusKm: 0, tournamentRadiusKm: 999 } }); // 0 et 999 sont permis
     await expect(db.user.update({ where: { id: me }, data: { postalCode: "6900" } })).rejects.toThrow();
     await expect(db.user.update({ where: { id: me }, data: { latitude: 45 } })).rejects.toThrow();
     await expect(db.user.update({ where: { id: me }, data: { latitude: 95, longitude: 4 } })).rejects.toThrow();
   });
 });
 
-describe("rencontres à proximité", () => {
+describe("interclub à proximité", () => {
   beforeEach(async () => {
     await setMyPostalCode(me, "69003", found("Lyon"));
+    await setMyRadius(me, 30); // le réglage par défaut est « Mes clubs » : ces tests cherchent autour de Lyon
   });
 
-  it("30 km par défaut : les clubs proches, triés par date de début (pas par distance), avec leur distance", async () => {
+  it("30 km : les clubs proches, triés par date de début (pas par distance), avec leur distance", async () => {
     const lyon = await clubWithEncounter("TC Lyon", { latitude: 45.75, longitude: 4.85 }, at(3));
     const villefranche = await clubWithEncounter("TC Villefranche", VILLEFRANCHE, at(1));
     await clubWithEncounter("TC Grenoble", GRENOBLE, at(2));
@@ -174,7 +183,41 @@ describe("rencontres à proximité", () => {
     await clubWithEncounter("TC Grenoble", GRENOBLE, at(2));
     const other = await makeUser("Isere");
     await setMyPostalCode(other, "38000", found("Grenoble", GRENOBLE));
+    await setMyRadius(other, 30);
     expect((await listNearbyEncounters(me, NOW))!.encounters).toEqual([]);
     expect((await listNearbyEncounters(other, NOW))!.encounters.map((e) => e.club.name)).toEqual(["TC Grenoble"]);
+  });
+});
+
+describe("barre de distance : mes clubs et toute la France", () => {
+  it("0 km : seulement les clubs dont je suis membre, sans code postal ; toute la France : tous les clubs, localisés ou non", async () => {
+    const mine = await clubWithEncounter("TC Mien", null, at(2)); // non localisé
+    await joinClub(me, mine.clubId);
+    const far = await clubWithEncounter("TC Lointain", GRENOBLE, at(1));
+    const unplaced = await clubWithEncounter("TC Sans Adresse", null, at(3));
+    await setMyRadius(me, 0);
+    let r = await listNearbyEncounters(me, NOW);
+    expect(r).toMatchObject({ needsLocation: false, located: false, radiusKm: 0, clubsInRange: 1 });
+    expect(r.encounters.map((e) => e.id)).toEqual([mine.encounterId]);
+    expect(r.encounters[0]).toMatchObject({ isMember: true, distanceKm: null });
+    await setMyRadius(me, 999);
+    r = await listNearbyEncounters(me, NOW);
+    expect(r).toMatchObject({ needsLocation: false, radiusKm: 999, clubsInRange: 3 });
+    expect(r.encounters.map((e) => e.id)).toEqual([far.encounterId, mine.encounterId, unplaced.encounterId]); // par date de début
+  });
+
+  it("toute la France avec un code postal : les distances sont calculées pour les clubs localisés", async () => {
+    await setMyPostalCode(me, "69003", found("Lyon"));
+    const grenoble = await clubWithEncounter("TC Grenoble", GRENOBLE, at(1));
+    await setMyRadius(me, 999);
+    const r = await listNearbyEncounters(me, NOW);
+    expect(r.encounters.find((e) => e.id === grenoble.encounterId)!.distanceKm).toBeGreaterThan(90);
+  });
+
+  it("un rayon de 1 à 200 km sans code postal demande le code, même avec un club membre", async () => {
+    const mine = await clubWithEncounter("TC Mien", { latitude: 45.75, longitude: 4.85 }, at(2));
+    await joinClub(me, mine.clubId);
+    await setMyRadius(me, 50);
+    expect(await listNearbyEncounters(me, NOW)).toMatchObject({ needsLocation: true, encounters: [] });
   });
 });

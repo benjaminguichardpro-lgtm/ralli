@@ -25,12 +25,13 @@ export async function savePostalCodeAction(_: FormState, fd: FormData): Promise<
 export async function saveRadiusAction(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireUser();
   const values = { radius: String(fd.get("radius") ?? "") };
+  const kind = fd.get("kind") === "tournois" ? "tournois" : "interclubs";
   try {
-    await setMyRadius(user.id, values.radius);
+    await setMyRadius(user.id, values.radius, kind);
   } catch (e) {
     if (e instanceof DomainError) return { message: e.message, errors: { radius: e.message }, values };
     throw e;
   }
   refresh();
-  return { ok: true, message: "Rayon enregistré.", values };
+  return { ok: true, message: "Distance enregistrée.", values };
 }

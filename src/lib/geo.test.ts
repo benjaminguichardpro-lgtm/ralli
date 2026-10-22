@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boundingBox, distanceKm, formatDistance, parseRadius } from "./geo";
+import { FRANCE_KM, SLIDER_MAX, boundingBox, distanceKm, formatDistance, parseRadius, radiusFromSlider, radiusLabel, radiusPhrase, radiusTitle, sliderFromRadius } from "./geo";
 
 const lyon = { latitude: 45.758, longitude: 4.8351 };
 const paris = { latitude: 48.8589, longitude: 2.347 };
@@ -47,11 +47,27 @@ describe("rectangle de recherche", () => {
 });
 
 describe("rayon saisi et distance affichée", () => {
-  it("entier de 1 à 200", () => {
+  it("entier de 0 à 200, ou 999 (toute la France)", () => {
     expect(parseRadius("30")).toBe(30);
     expect(parseRadius(" 200 ")).toBe(200);
     expect(parseRadius("1")).toBe(1);
-    for (const bad of ["0", "201", "-5", "12,5", "abc", "", null, undefined, "1000"]) expect(parseRadius(bad), String(bad)).toBeNull();
+    expect(parseRadius("0")).toBe(0);
+    expect(parseRadius("999")).toBe(FRANCE_KM);
+    for (const bad of ["201", "998", "1000", "-5", "12,5", "abc", "", null, undefined]) expect(parseRadius(bad), String(bad)).toBeNull();
+  });
+  it("la barre : 0 à 200 = kilomètres, dernier cran = toute la France", () => {
+    expect(SLIDER_MAX).toBe(201);
+    expect([0, 1, 60, 200, 201].map(radiusFromSlider)).toEqual([0, 1, 60, 200, 999]);
+    expect([0, 1, 60, 200, 999].map(sliderFromRadius)).toEqual([0, 1, 60, 200, 201]);
+    expect(radiusFromSlider(sliderFromRadius(137))).toBe(137);
+  });
+  it("libellés : mes clubs, kilomètres, toute la France", () => {
+    expect([0, 30, 200, 999].map(radiusLabel)).toEqual(["Mes clubs", "30 km", "200 km", "Toute la France"]);
+    expect(radiusTitle(30, "Lyon")).toBe("À moins de 30 km de Lyon");
+    expect(radiusTitle(30, null)).toBe("À moins de 30 km");
+    expect(radiusTitle(0, "Lyon")).toBe("Mes clubs");
+    expect(radiusTitle(999, null)).toBe("Toute la France");
+    expect([0, 30, 999].map(radiusPhrase)).toEqual(["dans tes clubs", "à moins de 30 km", "en France"]);
   });
   it("libellé de distance", () => {
     expect(formatDistance(0.4)).toBe("à moins de 1 km");

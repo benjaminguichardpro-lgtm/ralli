@@ -1,41 +1,43 @@
 import Link from "next/link";
-import { formatDistance } from "@/lib/geo";
+import { formatDistance, radiusPhrase, radiusTitle } from "@/lib/geo";
 import { formatParisDay, formatParisTime, relativeDayLabel } from "@/lib/time";
 import { listNearbyEncounters } from "@/server/nearby";
 import { ClubLogo } from "./club-logo";
 import { StatusBadge } from "./encounter-list";
-import { PostalCodeForm, RadiusForm } from "./location-forms";
+import { type NearbyResult } from "@/server/nearby";
+import { DistanceBar } from "./distance-bar";
+import { PostalCodeForm } from "./location-forms";
 
 /**
- * Rencontres à proximité de la personne : réglage du rayon, puis les rencontres (la plus proche dans le temps d'abord).
- * Utilisé par l'accueil (`?proximite=1`) et par la page `/rencontres/proximite`. Sans code postal enregistré (adresse tapée à la main),
- * le formulaire du code postal s'affiche à la place.
+ * Page « Interclub à proximité » (ouverte depuis la recherche de clubs) : la barre de distance, puis les rencontres. Sur l'accueil,
+ * la barre est sous les onglets et la liste (`NearbyEncounterList`) remplace le fil dès qu'on s'éloigne de « Mes clubs ».
  */
 export async function NearbySection({ userId, now = new Date() }: { userId: string; now?: Date }) {
   const result = await listNearbyEncounters(userId, now);
-  if (!result) {
-    return (
-      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="nearby-needs-location">
-        <h2 className="font-serif text-xl text-primary">Où es-tu ?</h2>
-        <p className="text-ink-muted">Indique le code postal de ta ville pour voir les rencontres près de chez toi.</p>
-        <PostalCodeForm submitLabel="Valider" />
-      </div>
-    );
-  }
-  const { encounters, radiusKm, commune } = result;
   return (
     <div className="space-y-4" data-testid="nearby">
-      <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm">
-        <h2 className="font-serif text-xl text-primary" data-testid="nearby-title">
-          À moins de {radiusKm} km{commune ? ` de ${commune}` : ""}
-        </h2>
-        <RadiusForm radiusKm={radiusKm} />
-      </div>
-      {encounters.length === 0 ? (
+      <DistanceBar radiusKm={result.radiusKm} kind="interclubs" scope={radiusTitle(result.radiusKm, result.commune)} count={result.needsLocation ? null : result.encounters.length} noun="interclub" />
+      <NearbyEncounterList result={result} now={now} />
+    </div>
+  );
+}
+
+/** Les interclubs du rayon choisi (la plus proche dans le temps d'abord) ; sans code postal pour un rayon en km, le formulaire du code postal. */
+export function NearbyEncounterList({ result, now }: { result: NearbyResult; now: Date }) {
+  const { encounters, radiusKm } = result;
+  return (
+    <>
+      {result.needsLocation ? (
+        <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="nearby-needs-location">
+          <h2 className="font-serif text-xl text-primary">Où es-tu ?</h2>
+          <p className="text-ink-muted">Indique le code postal de ta ville pour voir les interclubs près de chez toi. « Mes clubs » et « France » n&apos;en ont pas besoin.</p>
+          <PostalCodeForm submitLabel="Valider" />
+        </div>
+      ) : encounters.length === 0 ? (
         <div className="space-y-3 rounded-2xl bg-surface p-4 shadow-sm" data-testid="nearby-empty">
-          <p className="font-semibold">Aucune rencontre à moins de {radiusKm} km pour l&apos;instant.</p>
+          <p className="font-semibold">Aucune rencontre {radiusPhrase(radiusKm)} pour l&apos;instant.</p>
           <p className="text-sm text-ink-muted">
-            Élargis le rayon ci-dessus, ou regarde la carte des clubs. Seuls les clubs dont l&apos;adresse est localisée sur la carte sont pris en compte.
+            Élargis la distance ci-dessus, ou regarde la carte des clubs. Seuls les clubs dont l&apos;adresse est localisée sur la carte sont pris en compte.
           </p>
           <Link href="/clubs/carte" className="inline-flex min-h-11 items-center font-semibold text-primary underline">
             Voir la carte des clubs
@@ -64,7 +66,7 @@ export async function NearbySection({ userId, now = new Date() }: { userId: stri
                   <span className="flex flex-wrap items-center gap-2 text-sm text-ink-muted">
                     <ClubLogo club={e.club} size={24} />
                     <span>{e.club.name}</span>
-                    <span data-testid="nearby-distance">· {formatDistance(e.distanceKm)}</span>
+                    {e.distanceKm !== null && <span data-testid="nearby-distance">· {formatDistance(e.distanceKm)}</span>}
                   </span>
                   <span className="flex flex-wrap items-center gap-2 text-sm text-ink-muted">
                     <StatusBadge status={e.status} label={e.statusLabel} />
@@ -77,6 +79,6 @@ export async function NearbySection({ userId, now = new Date() }: { userId: stri
           })}
         </ul>
       )}
-    </div>
+    </>
   );
 }

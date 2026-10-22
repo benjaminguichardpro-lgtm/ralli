@@ -18,7 +18,7 @@ function Pin() {
 }
 
 /**
- * « Voir les rencontres à proximité » : mène aux résultats (`href`). Sans code postal enregistré, une fenêtre « Où es-tu ? »
+ * « Voir les interclubs à proximité » : mène aux résultats (`href`). Sans code postal enregistré, une fenêtre « Où es-tu ? »
  * le demande d'abord ; une fois enregistré (il reste dans le profil), on arrive directement sur les résultats.
  */
 export function NearbyButton({ located, href }: { located: boolean; href: string }) {
@@ -34,7 +34,7 @@ export function NearbyButton({ located, href }: { located: boolean; href: string
     return (
       <Link href={href} className={BUTTON} data-testid="nearby-button">
         <Pin />
-        Voir les rencontres à proximité
+        Voir les interclubs à proximité
       </Link>
     );
   }
@@ -42,13 +42,13 @@ export function NearbyButton({ located, href }: { located: boolean; href: string
     <>
       <button type="button" onClick={() => setOpen(true)} className={BUTTON} data-testid="nearby-button">
         <Pin />
-        Voir les rencontres à proximité
+        Voir les interclubs à proximité
       </button>
       {open && (
         <dialog ref={dialog} className="sheet" aria-label="Où es-tu ?" data-testid="nearby-dialog" onClose={() => setOpen(false)}>
           <div className="mx-auto grid max-h-[90dvh] w-full max-w-xl gap-4 overflow-y-auto rounded-t-3xl bg-surface px-5 pb-6 pt-4">
             <h2 className="font-serif text-2xl text-primary">Où es-tu ?</h2>
-            <p className="text-ink-muted">Indique le code postal de ta ville pour voir les rencontres près de chez toi. Tu pourras le modifier ou l&apos;effacer dans ton profil.</p>
+            <p className="text-ink-muted">Indique le code postal de ta ville pour voir les interclubs près de chez toi. Tu pourras le modifier ou l&apos;effacer dans ton profil.</p>
             <PostalCodeForm
               submitLabel="Valider"
               onSaved={() => {

@@ -135,7 +135,8 @@ model User {
   commune            String?
   latitude           Float?
   longitude          Float?
-  nearbyRadiusKm     Int       @default(30) // rayon de la recherche à proximité, réglable par la personne (1 à 200 km)
+  nearbyRadiusKm     Int       @default(0) // rayon « Interclubs à venir » et « Interclub à proximité », réglable par la personne : 0 (mes clubs, défaut), 1 à 200 km, 999 (toute la France)
+  tournamentRadiusKm Int       @default(0) // rayon « Tournoi à venir » (mêmes valeurs) ; 0 par défaut : les tournois de mes clubs
   profilePublic      Boolean   @default(true) // profil visible des membres des clubs en commun (tranche 39) ; false = avatar et pseudo seulement
   createdAt          DateTime  @default(now())
 

@@ -4,12 +4,12 @@ import { Suspense } from "react";
 import { NearbySection } from "@/components/nearby-section";
 import { requireUser } from "@/lib/auth/current-user";
 
-export const metadata: Metadata = { title: "Rencontres à proximité · Ralli" };
+export const metadata: Metadata = { title: "Interclub à proximité · Ralli" };
 
 export default function NearbyPage() {
   return (
     <section className="space-y-4">
-      <h1 className="font-serif text-3xl text-primary">Rencontres à proximité</h1>
+      <h1 className="font-serif text-3xl text-primary">Interclub à proximité</h1>
       <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
         <Content />
       </Suspense>

@@ -1,25 +1,30 @@
 import { db } from "@/lib/db";
 import { type EffectiveStatus, STATUS_LABELS, effectiveStatus } from "@/lib/encounters/state";
-import { boundingBox, distanceKm, parseRadius } from "@/lib/geo";
+import { parseRadius } from "@/lib/geo";
 import { type LocateResult, locatePostalCode, postalCodeSchema } from "@/lib/location";
 import { sideLabel } from "./encounters";
 import { DomainError } from "./errors";
+import { clubsForRadius } from "./nearby-clubs";
 
-// Rencontres à proximité : la ville de la personne (code postal facultatif, privé) et un rayon réglable (30 km par défaut).
-// On ne garde que le centre de la commune. Les clubs sans adresse localisée sur la carte ne peuvent pas être placés.
+// Interclub à proximité : la ville de la personne (code postal facultatif, privé) et une barre de distance (30 km par défaut) :
+// 0 = mes clubs, 1 à 200 km, toute la France (voir nearby-clubs.ts). On ne garde que le centre de la commune.
+// Les clubs sans adresse localisée sur la carte ne peuvent pas être placés (ils n'apparaissent que pour « mes clubs » et « toute la France »).
 
 export type MyLocation = {
   postalCode: string | null;
   commune: string | null;
   /** Vrai si le code postal est enregistré et localisé : la recherche à proximité est possible. */
   located: boolean;
+  /** Rayon « Interclub à proximité » (0, 1 à 200, ou 999 = toute la France). */
   radiusKm: number;
+  /** Rayon « Tournoi à venir » (mêmes valeurs). */
+  tournamentRadiusKm: number;
 };
 
 export async function getMyLocation(userId: string): Promise<MyLocation> {
-  const u = await db.user.findUnique({ where: { id: userId }, select: { postalCode: true, commune: true, latitude: true, nearbyRadiusKm: true } });
+  const u = await db.user.findUnique({ where: { id: userId }, select: { postalCode: true, commune: true, latitude: true, nearbyRadiusKm: true, tournamentRadiusKm: true } });
   if (!u) throw new DomainError("NOT_FOUND", "Compte introuvable");
-  return { postalCode: u.postalCode, commune: u.commune, located: u.postalCode !== null && u.latitude !== null, radiusKm: u.nearbyRadiusKm };
+  return { postalCode: u.postalCode, commune: u.commune, located: u.postalCode !== null && u.latitude !== null, radiusKm: u.nearbyRadiusKm, tournamentRadiusKm: u.tournamentRadiusKm };
 }
 
 /**
@@ -42,11 +47,13 @@ export async function setMyPostalCode(userId: string, rawCode: string, locate: (
   return { commune: name };
 }
 
-/** Rayon de la recherche à proximité : entier de 1 à 200 km, gardé dans le compte. */
-export async function setMyRadius(userId: string, raw: unknown): Promise<number> {
+export type RadiusKind = "interclubs" | "tournois";
+
+/** Rayon d'une recherche à proximité : 0 (mes clubs), entier de 1 à 200 km, ou 999 (toute la France), gardé dans le compte. */
+export async function setMyRadius(userId: string, raw: unknown, kind: RadiusKind = "interclubs"): Promise<number> {
   const km = parseRadius(raw);
-  if (km === null) throw new DomainError("INVALID", "Le rayon est un nombre entier de kilomètres, de 1 à 200");
-  await db.user.update({ where: { id: userId }, data: { nearbyRadiusKm: km } });
+  if (km === null) throw new DomainError("INVALID", "La distance est un nombre entier de kilomètres, de 0 à 200, ou toute la France");
+  await db.user.update({ where: { id: userId }, data: kind === "tournois" ? { tournamentRadiusKm: km } : { nearbyRadiusKm: km } });
   return km;
 }
 
@@ -60,33 +67,35 @@ export type NearbyEncounter = {
   away: string;
   matchCount: number;
   club: { id: string; name: string; logoUpdatedAt: Date | null };
-  /** Distance à vol d'oiseau entre la commune de la personne et le club. */
-  distanceKm: number;
+  /** Distance à vol d'oiseau entre la commune de la personne et le club ; null si l'un des deux n'est pas localisé. */
+  distanceKm: number | null;
   isMember: boolean;
 };
 
-export type NearbyResult = { radiusKm: number; commune: string | null; clubsInRange: number; encounters: NearbyEncounter[] };
+export type NearbyResult = {
+  radiusKm: number;
+  commune: string | null;
+  located: boolean;
+  /** Vrai si le rayon demande le code postal (1 à 200 km) et qu'il n'est pas enregistré : aucun résultat, la page le demande. */
+  needsLocation: boolean;
+  clubsInRange: number;
+  encounters: NearbyEncounter[];
+};
 
 const MAX_RESULTS = 50;
 
 /**
- * Rencontres publiées (pronostics ouverts), non archivées et pas encore commencées des clubs situés dans le rayon, la plus proche
- * dans le temps d'abord. Les clubs sont publics : un club dont on n'est pas membre apparaît aussi (page en lecture seule).
- * Null si la personne n'a pas renseigné son code postal.
+ * Rencontres publiées (pronostics ouverts), non archivées et pas encore commencées des clubs retenus par la barre de distance,
+ * la plus proche dans le temps d'abord. Les clubs sont publics : un club dont on n'est pas membre apparaît aussi (page en lecture seule).
+ * Un rayon de 1 à 200 km sans code postal enregistré donne `needsLocation` (aucune rencontre) ; 0 et « toute la France » n'en ont pas besoin.
  */
-export async function listNearbyEncounters(userId: string, now = new Date()): Promise<NearbyResult | null> {
-  const me = await db.user.findUnique({ where: { id: userId }, select: { postalCode: true, commune: true, latitude: true, longitude: true, nearbyRadiusKm: true } });
-  if (!me || me.latitude === null || me.longitude === null) return null;
-  const origin = { latitude: me.latitude, longitude: me.longitude };
-  const box = boundingBox(origin, me.nearbyRadiusKm);
-  const clubs = await db.club.findMany({
-    where: { deletedAt: null, latitude: { gte: box.minLat, lte: box.maxLat }, longitude: { gte: box.minLon, lte: box.maxLon } },
-    select: { id: true, name: true, logoUpdatedAt: true, latitude: true, longitude: true, memberships: { where: { userId }, select: { userId: true } } },
-  });
-  const inRange = clubs
-    .map((c) => ({ ...c, km: distanceKm(origin, { latitude: c.latitude!, longitude: c.longitude! }) }))
-    .filter((c) => c.km <= me.nearbyRadiusKm);
-  const byId = new Map(inRange.map((c) => [c.id, c]));
+export async function listNearbyEncounters(userId: string, now = new Date()): Promise<NearbyResult> {
+  const me = await db.user.findUnique({ where: { id: userId }, select: { nearbyRadiusKm: true } });
+  if (!me) throw new DomainError("NOT_FOUND", "Compte introuvable");
+  const scope = await clubsForRadius(userId, me.nearbyRadiusKm);
+  const head = { radiusKm: me.nearbyRadiusKm, commune: scope.commune, located: scope.located, needsLocation: scope.needsLocation, clubsInRange: scope.clubs.length };
+  if (scope.needsLocation || scope.clubs.length === 0) return { ...head, encounters: [] };
+  const byId = new Map(scope.clubs.map((c) => [c.id, c]));
   const rows = await db.encounter.findMany({
     where: { organizerClubId: { in: [...byId.keys()] }, status: "OPEN", archivedAt: null, startsAt: { gt: now } },
     orderBy: [{ startsAt: "asc" }, { id: "asc" }],
@@ -116,8 +125,8 @@ export async function listNearbyEncounters(userId: string, now = new Date()): Pr
       matchCount: e._count.matches,
       club: { id: club.id, name: club.name, logoUpdatedAt: club.logoUpdatedAt },
       distanceKm: club.km,
-      isMember: club.memberships.length > 0,
+      isMember: club.isMember,
     };
   });
-  return { radiusKm: me.nearbyRadiusKm, commune: me.commune, clubsInRange: inRange.length, encounters };
+  return { ...head, encounters };
 }

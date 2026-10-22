@@ -503,13 +503,13 @@ export async function tournamentExclusion(tx: Tx | typeof db, userId: string, t:
 
 export type TournamentCard = { id: string; clubId: string; clubName: string; name: string; status: TournamentStatus; statusLabel: string; startsAt: Date; drawSize: number; winner: string | null; openMatches: number };
 
-const cardSelect = {
+export const cardSelect = {
   id: true, clubId: true, name: true, status: true, startsAt: true, drawSize: true, winnerId: true,
   club: { select: { name: true } },
   matches: { where: { outcome: null, oddsHomeX100: { not: null } }, select: { startsAt: true } },
 } as const;
 
-async function toCards(rows: Prisma.TournamentGetPayload<{ select: typeof cardSelect }>[], now: Date): Promise<TournamentCard[]> {
+export async function toCards(rows: Prisma.TournamentGetPayload<{ select: typeof cardSelect }>[], now: Date): Promise<TournamentCard[]> {
   const winnerIds = rows.map((r) => r.winnerId).filter((x): x is string => x !== null);
   const winners = winnerIds.length ? await db.player.findMany({ where: { id: { in: winnerIds } }, select: { id: true, firstName: true, lastName: true } }) : [];
   const byId = new Map(winners.map((w) => [w.id, sideName([w])]));
