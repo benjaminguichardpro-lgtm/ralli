@@ -5,7 +5,7 @@ import { checkPage, queryTestDb, seedDemoOnTestDb, signIn, wipeTestDb } from "./
 
 test.describe.configure({ mode: "serial" });
 
-const PASSWORD = "demo-ralli-2026";
+const PASSWORD = "Demo-ralli-2026!";
 let clubId: string;
 const ids: Record<"open" | "locked" | "proposed" | "disputed" | "cancelled" | "draft" | "confirmed", string> = {} as never;
 

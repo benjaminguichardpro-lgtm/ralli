@@ -6,7 +6,7 @@ import { checkPage, queryTestDb, seedDemoOnTestDb, signIn, wipeTestDb } from "./
 
 test.describe.configure({ mode: "serial" });
 
-const PASSWORD = "demo-ralli-2026";
+const PASSWORD = "Demo-ralli-2026!";
 type Row = { id: string; status: string; club: string; clubId: string };
 let all: Row[]; // résultats des clubs de parieur1, du plus récent au plus ancien
 let lyonId: string;

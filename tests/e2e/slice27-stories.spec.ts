@@ -8,7 +8,7 @@ import { checkPage, queryTestDb, seedDemoOnTestDb, signIn, wipeTestDb } from "./
 
 test.describe.configure({ mode: "serial" });
 
-const PASSWORD = "demo-ralli-2026";
+const PASSWORD = "Demo-ralli-2026!";
 let lyonId: string;
 
 const newPage = async (b: Browser) => (await b.newContext()).newPage();

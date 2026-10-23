@@ -14,6 +14,7 @@ const TABLES = [
   "ClubMembership",
   "Club",
   "User",
+  "AuthAttempt",
 ];
 
 beforeEach(async () => {

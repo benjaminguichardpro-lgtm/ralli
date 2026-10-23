@@ -1,11 +1,13 @@
 import { z } from "zod";
 
-export const PASSWORD_MIN = 8;
+export const PASSWORD_MIN = 10;
+/** Phrase d'aide affichée sous les champs « mot de passe » à l'inscription et au changement. */
+export const PASSWORD_HINT = `Au moins ${PASSWORD_MIN} caractères, dont une majuscule et un symbole (! ? # - _ …).`;
 // bcrypt ignore tout ce qui dépasse 72 octets : on refuse plutôt que de tronquer en silence.
-export const PASSWORD_MAX_BYTES = 72;
+const PASSWORD_MAX_BYTES = 72;
 
-export const DISPLAY_NAME_MIN = 3;
-export const DISPLAY_NAME_MAX = 20;
+const DISPLAY_NAME_MIN = 3;
+const DISPLAY_NAME_MAX = 20;
 const DISPLAY_NAME_RE = /^[\p{L}\p{N} ._-]+$/u;
 
 export const emailSchema = z
@@ -14,14 +16,16 @@ export const emailSchema = z
   .toLowerCase()
   .pipe(z.email({ error: "Email invalide" }));
 
-export const passwordSchema = z
+const passwordSchema = z
   .string({ error: "Mot de passe requis" })
   .min(PASSWORD_MIN, { error: `Au moins ${PASSWORD_MIN} caractères` })
+  .refine((p) => /\p{Lu}/u.test(p), { error: "Il faut au moins une majuscule" })
+  .refine((p) => /[^\p{L}\p{N}\s]/u.test(p), { error: "Il faut au moins un symbole (! ? # - _ …)" })
   .refine((p) => new TextEncoder().encode(p).length <= PASSWORD_MAX_BYTES, {
     error: "Mot de passe trop long",
   });
 
-export const displayNameSchema = z
+const displayNameSchema = z
   .string({ error: "Pseudo requis" })
   .trim()
   .normalize("NFC")
@@ -41,6 +45,11 @@ export const signUpSchema = z.object({
   password: passwordSchema,
 });
 export type SignUpInput = z.infer<typeof signUpSchema>;
+
+/** Formulaire d'inscription : les mêmes champs, plus la confirmation du mot de passe. */
+export const signUpFormSchema = signUpSchema
+  .extend({ confirm: z.string() })
+  .refine((v) => v.password === v.confirm, { error: "Les deux mots de passe diffèrent", path: ["confirm"] });
 
 /** Connexion : un seul champ, email ou pseudo. Un email contient « @ », jamais un pseudo (voir DISPLAY_NAME_RE). */
 export const signInSchema = z.object({

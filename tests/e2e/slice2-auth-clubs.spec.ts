@@ -196,12 +196,12 @@ test("déconnexion puis mauvais mot de passe", async () => {
 test("connexion par pseudo (casse libre) ou par email, même message d'erreur", async () => {
   await signOut(bob);
   await expect(bob.getByRole("heading", { name: "Bienvenue sur Ralli" })).toBeVisible();
-  await signIn(bob, "Bob", "motdepasse", "  bOB ");
+  await signIn(bob, "Bob", "Motdepasse-2026!", "  bOB ");
   await expect(bob.getByTestId("nav-user")).toHaveText("Bob");
   await signOut(bob);
   await signIn(bob, "Bob", "mauvaismdp", "Bob");
   await expect(bob.getByText("Email, pseudo ou mot de passe incorrect")).toBeVisible();
-  await signIn(bob, "Bob", "motdepasse", "pseudo.inconnu");
+  await signIn(bob, "Bob", "Motdepasse-2026!", "pseudo.inconnu");
   await expect(bob.getByText("Email, pseudo ou mot de passe incorrect")).toBeVisible();
   await checkPage(bob, "06b-connexion-pseudo");
   await signIn(bob, "Bob");
@@ -211,7 +211,7 @@ test("connexion par pseudo (casse libre) ou par email, même message d'erreur", 
 test("reset-password : mot de passe temporaire puis changement forcé", async ({ browser }) => {
   const temp = resetPassword("bob@club.test");
   const page = await newPage(browser);
-  await signIn(page, "Bob", "motdepasse");
+  await signIn(page, "Bob", "Motdepasse-2026!");
   await expect(page.getByText("Email, pseudo ou mot de passe incorrect")).toBeVisible();
   await signIn(page, "Bob", temp);
   await expect(page).toHaveURL(/\/mot-de-passe$/);
@@ -220,8 +220,8 @@ test("reset-password : mot de passe temporaire puis changement forcé", async ({
   // Tant que le mot de passe n'est pas changé, les autres pages renvoient ici.
   await page.goto(clubUrl);
   await expect(page).toHaveURL(/\/mot-de-passe$/);
-  await page.getByLabel("Nouveau mot de passe", { exact: true }).fill("nouveaumdp1");
-  await page.getByLabel("Confirmer le mot de passe", { exact: true }).fill("nouveaumdp1");
+  await page.getByLabel("Nouveau mot de passe", { exact: true }).fill("Nouveaumdp-2026!");
+  await page.getByLabel("Confirmer le mot de passe", { exact: true }).fill("Nouveaumdp-2026!");
   await page.getByRole("button", { name: "Enregistrer" }).click();
   await expect(page.getByTestId("balance")).toBeVisible();
   await page.goto(clubUrl);

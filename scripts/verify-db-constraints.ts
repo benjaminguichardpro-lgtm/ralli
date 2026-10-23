@@ -174,9 +174,9 @@ const checks: Check[] = [
 
 // Données minimales pour satisfaire les clés étrangères (club → équipes → joueurs → rencontre → match).
 const fixtures = `
-INSERT INTO "User"(id,email,"passwordHash","displayName","displayNameKey","ageConfirmedAt") VALUES
-  ('verif_u','verif@ralli.test','x','Verif','verif',now()),
-  ('verif_u2','verif2@ralli.test','x','Verif2','verif2',now());
+INSERT INTO "User"(id,email,"passwordHash","displayName","displayNameKey") VALUES
+  ('verif_u','verif@ralli.test','x','Verif','verif'),
+  ('verif_u2','verif2@ralli.test','x','Verif2','verif2');
 INSERT INTO "Club"(id,name,"createdById") VALUES ('verif_c','Club vérif','verif_u');
 INSERT INTO "Team"(id,"clubId",name) VALUES ('verif_t1','verif_c','Équipe A'),('verif_t2','verif_c','Équipe B');
 INSERT INTO "Player"(id,"clubId","firstName","lastName","fftRank") VALUES

@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { signInSchema } from "@/lib/validation/account";
 import { authenticate } from "@/server/accounts";
+import { clearLoginFailures, clientIp, loginWaitMs, recordLoginFailure } from "@/server/rate-limit";
 
 declare module "next-auth" {
   interface Session {
@@ -25,10 +26,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: { identifier: {}, password: {} },
-      async authorize(raw) {
+      // La limite d'essais est vérifiée ici (et non seulement dans le formulaire) : cette fonction répond aussi aux appels directs à /api/auth.
+      async authorize(raw, request) {
         const parsed = signInSchema.safeParse(raw);
         if (!parsed.success) return null;
-        return authenticate(parsed.data.identifier, parsed.data.password);
+        const { identifier, password } = parsed.data;
+        const ip = clientIp(request.headers);
+        if ((await loginWaitMs(identifier, ip)) > 0) return null;
+        const user = await authenticate(identifier, password);
+        if (user) await clearLoginFailures(identifier);
+        else await recordLoginFailure(identifier, ip);
+        return user;
       },
     }),
   ],

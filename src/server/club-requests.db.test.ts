@@ -19,7 +19,7 @@ const input = clubRequestSchema.parse({
 let userId: string;
 
 beforeEach(async () => {
-  const { id } = await registerUser(signUpSchema.parse({ email: "alice@club.fr", displayName: "alice", password: "motdepasse" }));
+  const { id } = await registerUser(signUpSchema.parse({ email: "alice@club.fr", displayName: "alice", password: "Motdepasse-2026!" }));
   userId = id;
 });
 

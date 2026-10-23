@@ -3,10 +3,11 @@ import {
   changePasswordSchema,
   displayNameKey,
   loginLookup,
+  signUpFormSchema,
   signUpSchema,
 } from "./account";
 
-const valid = { email: "  Alice@Club.FR ", displayName: " Alice  B ", password: "motdepasse" };
+const valid = { email: "  Alice@Club.FR ", displayName: " Alice  B ", password: "Motdepasse-2026!" };
 
 describe("signUpSchema", () => {
   it("normalise l'email et le pseudo", () => {
@@ -20,8 +21,10 @@ describe("signUpSchema", () => {
   });
 
   it.each([
-    ["mot de passe trop court", { password: "1234567" }],
-    ["mot de passe > 72 octets", { password: "é".repeat(37) }],
+    ["mot de passe trop court", { password: "Abcdef-12" }],
+    ["mot de passe sans majuscule", { password: "motdepasse-2026!" }],
+    ["mot de passe sans symbole", { password: "Motdepasse2026" }],
+    ["mot de passe > 72 octets", { password: "É-" + "é".repeat(36) }],
     ["email invalide", { email: "pas-un-email" }],
     ["pseudo trop court", { displayName: "ab" }],
     ["pseudo trop long", { displayName: "a".repeat(21) }],
@@ -30,8 +33,21 @@ describe("signUpSchema", () => {
     expect(signUpSchema.safeParse({ ...valid, ...patch }).success).toBe(false);
   });
 
+  it("accepte 10 caractères avec une majuscule et un symbole, accentués ou non", () => {
+    for (const password of ["Abcdefgh-1", "Éléphant_rose", "Tennis club!", "Zz?zzzzzzz"]) expect(signUpSchema.safeParse({ ...valid, password }).success, password).toBe(true);
+  });
+
   it("accepte les accents et les chiffres dans le pseudo", () => {
     expect(signUpSchema.safeParse({ ...valid, displayName: "Zoé_75-Élan" }).success).toBe(true);
+  });
+});
+
+describe("signUpFormSchema (avec confirmation)", () => {
+  it("exige la même saisie deux fois", () => {
+    expect(signUpFormSchema.safeParse({ ...valid, confirm: valid.password }).success).toBe(true);
+    const r = signUpFormSchema.safeParse({ ...valid, confirm: "Autre-mot-de-passe-1!" });
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0]?.path).toEqual(["confirm"]);
   });
 });
 
@@ -43,8 +59,8 @@ describe("displayNameKey", () => {
 
 describe("changePasswordSchema", () => {
   it("exige deux saisies identiques", () => {
-    expect(changePasswordSchema.safeParse({ password: "nouveaumdp", confirm: "autre" }).success).toBe(false);
-    expect(changePasswordSchema.safeParse({ password: "nouveaumdp", confirm: "nouveaumdp" }).success).toBe(true);
+    expect(changePasswordSchema.safeParse({ password: "Nouveaumdp-1!", confirm: "autre" }).success).toBe(false);
+    expect(changePasswordSchema.safeParse({ password: "Nouveaumdp-1!", confirm: "Nouveaumdp-1!" }).success).toBe(true);
   });
 });
 

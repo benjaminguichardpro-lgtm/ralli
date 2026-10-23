@@ -42,7 +42,8 @@ test("sans compte : le lien mène à la connexion puis à l'inscription, puis au
   const form = page.locator("form").filter({ has: page.locator('input[name="displayName"]') });
   await form.locator('input[name="email"]').fill("nouveau16@club.test");
   await form.locator('input[name="displayName"]').fill("Nouveau16");
-  await form.locator('input[name="password"]').fill("motdepasse");
+  await form.locator('input[name="password"]').fill("Motdepasse-2026!");
+  await form.locator('input[name="confirm"]').fill("Motdepasse-2026!");
   await form.getByRole("button", { name: "Créer mon compte" }).click();
   await skipGuide(page);
   // On arrive sur la page du club, sans y être entré : il faut appuyer sur « Rejoindre le club ».
@@ -65,7 +66,7 @@ test("avec un compte existant : connexion depuis le lien, on arrive sur le club 
   await page.goto(`/clubs/${clubId}`);
   await expect(page).toHaveURL(new RegExp(`/connexion\\?club=${clubId}$`));
   await page.getByLabel("Email ou pseudo").fill("joueur16@club.test");
-  await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("Motdepasse-2026!");
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(page.getByTestId("visitor-club")).toBeVisible();
   await expect(page.getByRole("button", { name: "Rejoindre le club" })).toBeVisible();
@@ -87,7 +88,7 @@ test("une adresse de retour truquée ne redirige jamais hors de Ralli", async ({
   const page = await newPage(browser);
   await page.goto("/connexion?club=https://evil.example");
   await page.getByLabel("Email ou pseudo").fill("joueur16@club.test");
-  await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("Motdepasse-2026!");
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(page.getByTestId("nav-user")).toHaveText("Joueur16");
   expect(new URL(page.url()).pathname).toBe("/");

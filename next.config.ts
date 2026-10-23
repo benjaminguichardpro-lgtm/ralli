@@ -11,6 +11,22 @@ const nextConfig: NextConfig = {
   // Affiche du tournoi en image : les polices (assets/fonts) sont lues sur le disque au démarrage de la route ; on les embarque explicitement.
   outputFileTracingIncludes: { "/tournois/[tournamentId]/affiche/image": ["./assets/fonts/**/*"] },
   // Anciennes adresses du Portefeuille et des Résultats, regroupés dans « Mes rallis » (les paramètres, comme ?statut=, sont conservés).
+  // En-têtes de sécurité sur toutes les pages : pas d'affichage dans le cadre d'un autre site (clickjacking), pas de type de fichier
+  // deviné, adresse complète jamais transmise aux sites externes, capteurs que l'app n'utilise pas désactivés.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       { source: "/portefeuille", destination: "/rallis", permanent: false },

@@ -6,7 +6,7 @@ import { checkPage, queryTestDb, seedDemoOnTestDb, signIn, wipeTestDb } from "./
 
 test.describe.configure({ mode: "serial" });
 
-const PASSWORD = "demo-ralli-2026";
+const PASSWORD = "Demo-ralli-2026!";
 let lyonId: string;
 
 const idOf = async (pseudo: string) => (await queryTestDb<{ id: string }>(`SELECT id FROM "User" WHERE "displayName" = '${pseudo}'`))[0]!.id;

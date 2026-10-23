@@ -5,7 +5,7 @@ import { checkPage, queryTestDb, seedDemoOnTestDb, signIn, signUp, wipeTestDb } 
 
 test.describe.configure({ mode: "serial" });
 
-const PASSWORD = "demo-ralli-2026";
+const PASSWORD = "Demo-ralli-2026!";
 const newPage = async (b: Browser) => (await b.newContext()).newPage();
 
 async function login(b: Browser, pseudo: string): Promise<Page> {

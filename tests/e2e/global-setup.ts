@@ -10,7 +10,7 @@ export default async function setup() {
   const c = new Client({ connectionString: env.DATABASE_URL });
   await c.connect();
   await c.query(
-    `TRUNCATE "LedgerEntry","Prediction","Match","EncounterEvent","Encounter","TeamPlayer","Player","Team","ClubMembership","Club","User" CASCADE`,
+    `TRUNCATE "LedgerEntry","Prediction","Match","EncounterEvent","Encounter","TeamPlayer","Player","Team","ClubMembership","Club","User","AuthAttempt" CASCADE`,
   );
   await c.end();
 }

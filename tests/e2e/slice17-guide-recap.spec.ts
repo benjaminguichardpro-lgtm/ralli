@@ -21,7 +21,8 @@ async function signUpRaw(page: Page, name: string) {
   await page.goto("/inscription");
   await page.getByLabel("Email").fill(`${name.toLowerCase()}@club.test`);
   await page.getByLabel("Pseudo").fill(name);
-  await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("Motdepasse-2026!");
+  await page.getByLabel("Confirmer le mot de passe").fill("Motdepasse-2026!");
   await page.getByRole("button", { name: "Créer mon compte" }).click();
 }
 

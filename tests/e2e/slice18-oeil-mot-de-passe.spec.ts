@@ -84,8 +84,8 @@ test("changer de mot de passe : un seul œil pour les deux champs, qui s'affiche
   await page.goto("/mot-de-passe");
   const nouveau = page.getByLabel("Nouveau mot de passe", { exact: true });
   const confirm = page.getByLabel("Confirmer le mot de passe", { exact: true });
-  await nouveau.fill("nouveaumdp18");
-  await confirm.fill("nouveaumdp18");
+  await nouveau.fill("Nouveaumdp-18!");
+  await confirm.fill("Nouveaumdp-18!");
   await expect(nouveau).toHaveAttribute("type", "password");
   await expect(confirm).toHaveAttribute("type", "password");
   await expect(eye(page)).toHaveCount(1); // un seul bouton, pas un par champ
@@ -93,8 +93,8 @@ test("changer de mot de passe : un seul œil pour les deux champs, qui s'affiche
   await eye(page).click();
   await expect(nouveau).toHaveAttribute("type", "text");
   await expect(confirm).toHaveAttribute("type", "text");
-  await expect(nouveau).toHaveValue("nouveaumdp18");
-  await expect(confirm).toHaveValue("nouveaumdp18");
+  await expect(nouveau).toHaveValue("Nouveaumdp-18!");
+  await expect(confirm).toHaveValue("Nouveaumdp-18!");
   await hide(page).click();
   await expect(nouveau).toHaveAttribute("type", "password");
   await expect(confirm).toHaveAttribute("type", "password");

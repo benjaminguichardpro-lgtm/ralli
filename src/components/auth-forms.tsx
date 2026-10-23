@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { changePasswordAction, signInAction, signUpAction } from "@/app/actions/auth";
 import { initialFormState } from "@/app/actions/types";
-import { PASSWORD_MIN } from "@/lib/validation/account";
+import { PASSWORD_HINT } from "@/lib/validation/account";
 import { Field, FormMessage, PasswordField, SubmitButton, useRevealPassword } from "./ui";
 
 export function SignUpForm({ club }: { club?: string }) {
@@ -33,8 +33,9 @@ export function SignUpForm({ club }: { club?: string }) {
         autoComplete="new-password"
         required
         error={e.password}
-        hint={`Au moins ${PASSWORD_MIN} caractères.`}
+        hint={PASSWORD_HINT}
       />
+      <PasswordField label="Confirmer le mot de passe" name="confirm" shown={shown} autoComplete="new-password" required error={e.confirm} />
       <SubmitButton className="w-full" pendingLabel="Création…">
         Créer mon compte
       </SubmitButton>
@@ -97,7 +98,7 @@ export function ChangePasswordForm() {
         autoComplete="new-password"
         required
         error={e.password}
-        hint={`Au moins ${PASSWORD_MIN} caractères.`}
+        hint={PASSWORD_HINT}
       />
       <PasswordField label="Confirmer le mot de passe" name="confirm" shown={shown} autoComplete="new-password" required error={e.confirm} />
       <SubmitButton className="w-full">Enregistrer</SubmitButton>

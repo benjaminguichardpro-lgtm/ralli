@@ -5,7 +5,7 @@ import { registerUser } from "@/server/accounts";
 
 export async function makeUser(name: string): Promise<string> {
   const { id } = await registerUser(
-    signUpSchema.parse({ email: `${name.toLowerCase()}@club.fr`, displayName: name, password: "motdepasse" }),
+    signUpSchema.parse({ email: `${name.toLowerCase()}@club.fr`, displayName: name, password: "Motdepasse-2026!" }),
   );
   return id;
 }

@@ -17,14 +17,13 @@ import { addNewPlayerToTeam, createExternalTeam, createTeam, setPlayerAccount } 
 // Les dates sont relatives à `now` : relancer le seed le matin d'une démo remet tout à neuf.
 
 export const DEMO_EMAIL_DOMAIN = "@demo.ralli.test";
-export const DEMO_PASSWORD = "demo-ralli-2026";
+export const DEMO_PASSWORD = "Demo-ralli-2026!";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-const TABLES = ["StoryView", "Story", "LedgerEntry", "Prediction", "TournamentMatch", "TournamentEntry", "Tournament", "Match", "EncounterEvent", "Encounter", "TeamPlayer", "Player", "Team", "ClubMembership", "Club", "User"];
+const TABLES = ["StoryView", "Story", "LedgerEntry", "Prediction", "TournamentMatch", "TournamentEntry", "Tournament", "Match", "EncounterEvent", "Encounter", "TeamPlayer", "Player", "Team", "ClubMembership", "Club", "User", "AuthAttempt"];
 
-/** Vide toute la base (le ledger est append-only : seul TRUNCATE peut l'effacer). */
 /** Fiche des clubs de démo : adresse fictive, position, région déduite du code postal, licenciés (un club de chaque taille). */
 const DEMO_CLUB_PROFILES = {
   "TC Démo-Lyon": { address: "12 avenue Jean Jaurès", postalCode: "69007", city: "Lyon", latitude: 45.7455, longitude: 4.842, region: "Auvergne-Rhône-Alpes", licenseeCount: 250 },
@@ -32,6 +31,7 @@ const DEMO_CLUB_PROFILES = {
   "TC Démo-Bordeaux": { address: "5 cours du Médoc", postalCode: "33300", city: "Bordeaux", latitude: 44.862, longitude: -0.565, region: "Nouvelle-Aquitaine", licenseeCount: 400 },
 } as const;
 
+/** Vide toute la base (le ledger est append-only : seul TRUNCATE peut l'effacer). */
 export async function wipeAll(): Promise<void> {
   await db.$executeRawUnsafe(`TRUNCATE ${TABLES.map((t) => `"${t}"`).join(", ")} CASCADE`);
 }

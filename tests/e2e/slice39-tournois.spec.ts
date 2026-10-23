@@ -6,7 +6,7 @@ import { checkPage, placeBet, queryTestDb, seedDemoOnTestDb, signIn, wipeTestDb 
 
 test.describe.configure({ mode: "serial" });
 
-const PASSWORD = "demo-ralli-2026";
+const PASSWORD = "Demo-ralli-2026!";
 let tid: string;
 let lyonId: string;
 

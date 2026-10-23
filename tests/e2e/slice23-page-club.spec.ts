@@ -6,7 +6,7 @@ import { checkPage, openSection, queryTestDb, seedDemoOnTestDb, signIn, wipeTest
 
 test.describe.configure({ mode: "serial" });
 
-const PASSWORD = "demo-ralli-2026";
+const PASSWORD = "Demo-ralli-2026!";
 let clubId: string;
 let teams = 0, opponents = 0, members = 0;
 

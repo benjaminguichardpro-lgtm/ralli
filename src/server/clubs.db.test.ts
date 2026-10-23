@@ -6,7 +6,7 @@ import { createClub, getClubView, listMyClubs, setMemberRole } from "./clubs";
 
 async function user(name: string) {
   const { id } = await registerUser(
-    signUpSchema.parse({ email: `${name}@club.fr`, displayName: name, password: "motdepasse" }),
+    signUpSchema.parse({ email: `${name}@club.fr`, displayName: name, password: "Motdepasse-2026!" }),
   );
   return id;
 }

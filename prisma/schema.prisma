@@ -123,7 +123,6 @@ model User {
   passwordHash       String
   displayName        String // pseudo public, affiché dans les classements
   displayNameKey     String    @unique // pseudo en minuscules, pour l'unicité insensible à la casse
-  ageConfirmedAt     DateTime // héritage : date de la case « 18 ans ou plus », supprimée ; reçoit la date d'inscription (à retirer par une migration)
   mustChangePassword Boolean   @default(false) // posé par `npm run reset-password`
   avatarKey          String    @default("service") // avatar prédéfini (src/lib/avatars.ts)
   avatarPhotoAt      DateTime? // date de la photo importée (fichier dans le dossier avatar/) ; null = pas de photo
@@ -161,6 +160,18 @@ model User {
   refereesAdded       TournamentReferee[]   @relation("TournamentRefereeAddedBy")
   removedFrom         ClubRemoval[]         @relation("RemovedUser")
   removalsMade        ClubRemoval[]         @relation("RemovedBy")
+}
+
+/// Essais de connexion ratés et inscriptions, pour la limite d'essais (src/server/rate-limit.ts). keyHash = empreinte du pseudo, de l'email ou
+/// de l'adresse IP, jamais la valeur elle-même. Les lignes de plus de 24 h sont effacées au fil de l'eau.
+model AuthAttempt {
+  id        String   @id @default(cuid())
+  scope     String // "login" (par pseudo ou email), "login-ip", "signup" (par adresse IP)
+  keyHash   String
+  createdAt DateTime @default(now())
+
+  @@index([scope, keyHash, createdAt])
+  @@index([createdAt])
 }
 
 /// Demande d'un utilisateur pour devenir admin d'un club (et donc pouvoir en créer un). Examinée par l'équipe Ralli.

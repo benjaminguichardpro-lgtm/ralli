@@ -41,7 +41,8 @@ export async function signUp(page: Page, name: string, opts: { email?: string } 
   await page.goto("/inscription");
   await page.getByLabel("Email").fill(opts.email ?? `${name.toLowerCase()}@club.test`);
   await page.getByLabel("Pseudo").fill(name);
-  await page.getByLabel("Mot de passe", { exact: true }).fill("motdepasse");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("Motdepasse-2026!");
+  await page.getByLabel("Confirmer le mot de passe").fill("Motdepasse-2026!");
   await page.getByRole("button", { name: "Créer mon compte" }).click();
   // Inscription réussie : le guide s'affiche (parfois tard quand la machine est chargée). Inscription refusée (pseudo pris…) :
   // un message d'erreur s'affiche à la place. On attend l'un ou l'autre, sans délai fixe trop court.
@@ -76,7 +77,7 @@ export async function skipGuide(page: Page) {
 }
 
 /** Connexion par email (par défaut) ou, avec `identifier`, par ce texte tel quel (pseudo, éventuellement en autres majuscules). */
-export async function signIn(page: Page, name: string, password = "motdepasse", identifier?: string) {
+export async function signIn(page: Page, name: string, password = "Motdepasse-2026!", identifier?: string) {
   await page.goto("/connexion");
   await page.getByLabel("Email ou pseudo").fill(identifier ?? `${name.toLowerCase()}@club.test`);
   await page.getByLabel("Mot de passe", { exact: true }).fill(password);
