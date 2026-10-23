@@ -318,14 +318,14 @@ test("un membre de club rejoue la visite depuis son profil : textes « avec club
   await tour(oscar).getByRole("button", { name: "Suivant" }).click();
   await expectStep(oscar, 2, "Matchs", "matchs");
   await expect(oscar.getByTestId("tour-text")).toHaveText(
-    "Les rencontres de tes clubs. Touche une rencontre, puis la cote du joueur que tu penses gagnant, choisis ton montant et valide ton ralli.",
+    "Les rencontres et tournois à venir, et les derniers résultats. Règle la distance pour voir plus loin que tes clubs. Touche une rencontre, puis la cote du joueur que tu penses gagnant, choisis ton montant et valide ton ralli.",
   );
   await tour(oscar).getByRole("button", { name: "Suivant" }).click();
-  await expect(oscar.getByTestId("tour-text")).toHaveText("Tes rallis en cours et terminés : gagné, perdu ou remboursé, avec ton bilan et l'historique de tes Aces.");
+  await expect(oscar.getByTestId("tour-text")).toHaveText("Tes rallis en cours et terminés : gagné, perdu ou remboursé, avec ton bilan et l'historique de tes Aces. Cherche un match précis avec la barre de recherche.");
   await tour(oscar).getByRole("button", { name: "Suivant" }).click();
   await expect(oscar.getByTestId("tour-text")).toHaveText("Ta place parmi les membres de ton club, selon tes résultats.");
   await tour(oscar).getByRole("button", { name: "Suivant" }).click();
-  await expect(oscar.getByTestId("tour-text")).toHaveText("Cherche n'importe quel club, regarde ses rencontres à venir et rejoins-le d'un bouton. Tes clubs sont dans ton profil.");
+  await expect(oscar.getByTestId("tour-text")).toHaveText("Cherche n'importe quel club par son nom, sa ville ou sur la carte, regarde ses rencontres à venir et rejoins-le d'un bouton. Tes clubs sont dans ton profil.");
   await checkPage(oscar, "175-visite-club");
   await tour(oscar).getByRole("button", { name: "Passer" }).click();
   await expect(tour(oscar)).toBeHidden();

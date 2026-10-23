@@ -15,14 +15,14 @@ const STEPS: readonly Step[] = [
   {
     target: "matchs",
     title: "Matchs",
-    text: "Les rencontres de tes clubs. Touche une rencontre, puis la cote du joueur que tu penses gagnant, choisis ton montant et valide ton ralli.",
-    textNoClub: "Ici tu verras les rencontres de ton club. Touche une rencontre, puis une cote, choisis ton montant et valide ton ralli. Cherche d'abord ton club dans l'onglet Clubs.",
+    text: "Les rencontres et tournois à venir, et les derniers résultats. Règle la distance pour voir plus loin que tes clubs. Touche une rencontre, puis la cote du joueur que tu penses gagnant, choisis ton montant et valide ton ralli.",
+    textNoClub: "Ici tu verras les rencontres de ton club, et celles autour de toi grâce à la barre de distance. Touche une rencontre, puis une cote, choisis ton montant et valide ton ralli. Cherche d'abord ton club dans l'onglet Clubs.",
   },
   {
     target: "rallis",
     title: "Mes rallis",
-    text: "Tes rallis en cours et terminés : gagné, perdu ou remboursé, avec ton bilan et l'historique de tes Aces.",
-    textNoClub: "Ici tu verras tes rallis, en cours puis terminés : gagné, perdu ou remboursé, avec ton bilan et l'historique de tes Aces.",
+    text: "Tes rallis en cours et terminés : gagné, perdu ou remboursé, avec ton bilan et l'historique de tes Aces. Cherche un match précis avec la barre de recherche.",
+    textNoClub: "Ici tu verras tes rallis, en cours puis terminés : gagné, perdu ou remboursé, avec ton bilan et l'historique de tes Aces. Cherche un match précis avec la barre de recherche.",
   },
   {
     target: "classement",
@@ -33,13 +33,13 @@ const STEPS: readonly Step[] = [
   {
     target: "club",
     title: "Clubs",
-    text: "Cherche n'importe quel club, regarde ses rencontres à venir et rejoins-le d'un bouton. Tes clubs sont dans ton profil.",
-    textNoClub: "Cherche ton club, regarde ses rencontres à venir et rejoins-le d'un bouton pour pronostiquer.",
+    text: "Cherche n'importe quel club par son nom, sa ville ou sur la carte, regarde ses rencontres à venir et rejoins-le d'un bouton. Tes clubs sont dans ton profil.",
+    textNoClub: "Cherche ton club, regarde ses rencontres à venir et rejoins-le d'un bouton pour pronostiquer. Tu peux aussi le trouver sur la carte.",
   },
   {
     target: "profil",
     title: "Ton profil",
-    text: "Ton profil : change ton avatar ou ta photo, ton mot de passe, et revois ce guide quand tu veux.",
+    text: "Ton profil : change ton avatar ou ta photo, ton mot de passe, choisis qui voit ton profil et où tu joues, et revois ce guide quand tu veux.",
   },
 ];
 
