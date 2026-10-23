@@ -19,4 +19,3 @@ export const POSTER_COLORS = {
   "ink-muted": "#46594d",
 } as const;
 
-export type PosterColor = keyof typeof POSTER_COLORS;

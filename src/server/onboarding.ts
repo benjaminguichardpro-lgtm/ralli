@@ -10,7 +10,7 @@ export async function markOnboardingSeen(userId: string, now = new Date()): Prom
   await db.user.updateMany({ where: { id: userId, onboardingSeenAt: null }, data: { onboardingSeenAt: now } });
 }
 
-export type RecapItem = {
+type RecapItem = {
   id: string;
   matchLabel: string;
   pickedName: string;

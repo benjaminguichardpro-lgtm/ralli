@@ -1,6 +1,6 @@
 // Heures de rencontre : saisies et affichées en heure de Paris, stockées en UTC.
 
-export const APP_TIME_ZONE = "Europe/Paris";
+const APP_TIME_ZONE = "Europe/Paris";
 
 const partsFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: APP_TIME_ZONE,

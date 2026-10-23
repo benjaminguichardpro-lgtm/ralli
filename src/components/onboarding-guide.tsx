@@ -58,7 +58,7 @@ const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min)
  * Écran d'accueil (monnaie fictive), puis visite guidée des éléments de l'app, sur la vraie page.
  * `onClose` est appelé une seule fois quand la personne a fini ou passé (« Passer », Échap, « Terminer »).
  */
-export function Guide({ hasClub, onClose }: { hasClub: boolean; onClose: () => void }) {
+function Guide({ hasClub, onClose }: { hasClub: boolean; onClose: () => void }) {
   // null = écran d'accueil ; sinon numéro de l'étape de la visite.
   const [step, setStep] = useState<number | null>(null);
   if (step === null) return <Welcome onTour={() => setStep(0)} onClose={onClose} />;

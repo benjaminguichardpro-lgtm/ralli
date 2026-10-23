@@ -28,7 +28,7 @@ export type LeaderboardView = {
 };
 
 /** Fenêtre de règlement de la période, toujours bornée par la saison. */
-export function periodWindow(period: Period, now: Date): { from: Date; to: Date } {
+function periodWindow(period: Period, now: Date): { from: Date; to: Date } {
   if (period === "season") return { from: SEASON_START, to: SEASON_END };
   const w = parisWeekBounds(now);
   return {

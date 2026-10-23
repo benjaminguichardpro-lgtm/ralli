@@ -16,7 +16,7 @@ export const STORY_BACKGROUNDS = {
 export type StoryBackground = keyof typeof STORY_BACKGROUNDS;
 export const STORY_BACKGROUND_KEYS = Object.keys(STORY_BACKGROUNDS) as StoryBackground[];
 
-export function isStoryBackground(v: string): v is StoryBackground {
+function isStoryBackground(v: string): v is StoryBackground {
   return v in STORY_BACKGROUNDS;
 }
 

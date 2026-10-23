@@ -1,6 +1,6 @@
 // Date de naissance d'un joueur (facultative, visible des admins seulement) et âge calculé. Fonctions pures.
 
-export const BIRTH_MIN_YEAR = 1900;
+const BIRTH_MIN_YEAR = 1900;
 
 /** Date réelle ? (« 31/02/1990 » → faux) */
 function validDate(y: number, m: number, d: number): boolean {

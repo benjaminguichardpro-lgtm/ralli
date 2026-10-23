@@ -24,7 +24,7 @@ import { refundPendingPredictions } from "./refunds";
 type Tx = Prisma.TransactionClient;
 
 /** Seules une rencontre terminée ou annulée se range dans les archives (une contrainte en base le garantit aussi). */
-export const ARCHIVABLE_STATUSES: EncounterStatus[] = ["CONFIRMED", "CANCELLED"];
+const ARCHIVABLE_STATUSES: EncounterStatus[] = ["CONFIRMED", "CANCELLED"];
 
 export const ENCOUNTER_NOT_FOUND = new DomainError("NOT_FOUND", "Rencontre introuvable");
 const MATCH_NOT_FOUND = new DomainError("NOT_FOUND", "Match introuvable");
@@ -806,20 +806,6 @@ export async function listArchivedEncounters(actorId: string, clubId: string, no
     select: listSelect,
   });
   return attachResults(rows, toListItems(rows, now, { userId: actorId, isAdmin: role === "ADMIN" }));
-}
-
-/** Accueil : rencontres publiées et non terminées des clubs de l'utilisateur, les plus proches d'abord. */
-export async function listUpcomingForUser(userId: string, now = new Date()): Promise<EncounterListItem[]> {
-  const rows = await db.encounter.findMany({
-    where: {
-      organizerClub: { memberships: { some: { userId } } },
-      status: { in: ["OPEN", "SCORE_PROPOSED", "DISPUTED"] },
-    },
-    orderBy: { startsAt: "asc" },
-    take: 10,
-    select: listSelect,
-  });
-  return toListItems(rows, now);
 }
 
 /** Choix proposés à la création : équipes que l'acteur peut engager (R1) et adversaires du club (R2). */

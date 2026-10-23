@@ -15,7 +15,7 @@ import { clubTotals } from "./leaderboard";
 
 export const PROFILE_RECENT = 10;
 
-export type MemberResult = {
+type MemberResult = {
   id: string;
   title: string;
   matchLabel: string;

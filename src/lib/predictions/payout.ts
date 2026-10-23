@@ -2,8 +2,8 @@
 // gain = floor((committedAces × oddsX100 + 50) / 100), soit l'arrondi au plus proche, demi vers le haut.
 
 export const MIN_COMMITTED_ACES = 10;
-export const MIN_ODDS_X100 = 100;
-export const MAX_ODDS_X100 = 1000;
+const MIN_ODDS_X100 = 100;
+const MAX_ODDS_X100 = 1000;
 
 export function computePayout(committedAces: number, oddsX100: number): number {
   if (!Number.isSafeInteger(committedAces) || committedAces < MIN_COMMITTED_ACES) {

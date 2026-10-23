@@ -4,7 +4,7 @@ import { requireClubAdmin } from "./permissions";
 import { refundPendingPredictions } from "./refunds";
 
 /** Mot à saisir en toutes lettres pour confirmer la suppression d'un club. */
-export const DELETE_CONFIRMATION = "SUPPRIMER";
+const DELETE_CONFIRMATION = "SUPPRIMER";
 
 /** Rencontres pas encore terminées (« verrouillée » n'est pas un statut stocké : c'est une rencontre ouverte dont l'heure est passée) : annulées à la suppression du club (leurs pronostics en cours sont remboursés). */
 const OPEN_STATUSES = ["DRAFT", "OPEN", "SCORE_PROPOSED", "DISPUTED"] as const;

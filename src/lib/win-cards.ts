@@ -5,8 +5,8 @@ import { findForbiddenWords } from "./vocabulary";
 // (une seule par ralli) pendant 7 jours après le règlement ; un commentaire facultatif de 140 caractères l'accompagne.
 
 export const WIN_COMMENT_MAX = 140;
-export const WIN_SHARE_WINDOW_DAYS = 7;
-export const WIN_SHARE_WINDOW_MS = WIN_SHARE_WINDOW_DAYS * 24 * 3_600_000;
+const WIN_SHARE_WINDOW_DAYS = 7;
+const WIN_SHARE_WINDOW_MS = WIN_SHARE_WINDOW_DAYS * 24 * 3_600_000;
 export const REPORT_REASON_MAX = 200;
 export const WIN_REACTION = "🎾";
 export const WINS_RING_LABEL = "Rallis gagnants";

@@ -4,8 +4,8 @@ import type { Point } from "./geo";
 // Position d'un compte pour « rencontres à proximité » : code postal facultatif → centre de la commune (geo.api.gouv.fr,
 // gratuit et sans clé). Jamais d'adresse précise. Ne lève aucune exception : une panne donne `UNAVAILABLE`.
 
-export const COMMUNES_URL = "https://geo.api.gouv.fr/communes";
-export const COMMUNES_TIMEOUT_MS = 8000;
+const COMMUNES_URL = "https://geo.api.gouv.fr/communes";
+const COMMUNES_TIMEOUT_MS = 8000;
 
 /** Code postal français : 5 chiffres (espaces tolérés). Vide = effacer. */
 export const postalCodeSchema = z

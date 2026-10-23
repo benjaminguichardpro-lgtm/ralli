@@ -19,7 +19,7 @@ export const createEncounterSchema = z.object({
   startsAt: parisDateTimeSchema,
 });
 
-export const matchPlayersSchema = z.object({
+const matchPlayersSchema = z.object({
   homePlayerId: z.string({ error: "Choisissez le joueur domicile" }).min(1, { error: "Choisissez le joueur domicile" }).max(64),
   awayPlayerId: z.string({ error: "Choisissez le joueur extérieur" }).min(1, { error: "Choisissez le joueur extérieur" }).max(64),
 });

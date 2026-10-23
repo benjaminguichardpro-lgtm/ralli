@@ -21,7 +21,7 @@ const NAME_TAKEN = new DomainError("TEAM_NAME_TAKEN", "Une équipe porte déjà 
  * Statuts stockés pendant lesquels le lien joueur ↔ compte est figé (décision 9 du brief).
  * LOCKED est dérivé de OPEN, il est donc couvert.
  */
-export const LINK_FROZEN_STATUSES: EncounterStatus[] = ["OPEN", "SCORE_PROPOSED"];
+const LINK_FROZEN_STATUSES: EncounterStatus[] = ["OPEN", "SCORE_PROPOSED"];
 
 async function loadTeam(teamId: string) {
   const team = await db.team.findUnique({
@@ -357,13 +357,3 @@ export async function getTeamView(actorId: string, teamId: string): Promise<Team
   };
 }
 
-/** Membres d'un club pour le choix d'un capitaine (admin uniquement). */
-export async function listClubMembersForAdmin(actorId: string, clubId: string) {
-  await requireClubAdmin(actorId, clubId);
-  const ms = await db.clubMembership.findMany({
-    where: { clubId },
-    orderBy: { user: { displayName: "asc" } },
-    select: { user: { select: { id: true, displayName: true } } },
-  });
-  return ms.map((m) => ({ userId: m.user.id, displayName: m.user.displayName }));
-}

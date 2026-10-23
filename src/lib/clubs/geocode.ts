@@ -4,8 +4,8 @@ import { formatAddress } from "./profile";
 // Position d'un club avec l'API adresse de l'État (gratuite, sans clé). Ne bloque jamais l'enregistrement de la fiche :
 // toute panne ou adresse introuvable donne null (le club n'a simplement pas d'épingle).
 
-export const GEOCODE_URL = "https://api-adresse.data.gouv.fr/search/";
-export const GEOCODE_TIMEOUT_MS = 4000;
+const GEOCODE_URL = "https://api-adresse.data.gouv.fr/search/";
+const GEOCODE_TIMEOUT_MS = 4000;
 
 export type Position = { latitude: number; longitude: number };
 
@@ -19,7 +19,7 @@ const responseSchema = z.object({
 });
 
 /** Score minimal de l'API (0 à 1) : en dessous, l'adresse trouvée est trop approximative pour une épingle. */
-export const MIN_SCORE = 0.4;
+const MIN_SCORE = 0.4;
 
 /** Lit la réponse de l'API adresse : la meilleure correspondance, ou null. Les coordonnées arrivent en [longitude, latitude]. */
 export function parseGeocodeResponse(json: unknown): Position | null {

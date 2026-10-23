@@ -6,7 +6,7 @@ import { parseFftRank } from "./rank";
 // Import en lot des joueurs d'un club : lecture d'un tableau (CSV ou Excel déjà converti en lignes de cellules), repérage des colonnes par leur titre,
 // nettoyage et contrôle de chaque ligne. Fonctions pures : la base n'est pas touchée ici.
 
-export const MAX_IMPORT_ROWS = 10_000;
+const MAX_IMPORT_ROWS = 10_000;
 export const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 
 export type ImportRow = {

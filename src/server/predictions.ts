@@ -176,7 +176,7 @@ export async function getPredictionPanel(viewerId: string | null, encounterId: s
 
 // ─────────────────────────────── Lecture : portefeuille ───────────────────────────────
 
-export const LEDGER_LABELS = {
+const LEDGER_LABELS = {
   SIGNUP_BONUS: "Bonus d'inscription",
   WEEKLY_BONUS: "Bonus du lundi",
   DAILY_LOGIN_BONUS: "Connexion quotidienne",

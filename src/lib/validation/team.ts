@@ -3,13 +3,13 @@ import { FftRank } from "@/generated/prisma/enums";
 
 export const idSchema = z.string().min(1).max(64);
 
-export const teamNameSchema = z
+const teamNameSchema = z
   .string({ error: "Nom requis" })
   .trim()
   .min(2, { error: "Au moins 2 caractères" })
   .max(40, { error: "Au plus 40 caractères" });
 
-export const externalClubNameSchema = z
+const externalClubNameSchema = z
   .string({ error: "Nom du club adverse requis" })
   .trim()
   .min(2, { error: "Au moins 2 caractères" })

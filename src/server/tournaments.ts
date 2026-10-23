@@ -25,7 +25,7 @@ type Tx = Prisma.TransactionClient;
 const NOT_FOUND = new DomainError("NOT_FOUND", "Tournoi introuvable");
 const MATCH_NOT_FOUND = new DomainError("NOT_FOUND", "Match introuvable");
 
-export const TOURNAMENT_STATUS_LABELS: Record<TournamentStatus, string> = {
+const TOURNAMENT_STATUS_LABELS: Record<TournamentStatus, string> = {
   DRAFT: "Brouillon",
   OPEN: "En cours",
   FINISHED: "Terminé",
@@ -340,7 +340,7 @@ export async function recordTournamentResult(actorId: string, matchId: string, r
 
 // ─────────────────────────────── Lecture ───────────────────────────────
 
-export type TournamentMatchState = "waiting" | "needs-time" | "open" | "closed" | "done";
+type TournamentMatchState = "waiting" | "needs-time" | "open" | "closed" | "done";
 
 export type TournamentMatchView = {
   id: string;

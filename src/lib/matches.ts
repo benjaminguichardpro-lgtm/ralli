@@ -4,7 +4,6 @@ import type { MatchKind, Side } from "@/generated/prisma/enums";
 import { publicPlayerName } from "./names";
 
 export const MATCH_POINTS = [1, 2] as const;
-export type MatchPoints = (typeof MATCH_POINTS)[number];
 
 /** Mot employé dans les libellés : « simple » ou « double ». */
 export const kindWord = (kind: MatchKind) => (kind === "DOUBLES" ? "double" : "simple");

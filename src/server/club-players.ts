@@ -155,7 +155,7 @@ const sameBirth = (a: Date | null, b: Date | null) => a === null || b === null |
 type Existing = { id: string; firstName: string; lastName: string; fftRank: FftRank; birthDate: Date | null };
 
 /** Compare chaque ligne aux joueurs du club et entre elles : créer, mettre à jour (classement changé, date de naissance ajoutée), identique, doublon du fichier, erreur. */
-export function planImport(rows: readonly ImportRow[], existing: readonly Existing[]): { rows: ImportPlanRow[]; summary: ImportSummary } {
+function planImport(rows: readonly ImportRow[], existing: readonly Existing[]): { rows: ImportPlanRow[]; summary: ImportSummary } {
   const byName = new Map<string, Existing[]>();
   for (const e of existing) byName.set(nameKey(e.firstName, e.lastName), [...(byName.get(nameKey(e.firstName, e.lastName)) ?? []), e]);
   const seen = new Map<string, { birth: Date | null }[]>();

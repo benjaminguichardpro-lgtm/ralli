@@ -4,7 +4,7 @@ import { clubNameSchema } from "@/lib/validation/account";
 // Fiche du club : champs facultatifs saisis par les admins, et affichage. Fonctions pures.
 // Un champ laissé vide efface la valeur (null en base). Les limites sont aussi des CHECK en base (migration club_profile).
 
-export const FOUNDED_YEAR_MIN = 1800;
+const FOUNDED_YEAR_MIN = 1800;
 export const LICENSEES_MAX = 10_000;
 export const COURTS_MAX = 100;
 export const ADDRESS_MAX = 200;

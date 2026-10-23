@@ -9,7 +9,7 @@ import { CLUB_NOT_FOUND, getClubRole, requireClubAdmin, requireClubMember } from
 // Stories de club : visibles 24 h par les membres du club. Les droits sont relus en base à chaque appel.
 // Le « à la une » du club est fait de collections nommées (comme les « à la une » d'Instagram) qui gardent des stories après leurs 24 h.
 
-export type StoryView = {
+type StoryView = {
   id: string;
   clubId: string;
   /** Annonce d'un admin ou d'un capitaine, ou carte de ralli gagnant partagée par un membre. */

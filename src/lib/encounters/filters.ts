@@ -2,7 +2,7 @@
 
 import type { EffectiveStatus } from "./state";
 
-export type ResultKind = "WIN" | "LOSS" | "DRAW";
+type ResultKind = "WIN" | "LOSS" | "DRAW";
 
 /**
  * Résultat vu du club (l'équipe du club dans la rencontre) : ses points d'abord.
@@ -21,7 +21,7 @@ export function clubResult(tally: { home: number; away: number }, clubIsHome: bo
   return { kind: club > opp ? "WIN" : club < opp ? "LOSS" : "DRAW", club, opp, ...(provisional ? { provisional: true } : {}), ...(live ? { live: true } : {}) };
 }
 
-export const RESULT_LABELS: Record<ResultKind, string> = { WIN: "Victoire", LOSS: "Défaite", DRAW: "Nul" };
+const RESULT_LABELS: Record<ResultKind, string> = { WIN: "Victoire", LOSS: "Défaite", DRAW: "Nul" };
 
 /** « Victoire 4 – 2 » ; pour un score provisoire, « Provisoire 4 – 2 » (ni victoire ni défaite tant qu'il n'est pas confirmé). */
 export const resultBadgeText = (r: EncounterResult) => `${r.live ? "En direct" : r.provisional ? "Provisoire" : RESULT_LABELS[r.kind]} ${r.club} – ${r.opp}`;

@@ -2,8 +2,8 @@ import { z } from "zod";
 
 // Adresse lisible de la page publique d'un club : /c/tc-lyon. Fonctions pures. Les limites sont aussi un CHECK en base.
 
-export const SLUG_MIN = 3;
-export const SLUG_MAX = 50;
+const SLUG_MIN = 3;
+const SLUG_MAX = 50;
 
 /** Mots qui ne doivent pas servir d'adresse de club (réservés à l'appli). */
 const RESERVED = new Set(["admin", "api", "ralli", "connexion", "inscription", "clubs", "club", "nouveau"]);

@@ -3,8 +3,8 @@ import { parseParisLocal } from "@/lib/time";
 // Classement des équipes d'un club : victoire 3 points, nul 1, défaite 0 ; départage par la différence de points de match,
 // puis le nombre de victoires, puis l'ordre alphabétique. Fonctions pures.
 
-export const WIN_POINTS = 3;
-export const DRAW_POINTS = 1;
+const WIN_POINTS = 3;
+const DRAW_POINTS = 1;
 
 export type TeamGame = { teamId: string; scored: number; conceded: number };
 export type StandingRow = { teamId: string; name: string; rank: number; played: number; won: number; drawn: number; lost: number; diff: number; points: number };

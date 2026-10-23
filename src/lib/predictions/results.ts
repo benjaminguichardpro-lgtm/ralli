@@ -35,7 +35,7 @@ export function matchesSearch(query: string, ...texts: string[]): boolean {
 }
 
 export const PAGE_SIZE = 20;
-export const LIMIT_MAX = 200;
+const LIMIT_MAX = 200;
 
 /** Nombre de rallis affichés (`?limite=`) : par paliers de 20, jamais moins de 20 ni plus de 200. */
 export function parseLimit(raw: string | string[] | undefined): number {
@@ -117,7 +117,7 @@ export function groupByEncounter<T extends { encounterId: string }>(items: reado
 }
 
 /** Un ralli réglé depuis moins de 48 heures porte le marqueur « Nouveau » (et l'animation dorée s'il est gagné). */
-export const RECENT_RESULT_HOURS = 48;
+const RECENT_RESULT_HOURS = 48;
 
 export function isRecentResult(settledAt: Date, now: Date): boolean {
   const age = now.getTime() - settledAt.getTime();
@@ -136,7 +136,7 @@ export function currentStreak(newestFirst: readonly { status: ResultStatus }[]):
 }
 
 /** La série s'affiche à partir de 2 rallis justes d'affilée. */
-export const STREAK_MIN_SHOWN = 2;
+const STREAK_MIN_SHOWN = 2;
 
 export function streakLabel(streak: number): string | null {
   return streak >= STREAK_MIN_SHOWN ? `${streak} d'affilée` : null;

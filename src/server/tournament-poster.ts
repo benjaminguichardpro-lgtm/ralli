@@ -13,7 +13,7 @@ import { getClubRole } from "./permissions";
 // personnel seulement. Les joueurs s'affichent en « Prénom Nom » comme partout.
 
 const NOT_FOUND = new DomainError("NOT_FOUND", "Tournoi introuvable");
-export const TO_BE_DECIDED = "À déterminer";
+const TO_BE_DECIDED = "À déterminer";
 
 export type PosterPlayer = { name: string; club: string; rank: string; won: boolean };
 

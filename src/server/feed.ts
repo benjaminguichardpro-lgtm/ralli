@@ -7,9 +7,9 @@ import { formatOdds } from "@/lib/odds/model";
 import { type MyPrediction, balanceIn, exclusionReason } from "./predictions";
 import { sideLabel } from "./encounters";
 
-export type PickView = { name: string; rank: string; oddsX100: number | null; odds: string | null };
+type PickView = { name: string; rank: string; oddsX100: number | null; odds: string | null };
 
-export type FeedMatch = {
+type FeedMatch = {
   id: string;
   number: number;
   home: PickView;

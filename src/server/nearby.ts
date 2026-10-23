@@ -57,7 +57,7 @@ export async function setMyRadius(userId: string, raw: unknown, kind: RadiusKind
   return km;
 }
 
-export type NearbyEncounter = {
+type NearbyEncounter = {
   id: string;
   status: EffectiveStatus;
   statusLabel: string;

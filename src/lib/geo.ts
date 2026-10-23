@@ -1,7 +1,7 @@
 // Distances à vol d'oiseau, pour « Interclub à proximité » et « Tournoi à venir ». Fonctions pures.
 
-export const DEFAULT_RADIUS_KM = 30;
-export const MIN_RADIUS_KM = 1;
+/** Barre de distance : 0 = mes clubs seulement, 1 à 200 km autour de la commune, puis « toute la France » (valeur enregistrée : 999). */
+export const MIN_RADIUS_KM = 0;
 export const MAX_RADIUS_KM = 200;
 export const FRANCE_KM = 999;
 /** Position du dernier cran de la barre (« France ») : 0 à 200 = kilomètres, 201 = toute la France. */

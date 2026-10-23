@@ -202,7 +202,7 @@ export async function resolveDispute(actorId: string, encounterId: string, resul
 
 // ─────────────────────────────── Lecture ───────────────────────────────
 
-export type ScoreMatchView = {
+type ScoreMatchView = {
   id: string;
   kind: MatchKind;
   /** Numéro dans son type : Simple 1, Double 1… */
