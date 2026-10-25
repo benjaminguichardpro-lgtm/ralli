@@ -4,7 +4,7 @@ import { AuthError } from "next-auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { signIn, signOut } from "@/auth";
+import { signIn, signOut, unstable_update } from "@/auth";
 import { requireUser } from "@/lib/auth/current-user";
 import { afterAuthPath } from "@/lib/clubs/invite-link";
 import { changePasswordSchema, fieldErrors, signInSchema, signUpFormSchema } from "@/lib/validation/account";
@@ -74,6 +74,8 @@ export async function changePasswordAction(_: FormState, fd: FormData): Promise<
   const parsed = changePasswordSchema.safeParse({ password: str(fd, "password"), confirm: str(fd, "confirm") });
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
   await changePassword(user.id, parsed.data.password);
+  // Les autres connexions du compte sont révoquées ; celle-ci est renouvelée pour rester ouverte.
+  await unstable_update({});
   // L'en-tête et la barre du bas (solde, onglets) sont masqués tant que le mot de passe est temporaire : on les recharge.
   revalidatePath("/", "layout");
   redirect("/");

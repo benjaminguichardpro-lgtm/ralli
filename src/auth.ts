@@ -7,13 +7,18 @@ import { clearLoginFailures, clientIp, loginWaitMs, recordLoginFailure } from "@
 declare module "next-auth" {
   interface Session {
     user: { id: string };
+    // Instant (ms) où cette connexion a été ouverte ; 0 pour une connexion antérieure à cette information.
+    loginAt: number;
   }
 }
 
+// Durée d'une connexion : 14 jours.
+const SESSION_MAX_AGE = 14 * 24 * 60 * 60;
+
 // Sessions JWT (imposé par le provider credentials). Le JWT ne porte que l'identifiant :
 // pseudo, rôles et drapeau mustChangePassword sont relus en base à chaque requête.
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
+  session: { strategy: "jwt", maxAge: SESSION_MAX_AGE },
   // Un mauvais mot de passe est un cas normal : on ne le journalise pas comme une erreur serveur.
   logger: {
     error(error) {
@@ -41,12 +46,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    // loginAt est posé à la connexion et à la mise à jour demandée après un changement de mot de passe ;
+    // il ne bouge pas quand Auth.js renouvelle le cookie (contrairement à `iat`).
+    jwt({ token, user, trigger }) {
       if (user?.id) token.sub = user.id;
+      if (user?.id || trigger === "update") token.loginAt = Date.now();
       return token;
     },
     session({ session, token }) {
       if (token.sub) session.user.id = token.sub;
+      session.loginAt = typeof token.loginAt === "number" ? token.loginAt : 0;
       return session;
     },
   },

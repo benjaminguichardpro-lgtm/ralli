@@ -18,10 +18,15 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const session = await auth();
   const id = session?.user?.id;
   if (!id) return null;
-  return db.user.findUnique({
+  const user = await db.user.findUnique({
     where: { id },
-    select: { id: true, displayName: true, mustChangePassword: true, avatarKey: true, avatarPhotoAt: true, onboardingSeenAt: true },
+    select: { id: true, displayName: true, mustChangePassword: true, avatarKey: true, avatarPhotoAt: true, onboardingSeenAt: true, sessionsValidFrom: true },
   });
+  if (!user) return null;
+  // Connexion ouverte avant le dernier changement de mot de passe : révoquée.
+  const { sessionsValidFrom, ...current } = user;
+  if (sessionsValidFrom && session.loginAt < sessionsValidFrom.getTime()) return null;
+  return current;
 });
 
 /**

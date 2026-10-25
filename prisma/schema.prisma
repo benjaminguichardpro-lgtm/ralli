@@ -136,6 +136,7 @@ model User {
   longitude          Float?
   nearbyRadiusKm     Int       @default(0) // rayon « Interclubs à venir » et « Interclub à proximité », réglable par la personne : 0 (mes clubs, défaut), 1 à 200 km, 999 (toute la France)
   tournamentRadiusKm Int       @default(0) // rayon « Tournoi à venir » (mêmes valeurs) ; 0 par défaut : les tournois de mes clubs
+  sessionsValidFrom  DateTime? // les connexions ouvertes avant cette date ne sont plus valables (changement ou réinitialisation du mot de passe) ; null = aucune limite
   profilePublic      Boolean   @default(true) // profil visible des membres des clubs en commun (tranche 39) ; false = avatar et pseudo seulement
   createdAt          DateTime  @default(now())
 

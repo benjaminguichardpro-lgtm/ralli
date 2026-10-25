@@ -69,7 +69,7 @@ export async function authenticate(identifier: string, password: string): Promis
 export async function changePassword(userId: string, newPassword: string): Promise<void> {
   await db.user.update({
     where: { id: userId },
-    data: { passwordHash: await hashPassword(newPassword), mustChangePassword: false },
+    data: { passwordHash: await hashPassword(newPassword), mustChangePassword: false, sessionsValidFrom: new Date() },
   });
 }
 
@@ -80,7 +80,7 @@ export async function resetPasswordByEmail(email: string): Promise<{ temporaryPa
   const temporaryPassword = generateTemporaryPassword();
   await db.user.update({
     where: { id: user.id },
-    data: { passwordHash: await hashPassword(temporaryPassword), mustChangePassword: true },
+    data: { passwordHash: await hashPassword(temporaryPassword), mustChangePassword: true, sessionsValidFrom: new Date() },
   });
   return { temporaryPassword, displayName: user.displayName };
 }

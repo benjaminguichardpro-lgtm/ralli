@@ -85,6 +85,20 @@ describe("resetPasswordByEmail / changePassword", () => {
     expect(await getBalance(id)).toBe(1000);
   });
 
+  it("révoque les connexions ouvertes : sessionsValidFrom vide à l'inscription, posée par le reset et par le changement", async () => {
+    const { id } = await registerUser(input());
+    const sessionsValidFrom = async () => (await db.user.findUniqueOrThrow({ where: { id } })).sessionsValidFrom;
+    expect(await sessionsValidFrom()).toBeNull();
+
+    const beforeReset = Date.now();
+    await resetPasswordByEmail("alice@club.fr");
+    const afterReset = await sessionsValidFrom();
+    expect(afterReset!.getTime()).toBeGreaterThanOrEqual(beforeReset);
+
+    await changePassword(id, "Nouveaumotdepasse-2026!");
+    expect((await sessionsValidFrom())!.getTime()).toBeGreaterThanOrEqual(afterReset!.getTime());
+  });
+
   it("signale un email inconnu", async () => {
     await expect(resetPasswordByEmail("personne@club.fr")).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
