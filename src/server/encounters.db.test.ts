@@ -348,14 +348,15 @@ describe("lecture (R8)", () => {
     await expect(getEncounterPage(admin, id, T0)).resolves.toHaveProperty("status", "DRAFT");
   });
 
-  it("publiée : visible sans compte, joueurs en « Prénom Nom », aucune donnée de gestion", async () => {
+  it("publiée : visible sans compte (« Prénom N. »), connecté en « Prénom Nom », aucune donnée de gestion", async () => {
     const { id } = await create();
     await addMatch(capA, id, { homePlayerId: p1, awayPlayerId: x1 }, T0);
     await publishEncounter(capA, id, T0);
     const page = await getEncounterPage(null, id, T0);
     expect(page.home).toBe("TC Ralli · Messieurs 1");
     expect(page.away).toBe("TC Voisin 1");
-    expect(page.matches[0]).toMatchObject({ number: 1, home: { name: "Léa Martin", rank: "30" }, away: { name: "Paul Voisin", rank: "30/1" }, oddsHome: "1,56", oddsAway: "2,78" });
+    expect(page.matches[0]).toMatchObject({ number: 1, home: { name: "Léa M.", rank: "30" }, away: { name: "Paul V.", rank: "30/1" }, oddsHome: "1,56", oddsAway: "2,78" });
+    expect((await getEncounterPage(member, id, T0)).matches[0]).toMatchObject({ home: { name: "Léa Martin" }, away: { name: "Paul Voisin" } });
     expect(page.manage).toBeNull();
     expect((await getEncounterPage(member, id, T0)).manage).toBeNull();
     expect((await getEncounterPage(capB, id, T0)).manage).toBeNull();

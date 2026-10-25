@@ -1,7 +1,7 @@
 // Libellés et décompte des matchs d'une rencontre (simples et doubles). Fonctions pures.
 
 import type { MatchKind, Side } from "@/generated/prisma/enums";
-import { publicPlayerName } from "./names";
+import { publicPlayerName, visitorPlayerName } from "./names";
 
 export const MATCH_POINTS = [1, 2] as const;
 
@@ -22,9 +22,10 @@ export function sortSinglesFirst<T extends { kind: MatchKind; order: number }>(m
 
 type Person = { firstName: string; lastName: string };
 
-/** « Léa Martin » pour un simple, « Léa Martin / Hugo Durand » pour une paire. */
-export function sideName(players: readonly Person[]): string {
-  return players.map((p) => publicPlayerName(p.firstName, p.lastName)).join(" / ");
+/** « Léa Martin » pour un simple, « Léa Martin / Hugo Durand » pour une paire ; `visitor` : « Léa M. » (personne sans compte). */
+export function sideName(players: readonly Person[], visitor = false): string {
+  const name = visitor ? visitorPlayerName : publicPlayerName;
+  return players.map((p) => name(p.firstName, p.lastName)).join(" / ");
 }
 
 /** Points de chaque côté : un match gagné rapporte ses points ; un match sans vainqueur n'en rapporte à personne. */

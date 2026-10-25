@@ -124,12 +124,14 @@ test("publication : confirmation, cotes figées et affichées", async () => {
   await checkPage(jade, "22-rencontre-publiee-capitaine");
 });
 
-test("page publique : visible sans compte, « Prénom Nom », non indexée, sans gestion", async () => {
+test("page publique : visible sans compte, « Prénom N. », non indexée, sans gestion", async () => {
   await anon.goto(encounterUrl);
   await expect(anon.getByText("Pronostics ouverts", { exact: true })).toBeVisible();
   const matches = anon.getByTestId("matches");
-  await expect(matches).toContainText("Léa Martin");
-  await expect(matches).toContainText("Paul Voisin");
+  await expect(matches).toContainText("Léa M.");
+  await expect(matches).toContainText("Paul V.");
+  await expect(matches).not.toContainText("Martin");
+  await expect(matches).not.toContainText("Voisin");
   await expect(anon.getByTestId("manage")).toHaveCount(0);
   await expect(anon.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   expect(encounterUrl).toMatch(/\/rencontres\/c[a-z0-9]{20,}$/);

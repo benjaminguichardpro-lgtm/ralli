@@ -87,7 +87,7 @@ test("un membre simple ne voit ni la préparation ni les juges-arbitres, seuleme
   await m.context().close();
 });
 
-test("l'affiche : titre, lieu, sigle, joueurs en « Prénom Nom », vainqueur mis en avant, légende ; lisible sans compte", async ({ page }) => {
+test("l'affiche : titre, lieu, sigle, joueurs en « Prénom N. » sans compte, vainqueur mis en avant, légende", async ({ page }) => {
   await page.goto(`/tournois/${tid}/affiche`);
   const poster = page.getByTestId("poster");
   await expect(poster).toBeVisible();
@@ -98,10 +98,9 @@ test("l'affiche : titre, lieu, sigle, joueurs en « Prénom Nom », vainqueur mi
   const rows = poster.getByTestId("poster-row");
   expect(await rows.count()).toBeGreaterThanOrEqual(5);
   await expect(rows.first()).toContainText("SM");
-  // Noms complets « Prénom Nom » : jamais d'initiale seule suivie d'un point.
+  // Sans compte : « Prénom N. », jamais le nom de famille en entier.
   const names = await poster.getByTestId("poster-player").allInnerTexts();
-  for (const n of names) if (n !== "À déterminer") expect(n, `nom « ${n} »`).toMatch(/^\S+(?: \S+)+$/u);
-  for (const n of names) expect(n).not.toMatch(/ \p{Lu}\.$/u);
+  for (const n of names) if (n !== "À déterminer") expect(n, `nom « ${n} »`).toMatch(/ \p{Lu}\.$/u);
   // Un quart est joué : son vainqueur est mis en avant (cases foncées, « V »), le score en barres.
   const done = poster.locator('[data-testid="poster-row"][data-done="true"]').first();
   await expect(done.locator('[data-won="true"]').first()).toBeVisible();

@@ -31,10 +31,10 @@ async function PublicClub({ params }: { params: Promise<{ slug: string }> }) {
   const club = await getPublicClub(slug);
   if (!club) notFound();
   const now = new Date();
-  const [{ upcoming, recent }, viewer, tournaments, standings] = await Promise.all([
+  const viewer = await getCurrentUser();
+  const [{ upcoming, recent }, tournaments, standings] = await Promise.all([
     getPublicClubEncounters(club.id),
-    getCurrentUser(),
-    listClubTournaments(club.id),
+    listClubTournaments(club.id, { visitor: !viewer }),
     getTeamStandings(club.id, seasonYearOf(now), now),
   ]);
   const address = formatAddress(club);

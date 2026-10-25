@@ -193,7 +193,7 @@ describe("affiche", () => {
     expect((await getTournamentPoster(admin, tid)).isStaff).toBe(true);
   });
 
-  it("publié : lisible sans compte ; joueurs en « Prénom Nom », club d'origine, classement, sigle ; les matchs sans joueur ni heure n'y figurent pas", async () => {
+  it("publié : lisible sans compte ; joueurs en « Prénom N. » pour un visiteur, club d'origine, classement, sigle ; les matchs sans joueur ni heure n'y figurent pas", async () => {
     await fill();
     await setTournamentInfo(admin, tid, { tableLabel: "SM", venue: "Complexe des Flandres" });
     await publishTournament(admin, tid, T0);
@@ -202,8 +202,8 @@ describe("affiche", () => {
     expect(poster.rows).toHaveLength(2); // la finale n'a ni joueur ni heure
     expect(poster.rows[0]).toMatchObject({
       table: "SM",
-      home: { name: "Lucas Martin", club: "TC Affiche", rank: "30", won: false },
-      away: { name: "Thomas Dubois", club: "AS Mont-Noir", rank: "30/1", won: false },
+      home: { name: "Lucas M.", club: "TC Affiche", rank: "30", won: false },
+      away: { name: "Thomas D.", club: "AS Mont-Noir", rank: "30/1", won: false },
       score: "",
       done: false,
     });
@@ -228,7 +228,8 @@ describe("affiche", () => {
     expect(poster.rows[0]).toMatchObject({ score: "6/4 7/5", done: true, winnerSide: "HOME", home: { won: true }, away: { won: false } });
     await recordTournamentResult(admin, sf2!.id, { outcome: "WALKOVER", winnerSide: "AWAY", sets: [] }, AFTER_SF);
     poster = await getTournamentPoster(null, tid);
-    expect(poster.rows[1]).toMatchObject({ score: "WO", away: { name: "Denis Roux", won: true } });
+    expect(poster.rows[1]).toMatchObject({ score: "WO", away: { name: "Denis R.", won: true } });
+    expect((await getTournamentPoster(admin, tid)).rows[1]).toMatchObject({ away: { name: "Denis Roux" } });
     expect(poster.rows).toHaveLength(3); // la finale a maintenant ses deux joueurs
     expect(poster.heading).toBe("Matchs du");
     await setMatchTime(admin, fin!.id, FINAL, AFTER_SF);

@@ -407,7 +407,7 @@ export async function getTournamentPage(viewerId: string | null, tournamentId: s
   const isAdmin = role === "ADMIN";
   const isStaff = isAdmin || (role !== null && t.referees.some((r) => r.userId === viewerId));
   if (t.status === "DRAFT" && !isStaff) throw NOT_FOUND;
-  const person = (p: { id: string; firstName: string; lastName: string; fftRank: FftRank } | null) => (p ? { id: p.id, name: sideName([p]), rank: fftLabel(p.fftRank) } : null);
+  const person = (p: { id: string; firstName: string; lastName: string; fftRank: FftRank } | null) => (p ? { id: p.id, name: sideName([p], viewerId === null), rank: fftLabel(p.fftRank) } : null);
 
   const matches: TournamentMatchView[] = t.matches.map((m) => {
     const state: TournamentMatchState = m.outcome
@@ -431,7 +431,7 @@ export async function getTournamentPage(viewerId: string | null, tournamentId: s
       oddsHome: m.oddsHomeX100 === null ? null : formatOdds(m.oddsHomeX100),
       oddsAway: m.oddsAwayX100 === null ? null : formatOdds(m.oddsAwayX100),
       state,
-      result: m.outcome && m.winnerSide ? { winnerSide: m.winnerSide, winnerName: sideName([m.winnerSide === "HOME" ? m.homePlayer! : m.awayPlayer!]), outcome: m.outcome, sets: formatSets((m.sets as SetScore[] | null) ?? []) } : null,
+      result: m.outcome && m.winnerSide ? { winnerSide: m.winnerSide, winnerName: sideName([m.winnerSide === "HOME" ? m.homePlayer! : m.awayPlayer!], viewerId === null), outcome: m.outcome, sets: formatSets((m.sets as SetScore[] | null) ?? []) } : null,
       predictorCount: m._count.predictions,
     };
   });
@@ -459,7 +459,7 @@ export async function getTournamentPage(viewerId: string | null, tournamentId: s
     statusLabel: TOURNAMENT_STATUS_LABELS[t.status],
     drawSize: t.drawSize,
     startsAt: t.startsAt,
-    winner: winner ? sideName([winner]) : null,
+    winner: winner ? sideName([winner], viewerId === null) : null,
     isAdmin,
     isStaff,
     isMember: role !== null,
@@ -509,10 +509,10 @@ export const cardSelect = {
   matches: { where: { outcome: null, oddsHomeX100: { not: null } }, select: { startsAt: true } },
 } as const;
 
-export async function toCards(rows: Prisma.TournamentGetPayload<{ select: typeof cardSelect }>[], now: Date): Promise<TournamentCard[]> {
+export async function toCards(rows: Prisma.TournamentGetPayload<{ select: typeof cardSelect }>[], now: Date, visitor = false): Promise<TournamentCard[]> {
   const winnerIds = rows.map((r) => r.winnerId).filter((x): x is string => x !== null);
   const winners = winnerIds.length ? await db.player.findMany({ where: { id: { in: winnerIds } }, select: { id: true, firstName: true, lastName: true } }) : [];
-  const byId = new Map(winners.map((w) => [w.id, sideName([w])]));
+  const byId = new Map(winners.map((w) => [w.id, sideName([w], visitor)]));
   return rows.map((r) => ({
     id: r.id,
     clubId: r.clubId,
@@ -528,14 +528,14 @@ export async function toCards(rows: Prisma.TournamentGetPayload<{ select: typeof
 }
 
 /** Tournois d'un club : publiés pour tout le monde ; brouillons pour les admins (`withDrafts`). Les plus récents d'abord. Annulés exclus. */
-export async function listClubTournaments(clubId: string, opts: { withDrafts?: boolean } = {}, now = new Date()): Promise<TournamentCard[]> {
+export async function listClubTournaments(clubId: string, opts: { withDrafts?: boolean; visitor?: boolean } = {}, now = new Date()): Promise<TournamentCard[]> {
   const rows = await db.tournament.findMany({
     where: { clubId, club: { deletedAt: null }, status: { in: opts.withDrafts ? ["DRAFT", "OPEN", "FINISHED"] : ["OPEN", "FINISHED"] } },
     orderBy: [{ startsAt: "desc" }, { id: "desc" }],
     take: 30,
     select: cardSelect,
   });
-  return toCards(rows, now);
+  return toCards(rows, now, opts.visitor);
 }
 
 /** Accueil : tournois publiés des clubs de l'utilisateur, en cours (les plus proches d'abord) et terminés récemment. */

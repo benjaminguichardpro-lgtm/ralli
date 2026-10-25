@@ -217,7 +217,8 @@ describe("résultats : règlement et avancée du vainqueur", () => {
     expect(t).toMatchObject({ status: "FINISHED", winnerId: p[2] });
     expect((await db.prediction.findFirstOrThrow({ where: { tournamentMatchId: fin } })).status).toBe("WON");
     const page = await getTournamentPage(null, tid);
-    expect(page.winner).toBe("Chloé Petit");
+    expect(page.winner).toBe("Chloé P."); // visiteur sans compte
+    expect((await getTournamentPage(member, tid)).winner).toBe("Chloé Petit");
     expect(page.rounds[0]!.matches[0]!.state).toBe("done");
   });
 
@@ -265,7 +266,8 @@ describe("lecture", () => {
       expect(v.rounds.map((r) => r.matches.length)).toEqual([2, 1]);
     }
     const open = (await getTournamentPage(null, tid, T0)).rounds[0]!.matches[0]!;
-    expect(open).toMatchObject({ state: "open", home: { name: "Aline Martin" }, away: { name: "Boris Durand" } });
+    expect(open).toMatchObject({ state: "open", home: { name: "Aline M." }, away: { name: "Boris D." } });
+    expect((await getTournamentPage(member, tid, T0)).rounds[0]!.matches[0]!).toMatchObject({ home: { name: "Aline Martin" }, away: { name: "Boris Durand" } });
     expect((await getTournamentPage(null, tid, T0)).rounds[1]!.matches[0]!.state).toBe("waiting");
   });
 

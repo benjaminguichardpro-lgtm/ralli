@@ -69,7 +69,7 @@ export async function getTournamentPoster(viewerId: string | null, tournamentId:
 
   const table = t.tableLabel ?? "";
   const player = (p: P | null, won: boolean): PosterPlayer =>
-    p ? { name: sideName([p]), club: p.externalClubName ?? t.club.name, rank: fftLabel(p.fftRank), won } : { name: TO_BE_DECIDED, club: "", rank: "", won: false };
+    p ? { name: sideName([p], viewerId === null), club: p.externalClubName ?? t.club.name, rank: fftLabel(p.fftRank), won } : { name: TO_BE_DECIDED, club: "", rank: "", won: false };
 
   // Un match figure sur l'affiche dès que ses deux joueurs sont connus ou qu'il a une heure.
   const rows: PosterRow[] = t.matches
