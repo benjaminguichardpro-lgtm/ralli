@@ -106,6 +106,27 @@ describe("composition (R4)", () => {
     await expect(addMatch(capA, id, { homePlayerId: p2, awayPlayerId: x2 }, T0)).resolves.toHaveProperty("id");
   });
 
+  it("anti-trucage : un joueur lié à un compte qui a déjà pronostiqué la rencontre ne peut pas y être aligné (pronostic remboursé : possible)", async () => {
+    const { id } = await create();
+    const first = await addMatch(capA, id, { homePlayerId: p1, awayPlayerId: x1 }, T0);
+    await publishEncounter(capA, id, T0);
+    const predictionId = await predict(punter, first.id, 50);
+    await db.player.update({ where: { id: p2 }, data: { userId: punter } });
+
+    // Avant ce pronostic le joueur aurait pu jouer ; maintenant : refusé, en ajout comme en remplacement.
+    await expect(addMatch(capA, id, { homePlayerId: p2, awayPlayerId: x2 }, T0)).rejects.toMatchObject({
+      code: "INVALID",
+      message: expect.stringContaining("a déjà pronostiqué"),
+    });
+    await expect(replaceMatch(capA, first.id, { homePlayerId: p2, awayPlayerId: x1 }, T0)).rejects.toMatchObject({ code: "INVALID" });
+    // Un joueur lié à un compte qui n'a rien pronostiqué reste alignable.
+    await db.player.update({ where: { id: p3 }, data: { userId: member } });
+    await expect(addMatch(capA, id, { homePlayerId: p3, awayPlayerId: x3 }, T0)).resolves.toHaveProperty("id");
+    // Pronostic remboursé : il ne compte plus.
+    await db.prediction.update({ where: { id: predictionId }, data: { status: "REFUNDED" } });
+    await expect(addMatch(capA, id, { homePlayerId: p2, awayPlayerId: x2 }, T0)).resolves.toHaveProperty("id");
+  });
+
   it("équipe à l'extérieur : les côtés suivent domicile / extérieur", async () => {
     const { id } = await create(capA, { clubTeamIsHome: false });
     await expect(addMatch(capA, id, { homePlayerId: p1, awayPlayerId: x1 }, T0)).rejects.toMatchObject({ code: "INVALID" });

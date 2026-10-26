@@ -306,6 +306,17 @@ async function validateMatchPlayers(tx: Tx, e: LoadedEncounter, setup: ParsedSet
   }
   // Au plus un simple et un double par joueur et par rencontre.
   const all = [...homeIds, ...awayIds];
+  // Anti-trucage : un compte lié à l'un de ces joueurs ne doit pas avoir déjà pronostiqué cette rencontre (les pronostics remboursés ne comptent pas).
+  const predicted = await tx.prediction.findFirst({
+    where: { status: { not: "REFUNDED" }, match: { encounterId: e.id }, user: { player: { id: { in: all } } } },
+    select: { id: true },
+  });
+  if (predicted) {
+    throw new DomainError(
+      "INVALID",
+      `${plural ? "Un de ces joueurs est lié" : "Ce joueur est lié"} à un compte qui a déjà pronostiqué cette rencontre : il ne peut pas y être aligné`,
+    );
+  }
   const busy = await tx.match.findFirst({
     where: {
       encounterId: e.id,
